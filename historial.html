@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial Completo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+
+    <h2>Historial Completo de Producción</h2>
+
+    <!-- BORRAR POR MES -->
+    <h3>Borrar Registros por Mes</h3>
+
+    <input type="month" id="deleteMonth">
+
+    <button onclick="deleteByMonth()" style="background:#e67e22; margin-bottom:15px;">
+        Borrar Mes Seleccionado
+    </button>
+
+    <hr>
+
+    <!-- BORRAR TODO -->
+    <button onclick="clearHistory()" style="background:#c0392b; margin-bottom:15px;">
+        Borrar Todo el Historial
+    </button>
+
+    <button onclick="goBack()" style="margin-bottom:15px;">
+        Volver al Sistema
+    </button>
+
+    <hr>
+
+    <!-- TABLA HISTORIAL -->
+    <div id="history"></div>
+
+</div>
+
+<script src="app.js"></script>
+
+<script>
+    // Cargar historial automáticamente al abrir
+    renderHistory();
+
+    function goBack() {
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>
