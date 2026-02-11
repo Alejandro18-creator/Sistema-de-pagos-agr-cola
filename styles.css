@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* ===== RESET ===== */
 
 * {
@@ -225,4 +226,233 @@ tr:hover {
 
 .homeScreen p {
     opacity: 0.8;
+=======
+/* ===== RESET ===== */
+
+* {
+    box-sizing: border-box;
+}
+
+/* ===== BODY ===== */
+
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+
+header {
+    background: #ffffff;
+    padding: 18px 25px;
+    border-radius: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+header h1 {
+    margin: 0;
+    color: #1e3c72;
+    font-size: 22px;
+}
+
+/* ===== GRID PRINCIPAL ===== */
+
+#app {
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* ===== TARJETAS ===== */
+
+.card {
+    background: #ffffff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+/* ===== TITULOS ===== */
+
+.card h2 {
+    margin-top: 0;
+    color: #1e3c72;
+}
+
+/* ===== INPUTS ===== */
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0 14px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #2a5298;
+    box-shadow: 0 0 6px rgba(42,82,152,0.4);
+}
+
+/* ===== BOTONES ===== */
+
+button {
+    background: linear-gradient(135deg, #2a5298, #1e3c72);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+}
+
+/* ===== LOGIN ===== */
+
+#login {
+    max-width: 360px;
+    margin: 120px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    text-align: center;
+}
+
+#login h2 {
+    margin-top: 0;
+    color: #1e3c72;
+}
+
+/* ===== TABLAS ===== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th {
+    background: #2a5298;
+    color: white;
+    padding: 10px;
+}
+
+td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+    background: #f2f6ff;
+}
+
+/* ===== HIDDEN ===== */
+
+.hidden {
+    display: none !important;
+}
+.card input,
+.card select {
+    display: block;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+th {
+    background: #1e3c72;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background: #f4f7ff;
+}
+
+tr:hover {
+    background: #e6ecff;
+}
+/* ===== LAYOUT LATERAL ===== */
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Menú lateral */
+.sidebar {
+    width: 220px;
+    background: #1e3c72;
+    color: white;
+    padding: 20px;
+}
+
+/* Contenido */
+.content {
+    flex: 1;
+    padding: 20px;
+}
+.sidebar button {
+    width: 100%;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    text-align: left;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.sidebar button:hover {
+    background: rgba(255,255,255,0.25);
+}
+/* ===== PANTALLA INICIO ===== */
+
+.homeScreen {
+    height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+}
+
+.homeScreen h2 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.homeScreen p {
+    opacity: 0.8;
+>>>>>>> e01e16509140a56c9294e0f04275daa69af3bf66
 }
