@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema Agrícola</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.ico">
+
+</head>
+<body>
+            <!-- LOGIN -->
+<div id="login" class="card">
+    <h2>Ingreso Contratista</h2>
+    <input type="password" id="password" placeholder="Contraseña">
+    <button onclick="loginUser()">Ingresar</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden layout">
+
+    <!-- MENÚ LATERAL -->
+    <aside class="sidebar">
+        <h2>🌱 Sistema</h2>
+        <button onclick="showView('viewHome')">🏠 Inicio</button>
+        <button onclick="showView('viewWorkers')">👨‍🌾 Trabajadores</button>
+        <button onclick="showView('viewWorkersDB')">📋 Base de Datos Trabajadores</button>
+        <button onclick="showView('viewProduction')">🛠️ Producción</button>
+        <button onclick="showView('viewLiquidation')">📄 Liquidación</button>
+        <button onclick="showView('viewMonthly')">📅 Mensual Trabajador</button>
+        <button onclick="showView('viewMonthlyGeneral')">🧾 Mensual General</button>
+        <button onclick="showView('viewWeekly')">📊 Semanal</button>
+        <button onclick="showView('viewHistory')">📜 Historial</button>
+        <button onclick="showView('viewBackup')">💾 Respaldo</button>
+        <button onclick="showView('viewContract')"> 🧾 Contrato</button>
+    </aside>
+
+    <!-- CONTENIDO -->
+    <main class="content">
+
+        <header>
+            <h1>Sistema de Producción Agrícola</h1>
+            <button onclick="logout()">Cerrar sesión</button>
+        </header>
+    <!-- PANTALLA INICIO -->
+    <section class="view" id="viewHome">
+
+        <div class="homeScreen">
+            <h2>Bienvenido al Sistema Agrícola</h2>
+            <p>Seleccione una opción del menú lateral</p>
+        </div>
+
+    </section>
+
+    <!-- REGISTRO TRABAJADOR -->
+
+    <section class="card view hidden" id="viewWorkers">
+        <h2>Registrar Trabajador</h2>
+        <select id="workerEditSelect" onchange="loadWorkerToEdit()">
+    <option value="">-- Seleccionar para editar --</option>
+    </select>
+
+   
+        <input type="text" id="workerName" placeholder="Nombre">
+        <input type="text" id="workerRut"  placeholder="RUT" oninput="formatRutInput(this)">
+        <input type="text" id="workerAddress" placeholder="Direccion">
+        <button onclick="addWorker()">Guardar</button>
+        <button onclick="deleteWorker()" style="background:#c0392b"> Eliminar Trabajador</button>
+     </section>
+<!-- BASE DE DATOS TRABAJADORES -->
+<section class="card view hidden" id="viewWorkersDB">
+
+    <h2>Base de Datos de Trabajadores</h2>
+
+    <div id="workersTable"></div>
+
+</section>
+    <!-- REGISTRO PRODUCCIÓN -->
+    <section class="card view hidden" id="viewProduction">
+        <h2>Registrar Producción</h2>
+
+        <select id="workerSelect"></select>
+        <input type="date" id="workDate">
+        <select id="laborSelect"></select>
+        <input type="text" id="newLabor" placeholder="Nueva labor (opcional)">
+        <input type="number" id="quantity" placeholder="Cantidad">
+        <input type="text" id="unitValue" placeholder="Valor por unidad" oninput="formatCurrency(this)">
+        <input type="text" id="observation" placeholder="Observación">
+        <button onclick="registerWork()">Registrar</button>
+        <button onclick="editLastProduction()"> ✏️ Modificar último</button>
+        <button onclick="deleteLastProduction()" style="background:#c0392b">🗑️ Eliminar último</button>
+    </section>
+
+    <!-- LIQUIDACIÓN -->
+<section class="card view hidden" id="viewLiquidation">
+
+    <h2>Liquidación Mensual</h2>
+
+    <select id="workerLiquidation"></select>
+
+    <input type="month" id="monthLiquidation">
+
+    <button onclick="generateLiquidation()">
+        Generar PDF
+    </button>
+</section>
+
+<!-- CONTRATO DE TRABAJO -->
+<section class="card view hidden" id="viewContract">
+
+    <h2>Contrato de Trabajo</h2>
+
+    <select id="workerContract"></select>
+
+    <input type="text" id="faena" placeholder="Faena / Campo">
+
+    <input type="text" id="cargo" placeholder="Cargo / Labor">
+
+    <input type="text" id="afp" placeholder="AFP">
+
+    <input type="date" id="startDate">
+
+    <input type="text" id="salary" placeholder="Sueldo / Trato">
+
+    <button onclick="generateContract()">
+        Generar Contrato
+    </button>
+
+</section>
+
+<!-- RESUMEN MENSUAL -->
+<section class="card view hidden" id="viewMonthly">
+
+    <h2>Resumen Mensual por Trabajador</h2>
+ 
+    <select id="workerMonthly"></select>
+
+    <input type="month" id="monthMonthly">
+
+    <button onclick="generateMonthlySummary()">
+        Calcular Mes
+    </button>
+
+    <div id="monthlyResult"></div>
+
+</section>
+
+<!-- MENSUAL GENERAL -->
+<section class="card view hidden" id="viewMonthlyGeneral">
+
+    <h2>Resumen Mensual General</h2>
+
+    <input type="month" id="monthGeneral">
+
+    <button onclick="generateMonthlyGeneral()">
+        Calcular Mes
+    </button>
+
+    <div id="monthlyGeneralResult"></div>
+
+</section>
+
+<!-- RESUMEN SEMANAL -->
+<section class="card view hidden" id="viewWeekly">
+
+    <h2>Resumen Semanal</h2>
+
+    <button onclick="window.location.href='historial.html'">
+        Ver Historial Completo
+    </button>
+
+    <input type="text" id="searchWorkerWeekly" 
+           placeholder="Buscar por nombre o RUT"
+           oninput="filterWorkersWeekly()">
+
+    <select id="workerWeekly"></select>
+
+    <input type="week" id="weekSelected">
+
+    <button onclick="generateWeeklySummary()">
+        Calcular Semana
+    </button>
+
+    <div id="weeklyResult"></div>
+
+</section>
+
+    <!-- HISTORIAL -->
+   <section class="card view hidden" id="viewHistory">
+    <h2>Historial</h2>
+    <div id="history"></div>
+</section>
+
+<section class="card view hidden" id="viewBackup">
+
+<h3>Respaldo del Sistema</h3>
+
+<button onclick="exportData()">Exportar Respaldo</button>
+
+<input type="file" id="importFile" style="display:none" onchange="importData(event)">
+
+<button onclick="document.getElementById('importFile').click()">
+    Importar Respaldo
+</button>
+
+</section>
+
+</main>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
