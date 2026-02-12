@@ -31,6 +31,7 @@ function loginUser() {
         loadWorkers();
         loadLabors();
         renderHistory();
+        renderWorkersTable();   // 👈 AGREGA ESTA LÍNEA
 
     } else {
         alert("Contraseña incorrecta");
@@ -87,22 +88,29 @@ function addWorker() {
 
 function loadWorkers() {
 
-    const select =
-        document.getElementById("workerSelect");
+    const selects = [
+        "workerSelect",
+        "workerLiquidation",
+        "workerMonthly",
+        "workerWeekly",
+        "workerContract"
+    ];
 
-    if (!select) return;
+    selects.forEach(id => {
 
-    select.innerHTML = "";
+        const select = document.getElementById(id);
+        if (!select) return;
 
-    workers.forEach((worker, index) => {
+        select.innerHTML = "";
 
-        const option =
-            document.createElement("option");
+        workers.forEach((worker, index) => {
 
-        option.value = index;
-        option.textContent = worker.name;
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = worker.name;
 
-        select.appendChild(option);
+            select.appendChild(option);
+        });
     });
 }
 
@@ -428,5 +436,6 @@ window.onload = function () {
         loadWorkers();
         loadLabors();
         renderHistory();
+        renderWorkersTable();   // 👈 AGREGA AQUÍ
     }
 };

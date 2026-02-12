@@ -119,22 +119,29 @@ button:hover {
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 15px;
+    margin-top: 10px;
+    font-size: 14px;
 }
 
 th {
-    background: #2a5298;
+    background: #1e3c72;
     color: white;
     padding: 10px;
+    text-align: center;
 }
 
 td {
     padding: 8px;
     border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background: #f4f7ff;
 }
 
 tr:hover {
-    background: #f2f6ff;
+    background: #e6ecff;
 }
 
 /* ===== HIDDEN ===== */
@@ -230,4 +237,34 @@ tr:hover {
 
 .homeScreen p {
     opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .sidebar button {
+        flex: 1 1 45%;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .content {
+        padding: 10px;
+    }
+
+    header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
 }
