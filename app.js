@@ -342,3 +342,15 @@ window.onload = function () {
     }
 };
 
+function showView(id) {
+
+    document
+        .querySelectorAll(".view")
+        .forEach(function(v) {
+            v.classList.add("hidden");
+        });
+
+    document
+        .getElementById(id)
+        .classList.remove("hidden");
+}
