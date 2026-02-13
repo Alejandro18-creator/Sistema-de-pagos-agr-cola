@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,49 +10,157 @@
 
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<div class="container">
+<div class="content">
 
-    <h2>Historial Completo de Producción</h2>
+    <header>
+        <h1>Historial Completo de Producción</h1>
+        <button onclick="goBack()">Volver al Sistema</button>
+    </header>
 
-    <!-- BORRAR POR MES -->
-    <h3>Borrar Registros por Mes</h3>
+    <!-- ===== ACCIONES ===== -->
 
-    <input type="month" id="deleteMonth">
+    <div class="card">
 
-    <button onclick="deleteByMonth()" style="background:#e67e22; margin-bottom:15px;">
-        Borrar Mes Seleccionado
-    </button>
+        <h3>Borrar Registros por Mes</h3>
 
-    <hr>
+        <input type="month" id="deleteMonth">
 
-    <!-- BORRAR TODO -->
-    <button onclick="clearHistory()" style="background:#c0392b; margin-bottom:15px;">
-        Borrar Todo el Historial
-    </button>
+        <button
+            onclick="deleteByMonth()"
+            style="background:#e67e22;">
+            Borrar Mes Seleccionado
+        </button>
 
-    <button onclick="goBack()" style="margin-bottom:15px;">
-        Volver al Sistema
-    </button>
+        <hr style="margin:20px 0;">
 
-    <hr>
+        <button
+            onclick="clearHistory()"
+            style="background:#c0392b;">
+            Borrar Todo el Historial
+        </button>
 
-    <!-- TABLA HISTORIAL -->
-    <div id="history"></div>
+    </div>
+
+    <!-- ===== TOTALES ===== -->
+
+    <div class="card" id="historyTotals"></div>
+
+    <!-- ===== TABLA ===== -->
+
+    <div class="card">
+        <div id="history"></div>
+    </div>
 
 </div>
+
 
 <script src="app.js"></script>
 
 <script>
-    // Cargar historial automáticamente al abrir
-    renderHistory();
 
-    function goBack() {
-        window.location.href = "index.html";
+// =============================
+// 🚀 CARGA INICIAL
+// =============================
+
+renderHistory();
+renderTotals();
+
+
+// =============================
+// 🔙 VOLVER
+// =============================
+
+function goBack() {
+    window.location.href = "index.html";
+}
+
+
+// =============================
+// 🗑️ BORRAR TODO
+// =============================
+
+function clearHistory() {
+
+    if (!confirm("¿Borrar TODO el historial?")) return;
+
+    localStorage.removeItem("history");
+
+    history = [];
+
+    renderHistory();
+    renderTotals();
+}
+
+
+// =============================
+// 🗑️ BORRAR POR MES
+// =============================
+
+function deleteByMonth() {
+
+    const month =
+        document.getElementById("deleteMonth").value;
+
+    if (!month) {
+        alert("Seleccione mes.");
+        return;
     }
+
+    if (!confirm("¿Borrar registros del mes seleccionado?"))
+        return;
+
+    history =
+        history.filter(r =>
+            !r.date.startsWith(month)
+        );
+
+    localStorage.setItem(
+        "history",
+        JSON.stringify(history)
+    );
+
+    renderHistory();
+    renderTotals();
+}
+
+
+// =============================
+// 📊 TOTALES
+// =============================
+
+function renderTotals() {
+
+    const c =
+        document.getElementById("historyTotals");
+
+    if (history.length === 0) {
+
+        c.innerHTML =
+            "<h3>No hay registros.</h3>";
+
+        return;
+    }
+
+    let total = 0;
+
+    history.forEach(r =>
+        total += Number(r.total)
+    );
+
+    c.innerHTML = `
+        <h3>Resumen Histórico</h3>
+        <p><strong>Registros:</strong> ${history.length}</p>
+        <p><strong>Total Pagado:</strong>
+           $${total.toLocaleString("es-CL")}
+        </p>
+    `;
+}
+
 </script>
 
 </body>
 </html>
+
