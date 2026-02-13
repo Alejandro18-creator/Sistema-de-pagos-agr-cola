@@ -407,23 +407,54 @@ tr:hover {
 
 @media print {
 
+    /* Fondo blanco */
     body {
         background: white;
+        margin: 0;
+        padding: 0;
     }
 
+    /* Ocultar sistema */
     .sidebar,
     header,
     button {
         display: none !important;
     }
 
+    /* Quitar estilos de tarjetas */
     .card {
         box-shadow: none;
         border: none;
+        margin: 0;
+        padding: 0;
     }
 
     .content {
         padding: 0;
+        margin: 0;
+    }
+
+    /* CONTRATO */
+    #contractPrint {
+        position: relative;     /* 👈 importante */
+        top: 0;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        page-break-inside: avoid;
+    }
+
+    /* Texto compacto */
+    #contractPrint p {
+        margin: 4px 0;
+        text-align: justify;
+    }
+
+    /* Márgenes de hoja */
+    @page {
+        margin: 1cm;
     }
 }
+
 
