@@ -268,3 +268,141 @@ tr:hover {
         text-align: center;
     }
 }
+/* ============================= */
+/* 📄 CONTRATO EN PANTALLA */
+/* ============================= */
+
+#contractPrint {
+    background: white;
+    padding: 40px;
+    margin-top: 10px;
+    color: black;
+    line-height: 1;
+}
+
+
+/* ============================
+📄 IMPRESIÓN CONTRATO LIMPIO
+============================ */
+
+@media print {
+
+    /* ===== QUITAR MENÚ ===== */
+    .layout {
+        display: block !important;
+    }
+
+    .sidebar {
+        display: none !important;
+    }
+
+    .content {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .titulo-contrato {
+    margin-top: 0;
+    padding-top: 0;
+    text-align: center;
+    font-size: 25px;
+}
+    .contract,
+    .card {
+        padding-top: 0;
+        margin-top: 0;
+    }
+
+    /* ===== OCULTAR TODO ===== */
+    body * {
+        visibility: hidden;
+    }
+
+    /* ===== MOSTRAR SOLO CONTRATO ===== */
+    #contractPrint,
+    #contractPrint * {
+        visibility: visible;
+    }
+
+    /* ===== POSICIÓN HOJA ===== */
+    #contractPrint {
+        position: absolute;
+        top: -3.7cm;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white;
+        color: black;
+        font-size: 16px;
+        line-height: 1.2;
+        font-family: 'Times New Roman', serif;
+    }
+
+    /* ===== TEXTO JUNTO ===== */
+    #contractPrint p {
+        margin: 2px 0;
+        text-align: justify;
+    }
+    .clausula {
+    margin: 2px 0;
+    line-height: 1.2;
+}
+    #contractPrint h3 {
+        margin: 6px 0 2px 0;
+        font-size: 13px;
+    }
+    .signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 60px;
+}
+.signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+/* Cada firma */
+.sign {
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;   /* 👈 centra TODO respecto a la línea */
+}
+
+/* Línea de firma */
+.line {
+    border-top: 1px solid black;
+    width: 250px;          /* 👈 ancho fijo */
+    margin-bottom: 10px;
+}
+
+/* Textos */
+.sign-name,
+.sign-role,
+.sign-rut {
+    width: 250px;          /* 👈 mismo ancho que la línea */
+    text-align: center;
+    margin: 2px 0;
+}
+
+.sign-name {
+    font-weight: bold;
+}
+
+.sign-rut {
+    font-size: 12px;
+}
+
+    
+    /* ===== OCULTAR BOTÓN ===== */
+    .no-print {
+        display: none !important;
+    }
+
+    /* ===== MÁRGENES HOJA ===== */
+    @page {
+        margin: 1cm;
+    }
+}

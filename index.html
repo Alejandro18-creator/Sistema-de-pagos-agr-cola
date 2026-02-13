@@ -113,18 +113,94 @@
 
         <!-- CONTRATO -->
         <section class="card view hidden" id="viewContract">
-            <h2>Contrato de Trabajo</h2>
 
-            <select id="workerContract"></select>
-            <input type="text" id="faena" placeholder="Faena / Campo">
-            <input type="text" id="cargo" placeholder="Cargo / Labor">
-            <input type="text" id="afp" placeholder="AFP">
-            <input type="date" id="startDate">
-            <input type="text" id="salary" placeholder="Sueldo / Trato">
+    <div id="contractPrint">
+            <h2 class="titulo-contrato">Contrato de Trabajo de Temporada</h2>
+        <p>
+        En Santiago, a ____ de __________________ de 20____,
+        entre SERVICIOS AGRICOLAS SAN GERONIMO SPA, RUT Nº 78.018.478-7 con domicilio en 1 Sur 690 of 815 Edificio Oficina Plaza Talca comuna Talca que adelante se denominará "<b>el empleador</b>", y don(a) _________________________________,Cédula de Identidad n° ______________________, Nacionalidad ______________________,Estado Civil ______________________, fecha de Nacimiento ____ / ____ / 20____, de oficio trabajador Agrícola, con domicilio en _________________________________, que adelante se denominará <b>"el trabajador"</b>, se ha convenido en el siguiente contrato de trabajo de temporada o de faena transitoria. 
+        </p>
+        <p class="clausula">
+        <b>PRIMERO:</b> 
+        El trabajador prestará sus servicios como Trabajador Agrícola en Avda Miguel Vial Echenique s/n comuna de Coltauco.
+        </p>
+        <p class="clausula">
+        <b>SEGUNDO:</b>  
+        El presente contrato se entenderá terminado automáticamente, en la fecha en que concluyen las faenas que le dieron origen y a que se ha hecho referencia en la cláusula primera, sin perjuicio que el empleador comunique por escrito este hecho, de conformidad con lo dispuesto en el artículo 162 del Código del Trabajo. 
+        </p>
+        <p class="clausula">
+        <b>TERCERO:</b>  
+        La jornada ordinaria de trabajo será de 44 horas semanales distribuidas de la siguiente forma: lunes a Jueves de 07:00 a 12:00 y de 13:00 a 16:00 hrs. Y Viernes de 7: a 12:00 y de 13:00 a 15:30 hrs.
+        </p>
+        <p class="clausula">
+        <b>CUARTO:</b>  
+        El empleador se compromete a remunerar los servicios del trabajador con un sueldo de $539.000.- (Quinientos veintinueve mil pesos), que será liquidado y pagado, por períodos vencidos en forma proporcional a los días efectivamente trabajados. 
+        </p>
+        <p class="clausula">  
+        <b>QUINTO:</b> El empleador se compromete a otorgar o suministrar al trabajador los siguientes beneficios: Traslado desde la casa al trabajo y del trabajo a la casa.- 
+        </p>
+        <p class="clausula">  
+        <b>SEXTO:</b> Cuando por necesidades de funcionamiento de la Empresa, sea necesario pactar trabajo en tiempo extraordinario, el trabajador que lo acuerde, se obligará a cumplir el horario que al efecto determinen con la Empleadora, dentro de los límites legales. Dicho acuerdo constará por escrito y se firmará por ambas partes, previamente a la realización del trabajo.  
+        </p>
+        <p class="clausula">  
+        <b>SEPTIMO:</b> Queda prohibido expresamente al trabajador laborar sobre-tiempo o simplemente permanecer en el recinto de la Empresa, después de la hora diaria de salida, salvo en los casos a que se refiere el inciso precedente
+        </p>
+        <p class="clausula">  
+        <b>OCTAVO:</b> De acuerdo al artículo 38, Nº 3 del Código del Trabajo, las partes dejan establecido que la jornada ordinaria puede comprender domingos o festivos, atendido el carácter de las labores frutícolas materia del presente contrato. 
+        </p>
+        <p class="clausula">  
+        <b>NOVENO:</b> Se deja constancia que el trabajador de conformidad con lo dispuesto en el artículo 305 del Código del Trabajo, por la naturaleza de las faenas no está habilitado para negociar colectivamente. 
+        </p>
+        <p class="clausula">  
+        <b>DECIMO:</b> El trabajador deja constancia que se encuentra afiliado para los efectos de su previsión a AFP ______________  y  para los efectos de salud a ___________ y reconoce que son de su responsabilidad todos los cambios o modificaciones que puedan afectar su situación previsional o de salud, los que deberá informar oportunamente al Empleador. 
+        </p>
+        <p class="clausula">  
+        <b>UNDECIMO:</b> Se deja expresa constancia   que el trabajador   ingresó   al servicio del empleador el ___/___/20__. 
+        </p>
+        <p class="clausula">  
+        <b>DUODECIMO:</b> Para todos los efectos derivados del presente contrato las partes fijan domicilio en la ciudad de Talca  y se someten a la Jurisdicción de sus Tribunales. 
+        </p>
+        <p class="clausula">  
+        <b>DÉCIMO TERCERO:</b> El presente contrato se firma en 2 ejemplares, declarando el trabajador haber recibido en este acto un ejemplar de dicho instrumento, que es el fiel reflejo de la relación laboral convenida. 
+        </p>
 
-            <button onclick="generateContract()">
-                Generar Contrato
-            </button>
+        <br><br><br>
+
+<div class="signatures">
+
+    <!-- EMPLEADOR -->
+    <div class="sign">
+        <div class="line"></div>
+
+        <p class="sign-name">
+            Servicios Agrícolas San Gerónimo SPA
+        </p>
+
+        <p class="sign-role">
+            EMPLEADOR
+        </p>
+
+        <p class="sign-rut">
+            RUT: 78.018.478-7
+        </p>
+    </div>
+
+
+    <!-- TRABAJADOR -->
+    <div class="sign">
+        <div class="line"></div>
+
+        <p class="sign-name">
+            TRABAJADOR
+        </p>
+    </div>
+
+</div>
+
+    </div>
+    <button class="no-print" onclick="window.print()">
+        🖨️ Imprimir Contrato
+    </button>
         </section>
 
         <!-- MENSUAL -->
