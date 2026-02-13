@@ -67,6 +67,18 @@ function addWorker() {
 
     const address =
         document.getElementById("workerAddress").value.trim();
+                const afp =
+    document.getElementById("workerAFP").value.trim();
+
+const health =
+    document.getElementById("workerHealth").value.trim();
+
+const position =
+    document.getElementById("workerPosition").value.trim();
+
+const entryDate =
+    document.getElementById("workerEntryDate").value;
+
 
     if (!name || !rut) {
         alert("Debe ingresar nombre y RUT.");
@@ -92,7 +104,15 @@ function addWorker() {
             return;
         }
 
-        workers.push({ name, rut, address });
+        workers.push({
+    name,
+    rut,
+    address,
+    afp,
+    health,
+    position,
+    entryDate
+});
 
         alert("Trabajador guardado.");
     }

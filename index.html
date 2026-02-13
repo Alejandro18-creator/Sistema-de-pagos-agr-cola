@@ -80,6 +80,10 @@
             <input type="text" id="workerName" placeholder="Nombre">
             <input type="text" id="workerRut" placeholder="RUT" oninput="formatRutInput(this)">
             <input type="text" id="workerAddress" placeholder="Dirección">
+            <input type="text" id="workerAFP" placeholder="AFP">
+            <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)">
+            <input type="text" id="workerPosition" placeholder="Cargo">
+            <input type="date" id="workerEntryDate" placeholder="Fecha ingreso">
 
             <button type="button" onclick="addWorker()">Guardar</button>
 
@@ -142,6 +146,8 @@
                     style="background:#c0392b">
                 🗑️ Eliminar último
             </button>
+
+<div id="liquidationPrint" class="liquidacion-doc hidden"></div>
         </section>
 
         <!-- LIQUIDACIÓN -->
@@ -157,6 +163,12 @@
             <button type="button" onclick="generateLiquidation()">
                 Generar PDF
             </button>
+                <button onclick="window.print()" class="no-print">
+            🖨️ Imprimir Liquidación
+                </button>
+            <div id="liquidationPrint"
+                class="liquidacion-doc hidden">
+            </div>
         </section>
 
         <!-- CONTRATO -->
