@@ -1,3 +1,4 @@
+
 // =============================
 // 🔐 CONFIGURACIÓN
 // =============================
@@ -8,8 +9,7 @@ let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
 
-let editIndexProduction = null;
-let lastProductionIndex = null;
+let editWorkerIndex = null;
 
 
 // =============================
@@ -18,20 +18,17 @@ let lastProductionIndex = null;
 
 function loginUser() {
 
-    const passwordInput =
+    const pass =
         document.getElementById("password").value;
 
-    if (passwordInput === PASSWORD) {
+    if (pass === PASSWORD) {
 
         localStorage.setItem("sessionActive", "true");
 
         document.getElementById("login").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
 
-        loadWorkers();
-        loadLabors();
-        renderHistory();
-        renderWorkersTable();   // 👈 AGREGA ESTA LÍNEA
+        initSystem();
 
     } else {
         alert("Contraseña incorrecta");
@@ -39,9 +36,20 @@ function loginUser() {
 }
 
 function logout() {
-
     localStorage.removeItem("sessionActive");
     location.reload();
+}
+
+
+// =============================
+// 🚀 INIT
+// =============================
+
+function initSystem() {
+    loadWorkers();
+    loadLabors();
+    renderHistory();
+    renderWorkersTable();
 }
 
 
@@ -65,51 +73,75 @@ function addWorker() {
         return;
     }
 
-    const exists =
-        workers.some(w => w.rut === rut);
+    if (editWorkerIndex !== null) {
 
-    if (exists) {
-        alert("Trabajador ya existe.");
-        return;
+        workers[editWorkerIndex] =
+            { name, rut, address };
+
+        editWorkerIndex = null;
+
+        alert("Trabajador actualizado.");
+
+    } else {
+
+        const exists =
+            workers.some(w => w.rut === rut);
+
+        if (exists) {
+            alert("Trabajador ya existe.");
+            return;
+        }
+
+        workers.push({ name, rut, address });
+
+        alert("Trabajador guardado.");
     }
 
-    workers.push({ name, rut, address });
+    localStorage.setItem("workers", JSON.stringify(workers));
 
-    localStorage.setItem(
-        "workers",
-        JSON.stringify(workers)
-    );
-
+    clearWorkerInputs();
     loadWorkers();
     renderWorkersTable();
-
-    alert("Trabajador guardado.");
 }
+
+function clearWorkerInputs() {
+
+    document.getElementById("workerName").value = "";
+    document.getElementById("workerRut").value = "";
+    document.getElementById("workerAddress").value = "";
+}
+
+
+// =============================
+// 📋 SELECTS
+// =============================
 
 function loadWorkers() {
 
-    const selects = [
+    const ids = [
         "workerSelect",
         "workerLiquidation",
         "workerMonthly",
         "workerWeekly",
-        "workerContract"
+        "workerContract",
+        "workerEditSelect"
     ];
 
-    selects.forEach(id => {
+    ids.forEach(id => {
 
         const select = document.getElementById(id);
         if (!select) return;
 
-        select.innerHTML = "";
+        select.innerHTML =
+            "<option value=''>-- Seleccionar trabajador --</option>";
 
-        workers.forEach((worker, index) => {
+        workers.forEach((w, i) => {
 
-            const option = document.createElement("option");
-            option.value = index;
-            option.textContent = worker.name;
+            const opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = w.name;
 
-            select.appendChild(option);
+            select.appendChild(opt);
         });
     });
 }
@@ -121,40 +153,29 @@ function loadWorkers() {
 
 function renderWorkersTable() {
 
-    const container =
-        document.getElementById("workersTable");
-
-    if (!container) return;
+    const c = document.getElementById("workersTable");
+    if (!c) return;
 
     if (workers.length === 0) {
-        container.innerHTML =
-            "<p>No hay trabajadores registrados.</p>";
+        c.innerHTML = "<p>No hay trabajadores.</p>";
         return;
     }
 
-    let html = `
-        <table>
-            <tr>
-                <th>Nombre</th>
-                <th>RUT</th>
-                <th>Dirección</th>
-            </tr>
-    `;
+    let html = "<div class='table-container'><table>";
+    html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th></tr>";
 
-    workers.forEach(worker => {
+    workers.forEach(w => {
 
-        html += `
-            <tr>
-                <td>${worker.name}</td>
-                <td>${worker.rut}</td>
-                <td>${worker.address || "-"}</td>
-            </tr>
-        `;
+        html += "<tr>";
+        html += "<td>" + w.name + "</td>";
+        html += "<td>" + w.rut + "</td>";
+        html += "<td>" + (w.address || "-") + "</td>";
+        html += "</tr>";
     });
 
-    html += "</table>";
+    html += "</table></div>";
 
-    container.innerHTML = html;
+    c.innerHTML = html;
 }
 
 
@@ -169,23 +190,22 @@ function loadLabors() {
 
     if (!select) return;
 
-    select.innerHTML = "";
+    select.innerHTML =
+        "<option value=''>-- Seleccionar labor --</option>";
 
-    labors.forEach(labor => {
+    labors.forEach(l => {
 
-        const option =
-            document.createElement("option");
+        const opt = document.createElement("option");
+        opt.value = l;
+        opt.textContent = l;
 
-        option.value = labor;
-        option.textContent = labor;
-
-        select.appendChild(option);
+        select.appendChild(opt);
     });
 }
 
 
 // =============================
-// 🧾 REGISTRAR PRODUCCIÓN
+// 🧾 PRODUCCIÓN
 // =============================
 
 function registerWork() {
@@ -198,8 +218,11 @@ function registerWork() {
     const date =
         document.getElementById("workDate").value;
 
-    const labor =
+    let labor =
         document.getElementById("laborSelect").value;
+
+    const newLabor =
+        document.getElementById("newLabor").value.trim();
 
     const quantity =
         Number(document.getElementById("quantity").value);
@@ -207,47 +230,38 @@ function registerWork() {
     const unitValue =
         Number(
             document.getElementById("unitValue").value
-            .replace(/\$/g, "")
-            .replace(/\./g, "")
+            .replace(/\$/g,"")
+            .replace(/\./g,"")
         );
 
-    const observation =
-        document.getElementById("observation").value;
+    if (newLabor) {
 
-    if (!worker || !date || quantity <= 0) {
+        labor = newLabor;
+
+        if (!labors.includes(newLabor)) {
+            labors.push(newLabor);
+            localStorage.setItem("labors", JSON.stringify(labors));
+            loadLabors();
+        }
+    }
+
+    if (!worker || !date || !labor || quantity <= 0) {
         alert("Datos incompletos.");
         return;
     }
 
     const total = quantity * unitValue;
 
-    const record = {
+    history.push({
         name: worker.name,
         rut: worker.rut,
         date,
         labor,
         quantity,
-        unitValue,
-        total,
-        observation
-    };
+        total
+    });
 
-    if (editIndexProduction !== null) {
-
-        history[editIndexProduction] = record;
-        editIndexProduction = null;
-
-    } else {
-
-        history.push(record);
-        lastProductionIndex =
-            history.length - 1;
-    }
-
-    localStorage.setItem(
-        "history",
-        JSON.stringify(history)
-    );
+    localStorage.setItem("history", JSON.stringify(history));
 
     renderHistory();
 }
@@ -259,159 +273,58 @@ function registerWork() {
 
 function renderHistory() {
 
-    const container =
-        document.getElementById("history");
+    const c = document.getElementById("history");
+    if (!c) return;
 
-    if (!container) return;
-
-    let html = `
-    <table>
-        <tr>
-            <th>Fecha</th>
-            <th>Trabajador</th>
-            <th>Labor</th>
-            <th>Cantidad</th>
-            <th>Total</th>
-        </tr>
-    `;
-
-    history.forEach((r) => {
-
-        html += `
-        <tr>
-            <td>${r.date}</td>
-            <td>${r.name}</td>
-            <td>${r.labor}</td>
-            <td>${r.quantity}</td>
-            <td>$${r.total}</td>
-        </tr>
-        `;
-    });
-
-    html += "</table>";
-
-    container.innerHTML = html;
-}
-
-
-// =============================
-// 📊 RESUMEN MENSUAL
-// =============================
-
-function generateMonthlySummary() {
-
-    const worker =
-        workers[
-            document.getElementById("workerMonthly").value
-        ];
-
-    const month =
-        document.getElementById("monthMonthly").value;
-
-    if (!worker || !month) {
-        alert("Seleccione trabajador y mes.");
+    if (history.length === 0) {
+        c.innerHTML = "<p>No hay registros.</p>";
         return;
     }
 
-    const records = history.filter(item =>
-        item.rut === worker.rut &&
-        item.date.startsWith(month)
-    );
+    let html = "<div class='table-container'><table>";
+    html += "<tr><th>Fecha</th><th>Trabajador</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
-    if (records.length === 0) {
-        document.getElementById("monthlyResult")
-            .innerHTML = "<p>No hay registros.</p>";
+    history.forEach(r => {
+
+        html += "<tr>";
+        html += "<td>" + r.date + "</td>";
+        html += "<td>" + r.name + "</td>";
+        html += "<td>" + r.labor + "</td>";
+        html += "<td>" + r.quantity + "</td>";
+        html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
+        html += "</tr>";
+    });
+
+    html += "</table></div>";
+
+    c.innerHTML = html;
+}
+
+
+// =============================
+// 🧩 AUXILIARES
+// =============================
+
+function formatCurrency(input) {
+
+    let value = input.value.replace(/\D/g, "");
+
+    if (!value) {
+        input.value = "";
         return;
     }
 
-    const uniqueDays =
-        new Set(records.map(r => r.date));
-
-    const daysWorked =
-        uniqueDays.size;
-
-    const laborSummary = {};
-
-    records.forEach(r => {
-
-        if (!laborSummary[r.labor]) {
-            laborSummary[r.labor] = 0;
-        }
-
-        laborSummary[r.labor] += r.quantity;
-    });
-
-    const totalLabors =
-        records.reduce(
-            (sum, r) => sum + r.quantity,
-            0
-        );
-
-    const totalAmount =
-        records.reduce(
-            (sum, r) => sum + r.total,
-            0
-        );
-
-    let html = `
-        <table>
-            <tr>
-                <th>Fecha</th>
-                <th>Labor</th>
-                <th>Cantidad</th>
-                <th>Total</th>
-            </tr>
-    `;
-
-    records.forEach(r => {
-
-        html += `
-            <tr>
-                <td>${r.date}</td>
-                <td>${r.labor}</td>
-                <td>${r.quantity}</td>
-                <td>$${r.total}</td>
-            </tr>
-        `;
-    });
-
-    html += `</table><br><h3>Resumen</h3>`;
-
-    Object.keys(laborSummary).forEach(labor => {
-
-        html += `
-        <p>Total ${labor}: <strong>${laborSummary[labor]}</strong></p>
-        `;
-    });
-
-    html += `
-        <p><strong>Total Labores:</strong> ${totalLabors}</p>
-        <p><strong>Días Trabajados:</strong> ${daysWorked}</p>
-        <p><strong>Total Mes:</strong> $${totalAmount.toLocaleString("es-CL")}</p>
-    `;
-
-    document.getElementById("monthlyResult")
-        .innerHTML = html;
+    input.value =
+        "$" + Number(value).toLocaleString("es-CL");
 }
 
-
-// =============================
-// 🧭 NAVEGACIÓN
-// =============================
-
-function showView(viewId) {
-
-    const views =
-        document.querySelectorAll(".view");
-
-    views.forEach(v =>
-        v.classList.add("hidden")
-    );
-
-    document
-        .getElementById(viewId)
-        .classList.remove("hidden");
+function formatRutInput(input) {
+    input.value = input.value.toUpperCase();
 }
+
+function filterWorkersWeekly() {}
+function generateLiquidation() {}
+function generateContract() {}
 
 
 // =============================
@@ -420,22 +333,24 @@ function showView(viewId) {
 
 window.onload = function () {
 
-    const session =
-        localStorage.getItem("sessionActive");
+    if (localStorage.getItem("sessionActive") === "true") {
 
-    if (session === "true") {
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
 
-        document
-            .getElementById("login")
-            .classList.add("hidden");
-
-        document
-            .getElementById("app")
-            .classList.remove("hidden");
-
-        loadWorkers();
-        loadLabors();
-        renderHistory();
-        renderWorkersTable();   // 👈 AGREGA AQUÍ
+        initSystem();
     }
 };
+
+function showView(id) {
+
+    document
+        .querySelectorAll(".view")
+        .forEach(function(v) {
+            v.classList.add("hidden");
+        });
+
+    document
+        .getElementById(id)
+        .classList.remove("hidden");
+}
