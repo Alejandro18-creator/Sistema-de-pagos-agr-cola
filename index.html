@@ -83,10 +83,17 @@
             <input type="text" id="workerAFP" placeholder="AFP">
             <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)">
             <input type="text" id="workerPosition" placeholder="Cargo">
+            <input type="text"
+             id="workerBaseSalary"
+             placeholder="Sueldo Base">
             <input type="date" id="workerEntryDate" placeholder="Fecha ingreso">
 
             <button type="button" onclick="addWorker()">Guardar</button>
-
+                <button type="button"
+           onclick="clearWorkerForm()"
+              style="background:#7f8c8d">
+           Limpiar
+           </button>
             <button type="button"
                     onclick="deleteWorker()"
                     style="background:#c0392b">
@@ -102,74 +109,87 @@
 
         <!-- PRODUCCIÓN -->
         <section class="card view hidden" id="viewProduction">
-            <h2>Registrar Producción</h2>
+    <h2>Registrar Producción</h2>
 
-            <select id="workerSelect">
-                <option value="">-- Seleccionar trabajador --</option>
-            </select>
+    <select id="workerSelect">
+        <option value="">-- Seleccionar trabajador --</option>
+    </select>
 
-            <input type="date" id="workDate">
+    <input type="date" id="workDate">
 
-            <select id="laborSelect">
-                <option value="">-- Seleccionar labor --</option>
-            </select>
+    <select id="laborSelect">
+        <option value="">-- Seleccionar labor --</option>
+    </select>
 
-            <input type="text"
-                   id="newLabor"
-                   placeholder="Nueva labor (opcional)">
+    <input type="text"
+           id="newLabor"
+           placeholder="Nueva labor (opcional)">
 
-            <input type="number"
-                   id="quantity"
-                   placeholder="Cantidad"
-                   min="0"
-                   step="1">
+    <input type="number"
+           id="quantity"
+           placeholder="Cantidad"
+           min="0"
+           step="1">
 
-            <input type="text"
-                   id="unitValue"
-                   placeholder="Valor por unidad"
-                   oninput="formatCurrency(this)">
+    <input type="text"
+           id="unitValue"
+           placeholder="Valor por unidad"
+           oninput="formatCurrency(this)">
 
-            <input type="text"
-                   id="observation"
-                   placeholder="Observación">
+    <input type="text"
+           id="observation"
+           placeholder="Observación">
 
-            <button type="button" onclick="registerWork()">
-                Registrar
-            </button>
+    <button type="button" onclick="registerWork()">
+        Registrar
+    </button>
 
-            <button type="button" onclick="editLastProduction()">
-                ✏️ Modificar último
-            </button>
+    <button type="button" onclick="editLastProduction()">
+        ✏️ Modificar último
+    </button>
 
-            <button type="button"
-                    onclick="deleteLastProduction()"
-                    style="background:#c0392b">
-                🗑️ Eliminar último
-            </button>
+    <button type="button"
+            onclick="deleteLastProduction()"
+            style="background:#c0392b">
+        🗑️ Eliminar último
+    </button>
+
+</section>
 
 <div id="liquidationPrint" class="liquidacion-doc hidden"></div>
         </section>
 
         <!-- LIQUIDACIÓN -->
-        <section class="card view hidden" id="viewLiquidation">
-            <h2>Liquidación Mensual</h2>
+<section class="card view hidden" id="viewLiquidation">
 
-            <select id="workerLiquidation">
-                <option value="">-- Seleccionar trabajador --</option>
-            </select>
+    <h2>Liquidación Mensual</h2>
 
-            <input type="month" id="monthLiquidation">
+    <select id="workerLiquidation">
+        <option value="">-- Seleccionar trabajador --</option>
+    </select>
 
-            <button type="button" onclick="generateLiquidation()">
-                Generar PDF
-            </button>
-                <button onclick="window.print()" class="no-print">
-            🖨️ Imprimir Liquidación
-                </button>
-            <div id="liquidationPrint"
-                class="liquidacion-doc hidden">
-            </div>
-        </section>
+    <input type="month" id="monthLiquidation">
+
+    <input type="text"
+       id="advanceAmount"
+       placeholder="Anticipos del mes">
+
+    <button type="button" onclick="generateLiquidation()">
+        Generar Liquidación
+    </button>
+
+    <button type="button"
+            onclick="window.print()"
+            class="no-print">
+        🖨️ Imprimir Liquidación
+    </button>
+
+    <!-- CONTENEDOR DONDE SE GENERA -->
+    <div id="liquidationPrint"
+         class="liquidacion-doc hidden">
+    </div>
+
+</section>
 
         <!-- CONTRATO -->
         <section class="card view hidden" id="viewContract">

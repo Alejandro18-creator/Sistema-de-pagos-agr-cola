@@ -457,4 +457,56 @@ tr:hover {
     }
 }
 
+/* ============================= */
+/* 📄 LIQUIDACIÓN */
+/* ============================= */
 
+.liquidacion-doc {
+    background: white;
+    padding: 30px;
+    margin-top: 20px;
+    color: black;
+    border-radius: 10px;
+}
+
+.liquidacion-doc h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.liquidacion-doc table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.liquidacion-doc th,
+.liquidacion-doc td {
+    border: 1px solid black;
+    padding: 6px;
+    text-align: center;
+}
+.liq-doc {
+    background: white;
+    padding: 40px;
+    color: black;
+    max-width: 800px;
+    margin: auto;
+}
+
+.liq-doc h1,
+.liq-doc h3 {
+    text-align: center;
+}
+
+.liq-doc table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.liq-doc td,
+.liq-doc th {
+    border: 1px solid black;
+    padding: 6px;
+}

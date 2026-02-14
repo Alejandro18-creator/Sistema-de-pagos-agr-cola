@@ -3,6 +3,12 @@
 // 🔐 CONFIGURACIÓN
 // =============================
 
+function formatMoney(value) {
+
+    return "$ " + Number(value)
+        .toLocaleString("es-CL");
+}
+
 const PASSWORD = "1234";
 
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
@@ -11,6 +17,28 @@ let history = JSON.parse(localStorage.getItem("history")) || [];
 
 let editWorkerIndex = null;
 
+// =============================
+// 🪪 FORMATO RUT
+// =============================
+
+function formatRutInput(input) {
+
+    let value = input.value
+        .replace(/[^0-9kK]/g, "")
+        .toUpperCase();
+
+    if (value.length <= 1) {
+        input.value = value;
+        return;
+    }
+
+    let body = value.slice(0, -1);
+    let dv = value.slice(-1);
+
+    body = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+    input.value = body + "-" + dv;
+}
 
 // =============================
 // 🔐 LOGIN
@@ -79,6 +107,8 @@ const position =
 const entryDate =
     document.getElementById("workerEntryDate").value;
 
+    const baseSalary =
+    document.getElementById("workerBaseSalary").value.trim();
 
     if (!name || !rut) {
         alert("Debe ingresar nombre y RUT.");
@@ -96,8 +126,13 @@ const entryDate =
 
     } else {
 
-        const exists =
-            workers.some(w => w.rut === rut);
+        const editIndex =
+    document.getElementById("workerEditSelect").value;
+
+       const exists =
+       workers.some((w, i) =>
+        w.rut === rut && i != editIndex
+    );
 
         if (exists) {
             alert("Trabajador ya existe.");
@@ -111,6 +146,7 @@ const entryDate =
     afp,
     health,
     position,
+    baseSalary,
     entryDate
 });
 
@@ -122,6 +158,54 @@ const entryDate =
     clearWorkerInputs();
     loadWorkers();
     renderWorkersTable();
+}
+
+function loadWorkerToEdit() {
+
+    const index =
+        document.getElementById("workerEditSelect").value;
+
+    if (index === "") return;
+
+    const worker = workers[index];
+
+    document.getElementById("workerName").value =
+        worker.name || "";
+
+    document.getElementById("workerRut").value =
+        worker.rut || "";
+
+    document.getElementById("workerAddress").value =
+        worker.address || "";
+
+    document.getElementById("workerAFP").value =
+        worker.afp || "";
+
+    document.getElementById("workerHealth").value =
+        worker.health || "";
+
+    document.getElementById("workerPosition").value =
+        worker.position || "";
+
+    document.getElementById("workerBaseSalary").value =
+        worker.baseSalary || "";
+
+    document.getElementById("workerEntryDate").value =
+        worker.entryDate || "";
+}
+
+function clearWorkerForm() {
+
+    document.getElementById("workerEditSelect").value = "";
+
+    document.getElementById("workerName").value = "";
+    document.getElementById("workerRut").value = "";
+    document.getElementById("workerAddress").value = "";
+    document.getElementById("workerAFP").value = "";
+    document.getElementById("workerHealth").value = "";
+    document.getElementById("workerPosition").value = "";
+    document.getElementById("workerBaseSalary").value = "";
+    document.getElementById("workerEntryDate").value = "";
 }
 
 function clearWorkerInputs() {
@@ -284,6 +368,10 @@ function registerWork() {
     localStorage.setItem("history", JSON.stringify(history));
 
     renderHistory();
+    // ===== LIMPIAR CAMPOS =====
+
+document.getElementById("workDate").value = "";
+document.getElementById("quantity").value = "";
 }
 
 
@@ -338,12 +426,154 @@ function formatCurrency(input) {
         "$" + Number(value).toLocaleString("es-CL");
 }
 
-function formatRutInput(input) {
-    input.value = input.value.toUpperCase();
-}
-
 function filterWorkersWeekly() {}
-function generateLiquidation() {}
+
+function generateLiquidation() {
+
+    const workerIndex =
+        document.getElementById("workerLiquidation").value;
+
+    const month =
+        document.getElementById("monthLiquidation").value;
+
+    if (workerIndex === "" || !month) {
+        alert("Seleccione trabajador y mes.");
+        return;
+    }
+
+    const worker = workers[workerIndex];
+
+    // ===== PRODUCCIÓN DEL MES =====
+
+    const records = history.filter(r =>
+        r.rut === worker.rut &&
+        r.date.startsWith(month)
+    );
+
+    if (records.length === 0) {
+        alert("No hay producción ese mes.");
+        return;
+    }
+
+    const sueldoImponible =
+        records.reduce((sum, r) => sum + r.total, 0);
+
+    const semanaCorrida =
+    Math.round(sueldoImponible * 0.10);
+
+        const sueldoBase =
+    Number(
+        (worker.baseSalary || "0")
+        .replace(/\./g, "")
+    );
+
+        // Gratificación (25% de imponible + base)
+    const gratificacion =
+    Math.round(
+        (sueldoBase + sueldoImponible) * 0.25);
+
+           const totalHaberes =
+    sueldoBase + sueldoImponible + semanaCorrida + gratificacion;
+    
+    // ===== DESCUENTOS LEGALES =====
+
+             const anticipos =
+    Number(
+        document
+        .getElementById("advanceAmount")
+        .value
+        .replace(/\./g, "")
+        || 0
+    );
+
+    const afp = Math.round(totalHaberes * 0.1127);
+    const salud = Math.round(totalHaberes * 0.07);
+
+    const totalDescuentos = afp + salud + anticipos;
+   
+
+    const liquido = totalHaberes - totalDescuentos;
+
+    // ===== DOCUMENTO LEGAL =====
+
+    const html = `
+        <div class="liq-doc">
+
+            <h1>LIQUIDACIÓN DE SUELDO</h1>
+            <h3>${month}</h3>
+
+            <p><strong>Nombre:</strong> ${worker.name}</p>
+            <p><strong>RUT:</strong> ${worker.rut}</p>
+            <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
+            <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
+            <p><strong>Salud:</strong> ${worker.health || "-"}</p>
+
+            <hr>
+
+            <h3>HABERES IMPONIBLES</h3>
+
+            <table>
+                
+    <td>Sueldo Base</td>
+    <td>$${sueldoBase.toLocaleString("es-CL")}</td>
+</tr>
+
+<tr>
+    <td>Producción del Mes</td>
+    <td>$${sueldoImponible.toLocaleString("es-CL")}</td>
+</tr>
+
+<tr>
+    <td>Semana Corrida</td>
+    <td>${formatMoney(semanaCorrida)}</td>
+</tr>
+
+    <tr>
+    <td>Gratificación Legal 25%</td>
+    <td>${formatMoney(gratificacion)}</td>
+</tr>
+<tr>
+    <th>Total Haberes</th>
+    <th>$${totalHaberes.toLocaleString("es-CL")}</th>
+</tr>
+            </table>
+
+            <h3>DESCUENTOS</h3>
+
+            <table>
+                <tr>
+                    <td>AFP 11,27%</td>
+                    <td>$${afp.toLocaleString("es-CL")}</td>
+                </tr>
+                <tr>
+                    <td>Salud 7%</td>
+                    <td>$${salud.toLocaleString("es-CL")}</td>
+                </tr>
+                <tr>
+                
+                <td>Anticipos del Mes</td>
+                <td>${formatMoney(anticipos)}</td>
+                </tr>
+                <tr>
+                    <th>Total Descuentos</th>
+                    <th>$${totalDescuentos.toLocaleString("es-CL")}</th>
+                </tr>
+            </table>
+
+            <h2>
+                LÍQUIDO A PAGAR:
+               ${formatMoney(liquido)}
+            </h2>
+
+        </div>
+    `;
+
+    const container =
+        document.getElementById("liquidationPrint");
+
+    container.innerHTML = html;
+    container.classList.remove("hidden");
+}
 function generateContract() {}
 
 
