@@ -3,17 +3,24 @@
 // 🔐 CONFIGURACIÓN
 // =============================
 
-function formatMoney(value) {
-
-    return "$ " + Number(value)
-        .toLocaleString("es-CL");
-}
-
 const PASSWORD = "1234";
 
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
+
+let editIndexWorker = null;
+
+function formatMoney(value) {
+
+    if (!value) return "$0";
+
+    return "$" + Number(value)
+        .toLocaleString("es-CL", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+}
 
 // =============================
 // 🔄 CARGAR RESPALDO SI NO HAY DATOS
@@ -162,27 +169,55 @@ const entryDate =
         const editIndex =
     document.getElementById("workerEditSelect").value;
 
-       const exists =
-       workers.some((w, i) =>
-        w.rut === rut && i != editIndex
+      let exists = false;
+
+if (editIndexWorker === null) {
+
+    // Solo validar duplicado si es nuevo
+    exists = workers.some(w => w.rut === rut);
+
+} else {
+
+    // Validar duplicado excluyendo el editado
+    exists = workers.some((w, index) =>
+        w.rut === rut &&
+        index != editIndexWorker
     );
+}
 
-        if (exists) {
-            alert("Trabajador ya existe.");
-            return;
-        }
+if (exists) {
+    alert("Trabajador ya existe.");
+    return;
+}
 
-        workers.push({
-    name,
-    rut,
-    address,
-    afp,
-    health,
-    position,
-    baseSalary,
-    entryDate
-});
+   if (editIndexWorker !== null) {
 
+    // ✏️ EDITAR EXISTENTE
+    workers[editIndexWorker] = {
+        name,
+        rut,
+        address,
+        afp,
+        health,
+        position,
+        entryDate
+    };
+
+    editIndexWorker = null;
+
+} else {
+
+    // ➕ NUEVO TRABAJADOR
+    workers.push({
+        name,
+        rut,
+        address,
+        afp,
+        health,
+        position,
+        entryDate
+    });
+}
         alert("Trabajador guardado.");
     }
 
@@ -201,6 +236,9 @@ function loadWorkerToEdit() {
     if (index === "") return;
 
     const worker = workers[index];
+
+    // 🧠 ACTIVAR MODO EDICIÓN
+    editIndexWorker = index;
 
     document.getElementById("workerName").value =
         worker.name || "";
