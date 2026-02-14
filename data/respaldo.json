@@ -1,0 +1,437 @@
+{
+  "workers": [
+    {
+      "name": "ESTER MAMANI\t \t",
+      "rut": "23.375.433-9"
+    },
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1"
+    },
+    {
+      "name": "ARIEL CASIMIRO",
+      "rut": "11.111.111-1"
+    },
+    {
+      "name": "MARCIAL ALIZAR",
+      "rut": "11.111.111-8",
+      "address": "tororotot"
+    },
+    {
+      "name": "Dorotea segismunda",
+      "rut": "3.444,555-6",
+      "address": "ppaara"
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "address": "ZAS"
+    },
+    {
+      "name": "JOEL CONDORI",
+      "rut": "12.456.432-1",
+      "address": "QWE"
+    },
+    {
+      "name": "FAUSTINO CASIMIRO",
+      "rut": "13.221.345-2",
+      "address": "DCF"
+    },
+    {
+      "name": "REIMER ROJAS",
+      "rut": "12.123.432-1",
+      "address": "WWS"
+    },
+    {
+      "name": "JAIRO VILLARUEL",
+      "rut": "22.341.212-3",
+      "address": "XXC"
+    },
+    {
+      "name": "EDWIN ROJAS",
+      "rut": "22.123.421-2",
+      "address": "QQA"
+    },
+    {
+      "name": "BERBELIN ESPINOZA",
+      "rut": "12.341.231-1",
+      "address": "QAX"
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "address": "NHY"
+    },
+    {
+      "name": "JOSE LUIS COPA",
+      "rut": "20.987.655-4",
+      "address": ""
+    },
+    {
+      "name": "Gerardo Cea",
+      "rut": "12.123.453-7",
+      "address": "por hai 567"
+    },
+    {
+      "name": "Alejandro Castillo",
+      "rut": "12.123.456-7",
+      "address": "las lomas"
+    },
+    {
+      "name": "Alejandro Castillo",
+      "rut": "9962931-2",
+      "address": "las lomas",
+      "afp": "habitat",
+      "health": "fonasa",
+      "position": "jornal",
+      "entryDate": "2026-02-02"
+    }
+  ],
+  "history": [
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1",
+      "date": "2026-02-02",
+      "labor": "Manzana",
+      "quantity": 5,
+      "unitValue": 10000,
+      "total": 50000,
+      "observation": ""
+    },
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1",
+      "date": "2026-02-03",
+      "labor": "Manzana",
+      "quantity": 3,
+      "unitValue": 10000,
+      "total": 30000,
+      "observation": ""
+    },
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1",
+      "date": "2026-02-04",
+      "labor": "Manzana",
+      "quantity": 4,
+      "unitValue": 10000,
+      "total": 40000,
+      "observation": ""
+    },
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1",
+      "date": "2026-02-06",
+      "labor": "Manzana",
+      "quantity": 2,
+      "unitValue": 10000,
+      "total": 20000,
+      "observation": ""
+    },
+    {
+      "name": "ARIEL CASIMIRO",
+      "rut": "11.111.111-1",
+      "date": "2026-02-02",
+      "labor": "Manzana",
+      "quantity": 8,
+      "unitValue": 10000,
+      "total": 80000,
+      "observation": ""
+    },
+    {
+      "name": "ARIEL CASIMIRO",
+      "rut": "11.111.111-1",
+      "date": "2026-02-03",
+      "labor": "Manzana",
+      "quantity": 5,
+      "unitValue": 10000,
+      "total": 50000,
+      "observation": ""
+    },
+    {
+      "name": "ARIEL CASIMIRO",
+      "rut": "11.111.111-1",
+      "date": "2026-02-05",
+      "labor": "Manzana",
+      "quantity": 2,
+      "unitValue": 10000,
+      "total": 20000,
+      "observation": ""
+    },
+    {
+      "name": "ARIEL CASIMIRO",
+      "rut": "11.111.111-1",
+      "date": "2026-02-06",
+      "labor": "Manzana",
+      "quantity": 4,
+      "unitValue": 10000,
+      "total": 40000,
+      "observation": ""
+    },
+    {
+      "name": "MARCIAL ALIZAR",
+      "rut": "11.111.111-8",
+      "date": "2026-02-02",
+      "labor": "Manzana",
+      "quantity": 3,
+      "unitValue": 10000,
+      "total": 30000,
+      "observation": ""
+    },
+    {
+      "name": "MARCIAL ALIZAR",
+      "rut": "11.111.111-8",
+      "date": "2026-02-03",
+      "labor": "Manzana",
+      "quantity": 4,
+      "unitValue": 10000,
+      "total": 40000,
+      "observation": ""
+    },
+    {
+      "name": "MARCIAL ALIZAR",
+      "rut": "11.111.111-8",
+      "date": "2026-02-04",
+      "labor": "Manzana",
+      "quantity": 5,
+      "unitValue": 10000,
+      "total": 50000,
+      "observation": ""
+    },
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1",
+      "date": "2026-02-02",
+      "labor": "poda",
+      "quantity": 5,
+      "unitValue": 10000,
+      "total": 50000,
+      "observation": ""
+    },
+    {
+      "name": "LUIS CASIMIRI\t \t",
+      "rut": "11.111.111-1",
+      "date": "2026-02-02",
+      "labor": "Manzana",
+      "quantity": 2,
+      "unitValue": 10000,
+      "total": 20000,
+      "observation": ""
+    },
+    {
+      "name": "Dorotea segismunda",
+      "rut": "3.444,555-6",
+      "date": "2026-02-02",
+      "labor": "poda",
+      "quantity": 2,
+      "unitValue": 2000,
+      "total": 4000,
+      "observation": ""
+    },
+    {
+      "name": "Dorotea segismunda",
+      "rut": "3.444,555-6",
+      "date": "2026-02-02",
+      "labor": "poda",
+      "quantity": 3,
+      "unitValue": 500,
+      "total": 1500,
+      "observation": ""
+    },
+    {
+      "name": "Dorotea segismunda",
+      "rut": "3.444,555-6",
+      "date": "2026-02-05",
+      "labor": "poda",
+      "quantity": 5,
+      "unitValue": 1000,
+      "total": 5000,
+      "observation": ""
+    },
+    {
+      "name": "Dorotea segismunda",
+      "rut": "3.444,555-6",
+      "date": "2026-02-06",
+      "labor": "poda",
+      "quantity": 4,
+      "unitValue": 1000,
+      "total": 4000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-02",
+      "labor": "poda",
+      "quantity": 1,
+      "unitValue": 10000,
+      "total": 10000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-03",
+      "labor": "poda",
+      "quantity": 2,
+      "unitValue": 10000,
+      "total": 20000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-04",
+      "labor": "poda",
+      "quantity": 3,
+      "unitValue": 10000,
+      "total": 30000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-05",
+      "labor": "poda",
+      "quantity": 4,
+      "unitValue": 10000,
+      "total": 40000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-06",
+      "labor": "poda",
+      "quantity": 5,
+      "unitValue": 10000,
+      "total": 50000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-07",
+      "labor": "poda",
+      "quantity": 6,
+      "unitValue": 10000,
+      "total": 60000,
+      "observation": ""
+    },
+    {
+      "name": "DANYERLIT TERCERO",
+      "rut": "20.123.212-7",
+      "date": "2026-02-08",
+      "labor": "poda",
+      "quantity": 7,
+      "unitValue": 10000,
+      "total": 70000,
+      "observation": ""
+    },
+    {
+      "name": "BERBELIN ESPINOZA",
+      "rut": "12.341.231-1",
+      "date": "2026-02-02",
+      "labor": "poda",
+      "quantity": 2,
+      "unitValue": 222,
+      "total": 444,
+      "observation": ""
+    },
+    {
+      "name": "REIMER ROJAS",
+      "rut": "12.123.432-1",
+      "date": "2026-02-03",
+      "labor": "poda",
+      "quantity": 3,
+      "unitValue": 234,
+      "total": 702,
+      "observation": ""
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "date": "2026-02-03",
+      "labor": "poda",
+      "quantity": 12,
+      "unitValue": 1500,
+      "total": 18000,
+      "observation": ""
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "date": "2026-02-03",
+      "labor": "poda",
+      "quantity": 12,
+      "unitValue": 1500,
+      "total": 18000,
+      "observation": ""
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "date": "2026-02-03",
+      "labor": "poda",
+      "quantity": 10,
+      "unitValue": 1500,
+      "total": 15000,
+      "observation": ""
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "date": "2026-02-03",
+      "labor": "poda",
+      "quantity": 10,
+      "unitValue": 1500,
+      "total": 15000,
+      "observation": ""
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "date": "2026-02-05",
+      "labor": "poda",
+      "quantity": 6,
+      "unitValue": 1000,
+      "total": 6000,
+      "observation": ""
+    },
+    {
+      "name": "NELSON GIMENEZ",
+      "rut": "10.123.432-2",
+      "date": "2026-02-05",
+      "labor": "poda",
+      "quantity": 6,
+      "unitValue": 1000,
+      "total": 6000,
+      "observation": ""
+    },
+    {
+      "name": "REIMER ROJAS",
+      "rut": "12.123.432-1",
+      "date": "2026-02-02",
+      "labor": "poda",
+      "quantity": 8,
+      "unitValue": 100,
+      "total": 800,
+      "observation": ""
+    },
+    {
+      "name": "REIMER ROJAS",
+      "rut": "12.123.432-1",
+      "date": "2026-02-05",
+      "labor": "poda",
+      "quantity": 12,
+      "unitValue": 1000,
+      "total": 12000,
+      "observation": ""
+    }
+  ],
+  "labors": [
+    "poda",
+    "Manzana",
+    "amarra"
+  ]
+}

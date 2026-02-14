@@ -15,6 +15,39 @@ let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
 
+// =============================
+// 🔄 CARGAR RESPALDO SI NO HAY DATOS
+// =============================
+
+if (workers.length === 0) {
+
+    fetch("data/respaldo.json")
+        .then(res => res.json())
+        .then(data => {
+
+            workers = data.workers || [];
+            history = data.history || [];
+            labors = data.labors || [];
+
+            localStorage.setItem(
+                "workers",
+                JSON.stringify(workers)
+            );
+
+            localStorage.setItem(
+                "history",
+                JSON.stringify(history)
+            );
+
+            localStorage.setItem(
+                "labors",
+                JSON.stringify(labors)
+            );
+
+            console.log("Respaldo cargado automáticamente");
+        });
+}
+
 let editWorkerIndex = null;
 
 // =============================
@@ -603,4 +636,36 @@ function showView(id) {
     document
         .getElementById(id)
         .classList.remove("hidden");
+}
+// =============================
+// 💾 EXPORTAR RESPALDO
+// =============================
+
+function exportData() {
+
+    const data = {
+        workers,
+        history,
+        labors
+    };
+
+    const json =
+        JSON.stringify(data, null, 2);
+
+    const blob =
+        new Blob([json], {
+            type: "application/json"
+        });
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+    a.download = "respaldo_sistema.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
 }
