@@ -87,7 +87,6 @@
              id="workerBaseSalary"
              placeholder="Sueldo Base">
             <input type="date" id="workerEntryDate" placeholder="Fecha ingreso">
-
             <button type="button" onclick="addWorker()">Guardar</button>
                 <button type="button"
            onclick="clearWorkerForm()"
@@ -210,7 +209,7 @@
         </p>
         <p class="clausula">
         <b>CUARTO:</b>  
-        El empleador se compromete a remunerar los servicios del trabajador con un sueldo de $539.000.- (Quinientos veintinueve mil pesos), que será liquidado y pagado, por períodos vencidos en forma proporcional a los días efectivamente trabajados. 
+        El empleador se compromete a remunerar los servicios del trabajador con un sueldo de ____________ (___________________________________), que será liquidado y pagado, por períodos vencidos en forma proporcional a los días efectivamente trabajados. 
         </p>
         <p class="clausula">  
         <b>QUINTO:</b> El empleador se compromete a otorgar o suministrar al trabajador los siguientes beneficios: Traslado desde la casa al trabajo y del trabajo a la casa.- 
@@ -327,8 +326,8 @@
             <h2>Resumen Semanal</h2>
 
             <button type="button"
-                    onclick="window.location.href='historial.html'">
-                Ver Historial Completo
+                    onclick="showView('viewHistory')">
+                   Ver Historial Completo
             </button>
 
             <input type="text"
@@ -379,6 +378,9 @@
 
 <!-- LIBRERÍA PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <!-- APP JS -->
 <script src="app.js"></script>

@@ -1,3 +1,14 @@
+// =============================
+// 🌐 SUPABASE CONEXIÓN
+// =============================
+
+const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
+const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
+
+const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 // =============================
 // 🔐 CONFIGURACIÓN
@@ -55,7 +66,7 @@ if (workers.length === 0) {
         });
 }
 
-let editWorkerIndex = null;
+
 
 // =============================
 // 🪪 FORMATO RUT
@@ -200,6 +211,7 @@ if (exists) {
         afp,
         health,
         position,
+        baseSalary,
         entryDate
     };
 
@@ -215,6 +227,7 @@ if (exists) {
         afp,
         health,
         position,
+        baseSalary,
         entryDate
     });
 }
@@ -535,7 +548,8 @@ function generateLiquidation() {
         const sueldoBase =
     Number(
         (worker.baseSalary || "0")
-        .replace(/\./g, "")
+         .replace(/\$/g, "")
+         .replace(/\./g, "")
     );
 
         // Gratificación (25% de imponible + base)
