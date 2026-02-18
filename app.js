@@ -34,7 +34,7 @@ async function saveWorkerToCloud(worker) {
 // 🔐 PASSWORD
 // =============================
 
-const PASSWORD = "1234";
+const LOGIN_PASSWORD = "1234";
 
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
@@ -120,7 +120,7 @@ function loginUser() {
     const pass =
         document.getElementById("password").value;
 
-    if (pass === PASSWORD) {
+    if (pass === LOGIN_PASSWORD) {
 
         localStorage.setItem("sessionActive", "true");
 
