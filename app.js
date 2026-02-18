@@ -29,9 +29,9 @@ async function saveWorkerToCloud(worker) {
             "Trabajador guardado en Supabase"
         );
     }
-
+}   
 // =============================
-// 🔐 CONFIGURACIÓN
+// 🔐 PASSWORD
 // =============================
 
 const PASSWORD = "1234";
@@ -72,10 +72,6 @@ if (workers.length === 0) {
                 JSON.stringify(workers)
             );
 
-            // =============================
-// 
-});
-
             localStorage.setItem(
                 "history",
                 JSON.stringify(history)
@@ -87,7 +83,7 @@ if (workers.length === 0) {
             );
 
             console.log("Respaldo cargado automáticamente");
-        };
+        });
 }
 
 
