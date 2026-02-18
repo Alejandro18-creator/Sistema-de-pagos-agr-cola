@@ -5,7 +5,7 @@
 const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
 const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
@@ -15,7 +15,7 @@ const supabase = window.supabase.createClient(
 
 async function saveWorkerToCloud(worker) {
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("workers")
         .insert([worker]);
 
