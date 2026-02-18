@@ -10,6 +10,26 @@ const supabase = window.supabase.createClient(
     SUPABASE_KEY
 );
 
+/*☁️ GUARDAR EN SUPABASE*/
+// =============================
+
+async function saveWorkerToCloud(worker) {
+
+    const { error } = await supabase
+        .from("workers")
+        .insert([worker]);
+
+    if (error) {
+        console.error(
+            "Error guardando en nube:",
+            error.message
+        );
+    } else {
+        console.log(
+            "Trabajador guardado en Supabase"
+        );
+    }
+
 // =============================
 // 🔐 CONFIGURACIÓN
 // =============================
@@ -52,6 +72,10 @@ if (workers.length === 0) {
                 JSON.stringify(workers)
             );
 
+            // =============================
+// 
+});
+
             localStorage.setItem(
                 "history",
                 JSON.stringify(history)
@@ -63,7 +87,7 @@ if (workers.length === 0) {
             );
 
             console.log("Respaldo cargado automáticamente");
-        });
+        };
 }
 
 
@@ -217,7 +241,8 @@ if (exists) {
 
     editIndexWorker = null;
 
-} else {
+} 
+else {
 
     // ➕ NUEVO TRABAJADOR
     workers.push({
@@ -230,6 +255,17 @@ if (exists) {
         baseSalary,
         entryDate
     });
+
+    saveWorkerToCloud({
+    name,
+    rut,
+    address,
+    afp,
+    health,
+    position,
+    baseSalary,
+    entryDate
+});
 }
         alert("Trabajador guardado.");
     }
