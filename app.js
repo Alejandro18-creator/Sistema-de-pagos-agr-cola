@@ -79,8 +79,8 @@ function formatMoney(value) {
 // =============================
 // 🔄 CARGAR RESPALDO SI NO HAY DATOS
 // =============================
-
-if (workers.length === 0) {
+/* Bloque antigu si es que no hay internet o no se pudo conectar a Supabase, para no perder la funcionalidad básica del sistema.*/
+/*if (workers.length === 0) {
 
     fetch("data/respaldo.json")
         .then(res => res.json())
@@ -107,7 +107,7 @@ if (workers.length === 0) {
 
             console.log("Respaldo cargado automáticamente");
         });
-}
+}*/
 
 
 
