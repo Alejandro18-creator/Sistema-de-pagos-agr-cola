@@ -181,10 +181,10 @@ const entryDate =
     const baseSalary =
     document.getElementById("workerBaseSalary").value.trim();
 
-    if (!name || !rut) {
-        alert("Debe ingresar nombre y RUT.");
-        return;
-    }
+    if (!name || !rut || !entryDate) {
+    alert("Falta completar campos obligatorios (Nombre, RUT y Fecha de ingreso).");
+    return;
+}
 
     else {
 
