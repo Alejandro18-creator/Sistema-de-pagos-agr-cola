@@ -7,8 +7,12 @@ const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
-    SUPABASE_KEY
+    SUPABASE_KEY,    
 );
+
+let workers = JSON.parse(localStorage.getItem("workers")) || [];
+let labors = JSON.parse(localStorage.getItem("labors")) || [];
+let history = JSON.parse(localStorage.getItem("history")) || [];
 
 /*☁️ GUARDAR EN SUPABASE*/
 // =============================
@@ -59,9 +63,7 @@ async function loadWorkersFromCloud() {
 
 const LOGIN_PASSWORD = "1234";
 
-let workers = JSON.parse(localStorage.getItem("workers")) || [];
-let labors = JSON.parse(localStorage.getItem("labors")) || [];
-let history = JSON.parse(localStorage.getItem("history")) || [];
+
 
 let editIndexWorker = null;
 
