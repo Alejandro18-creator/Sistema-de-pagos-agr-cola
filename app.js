@@ -186,11 +186,7 @@ const entryDate =
         return;
     }
 
-     
     else {
-
-        const editIndex =
-    document.getElementById("workerEditSelect").value;
 
       let exists = false;
 
@@ -213,10 +209,10 @@ if (exists) {
     return;
 }
 
-   if (editIndexWorker !== null) {
+    if (editIndexWorker !== null) {
 
     // ✏️ EDITAR EXISTENTE
-    workers[editIndexWorker] = {
+     workers[editIndexWorker] = {
         name,
         rut,
         address,
