@@ -167,9 +167,9 @@ function logout() {
 // 🚀 INIT
 // =============================
 
-function initSystem() {
+async function initSystem() {
 
-    loadWorkersFromCloud(); // ← nube primero
+    await loadWorkersFromCloud();
 
     loadLabors();
     renderHistory();
