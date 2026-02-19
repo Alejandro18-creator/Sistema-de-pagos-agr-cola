@@ -30,6 +30,29 @@ async function saveWorkerToCloud(worker) {
         );
     }
 }   
+async function loadWorkersFromCloud() {
+
+    const { data, error } = await supabaseClient
+        .from("workers")
+        .select("*");
+
+    if (error) {
+        console.error("Error cargando trabajadores:", error.message);
+        return;
+    }
+
+    workers = data || [];
+
+    localStorage.setItem(
+        "workers",
+        JSON.stringify(workers)
+    );
+
+    loadWorkers();
+    renderWorkersTable();
+
+    console.log("Trabajadores cargados desde Supabase");
+}
 // =============================
 // 🔐 PASSWORD
 // =============================
@@ -252,29 +275,7 @@ else {
     baseSalary,
     entryDate
 });
-async function loadWorkersFromCloud() {
 
-    const { data, error } = await supabaseClient
-        .from("workers")
-        .select("*");
-
-    if (error) {
-        console.error("Error cargando trabajadores:", error.message);
-        return;
-    }
-
-    workers = data || [];
-
-    localStorage.setItem(
-        "workers",
-        JSON.stringify(workers)
-    );
-
-    loadWorkers();
-    renderWorkersTable();
-
-    console.log("Trabajadores cargados desde Supabase");
-}
 }
 
         alert("Trabajador guardado.");
