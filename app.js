@@ -41,6 +41,7 @@ async function loadWorkersFromCloud() {
     const { data, error } = await supabaseClient
         .from("workers")
         .select("*");
+        console.log("DATA:", data);
 
     if (error) {
         console.error("Error cargando trabajadores:", error.message);
