@@ -186,16 +186,8 @@ const entryDate =
         return;
     }
 
-    if (editWorkerIndex !== null) {
-
-        workers[editWorkerIndex] =
-            { name, rut, address };
-
-        editWorkerIndex = null;
-
-        alert("Trabajador actualizado.");
-
-    } else {
+     
+    else {
 
         const editIndex =
     document.getElementById("workerEditSelect").value;
