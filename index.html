@@ -156,9 +156,6 @@
 
 </section>
 
-
-      
-
         <!-- LIQUIDACIÓN -->
 <section class="card view hidden" id="viewLiquidation">
     <div id="liquidationPrint" class="liquidacion-doc hidden"></div>
@@ -317,6 +314,12 @@
 
             <button type="button" onclick="generateMonthlyGeneral()">
                 Calcular Mes
+            </button>
+
+            <button type="button"
+            onclick="printMonthlyGeneral()"
+            class="no-print">
+           🖨️ Imprimir Resumen
             </button>
 
             <div id="monthlyGeneralResult"></div>

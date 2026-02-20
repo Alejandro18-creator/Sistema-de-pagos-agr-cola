@@ -994,3 +994,15 @@ function exportData() {
 
     URL.revokeObjectURL(url);
 }
+
+function printMonthlyGeneral() {
+
+    const container = document.getElementById("monthlyGeneralResult");
+
+    if (!container || container.innerHTML.trim() === "") {
+        alert("Primero debe calcular el mes.");
+        return;
+    }
+
+    window.print();
+}
