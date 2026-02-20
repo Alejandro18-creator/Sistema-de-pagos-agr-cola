@@ -830,7 +830,71 @@ const daysWorked = uniqueDates.length;
 }
 
 function generateMonthlyGeneral() {
-    alert("Función pendiente de implementar.");
+
+    const month =
+        document.getElementById("monthGeneral").value;
+
+    if (!month) {
+        alert("Seleccione un mes.");
+        return;
+    }
+
+    const records = history.filter(r =>
+        r.date.startsWith(month)
+    );
+
+    const container =
+        document.getElementById("monthlyGeneralResult");
+
+    if (records.length === 0) {
+        container.innerHTML =
+            "<p>No hay producción ese mes.</p>";
+        return;
+    }
+
+    // Agrupar por RUT
+    const summary = {};
+
+    records.forEach(r => {
+
+        if (!summary[r.rut]) {
+            summary[r.rut] = {
+                name: r.name,
+                total: 0,
+                dates: new Set()
+            };
+        }
+
+        summary[r.rut].total += r.total;
+        summary[r.rut].dates.add(r.date);
+    });
+
+    let html = "<h3>Resumen General del Mes</h3>";
+    html += "<table>";
+    html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
+
+    let totalGeneral = 0;
+
+    Object.values(summary).forEach(worker => {
+
+        const daysWorked = worker.dates.size;
+
+        totalGeneral += worker.total;
+
+        html += "<tr>";
+        html += "<td>" + worker.name + "</td>";
+        html += "<td>" + daysWorked + "</td>";
+        html += "<td>$" + worker.total.toLocaleString("es-CL") + "</td>";
+        html += "</tr>";
+    });
+
+    html += "</table>";
+
+    html += "<h2>Total General del Mes: $" +
+        totalGeneral.toLocaleString("es-CL") +
+        "</h2>";
+
+    container.innerHTML = html;
 }
 // =============================
 // 🔐 SESIÓN
