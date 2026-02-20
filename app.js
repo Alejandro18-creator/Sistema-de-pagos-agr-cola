@@ -1043,17 +1043,32 @@ function exportMonthlyGeneralExcel() {
         summary[r.rut].dates.add(r.date);
     });
 
-    // Construir CSV
-    let csv = "Trabajador,Dias Trabajados,Total\n";
+    // ===== CONSTRUIR CSV PROFESIONAL =====
 
-    Object.values(summary).forEach(worker => {
-        const daysWorked = worker.dates.size;
+let csv = "";
 
-        csv +=
-            worker.name + "," +
-            daysWorked + "," +
-            worker.total + "\n";
-    });
+// Título
+csv += "RESUMEN MENSUAL GENERAL\n";
+csv += "Mes: " + month + "\n\n";
+
+// Encabezado tabla trabajadores
+csv += "Trabajador;Dias Trabajados;Total\n";
+
+let totalGeneral = 0;
+
+Object.values(summary).forEach(worker => {
+
+    const daysWorked = worker.dates.size;
+    totalGeneral += worker.total;
+
+    csv +=
+        worker.name + ";" +
+        daysWorked + ";" +
+        worker.total + "\n";
+});
+
+// Línea total general
+csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
 
     // Crear archivo
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
