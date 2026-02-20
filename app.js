@@ -1021,6 +1021,26 @@ function exportMonthlyGeneralExcel() {
         r.date.startsWith(month)
     );
 
+    // ================================
+// RESUMEN POR TIPO DE LABOR
+// ================================
+
+const laborSummary = {};
+
+records.forEach(r => {
+
+    if (!laborSummary[r.labor]) {
+        laborSummary[r.labor] = {
+            cantidad: 0,
+            total: 0
+        };
+    }
+
+    laborSummary[r.labor].cantidad += r.quantity;
+    laborSummary[r.labor].total += r.total;
+});
+
+
     if (records.length === 0) {
         alert("No hay datos para exportar.");
         return;
