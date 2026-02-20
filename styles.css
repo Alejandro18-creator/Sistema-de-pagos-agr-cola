@@ -314,11 +314,13 @@ tr:hover {
         visibility: hidden;
     }
 
-    /* ===== MOSTRAR SOLO CONTRATO ===== */
+    /* ===== MOSTRAR SOLO CONTRATO Y LIQIDACIONES ===== */
     #contractPrint,
-    #contractPrint * {
+    #contractPrint *,
+    #liquidationPrint,     
+    #liquidationPrint * {
         visibility: visible;
-    }
+       }
 
     /* ===== POSICIÓN HOJA ===== */
     #contractPrint {
