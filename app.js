@@ -859,14 +859,19 @@ function generateMonthlyGeneral() {
 
         if (!summary[r.rut]) {
             summary[r.rut] = {
-                name: r.name,
-                total: 0,
-                dates: new Set()
-            };
+            name: r.name,
+            total: 0,
+            dates: new Set(),
+            labors: {}
+          };
         }
 
         summary[r.rut].total += r.total;
         summary[r.rut].dates.add(r.date);
+         if (!summary[r.rut].labors[r.labor]) {
+        summary[r.rut].labors[r.labor] = 0;
+         }   
+        summary[r.rut].labors[r.labor] += r.quantity;
     });
 
     let html = "<h3>Resumen General del Mes</h3>";
@@ -881,11 +886,17 @@ function generateMonthlyGeneral() {
 
         totalGeneral += worker.total;
 
-        html += "<tr>";
-        html += "<td>" + worker.name + "</td>";
-        html += "<td>" + daysWorked + "</td>";
-        html += "<td>$" + worker.total.toLocaleString("es-CL") + "</td>";
-        html += "</tr>";
+       let laborDetalle = "";
+
+Object.entries(worker.labors).forEach(([labor, cantidad]) => {
+    laborDetalle += labor + ": " + cantidad + "<br>";
+});
+
+html += "<tr>";
+html += "<td>" + worker.name + "<br><small>" + laborDetalle + "</small></td>";
+html += "<td>" + daysWorked + "</td>";
+html += "<td>$" + worker.total.toLocaleString("es-CL") + "</td>";
+html += "</tr>";
     });
 
     html += "</table>";
