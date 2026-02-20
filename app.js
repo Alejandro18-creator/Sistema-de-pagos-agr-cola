@@ -1047,11 +1047,21 @@ function exportMonthlyGeneralExcel() {
 
 let csv = "";
 
-// Título
-csv += "RESUMEN MENSUAL GENERAL\n";
-csv += "Mes: " + month + "\n\n";
+const fechaGeneracion = new Date().toLocaleDateString("es-CL");
+const responsable = "Contratista"; // puedes cambiarlo luego
 
-// Encabezado tabla trabajadores
+// ENCABEZADO EMPRESA
+csv += "SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA\n";
+csv += "RESUMEN MENSUAL GENERAL\n";
+csv += "Mes: " + month + "\n";
+csv += "Fecha de generación: " + fechaGeneracion + "\n";
+csv += "Responsable: " + responsable + "\n\n";
+
+// ================================
+// TABLA RESUMEN POR TRABAJADOR
+// ================================
+
+csv += "=== RESUMEN POR TRABAJADOR ===\n";
 csv += "Trabajador;Dias Trabajados;Total\n";
 
 let totalGeneral = 0;
@@ -1065,6 +1075,23 @@ Object.values(summary).forEach(worker => {
         worker.name + ";" +
         daysWorked + ";" +
         worker.total + "\n";
+});
+
+csv += "\nTotal General del Mes;;" + totalGeneral + "\n\n";
+
+// ================================
+// RESUMEN POR TIPO DE LABOR
+// ================================
+
+csv += "=== RESUMEN POR TIPO DE LABOR ===\n";
+csv += "Labor;Cantidad Total;Total $\n";
+
+Object.entries(laborSummary).forEach(([labor, data]) => {
+
+    csv +=
+        labor + ";" +
+        data.cantidad + ";" +
+        data.total + "\n";
 });
 
 // Línea total general
