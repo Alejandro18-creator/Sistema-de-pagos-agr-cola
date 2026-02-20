@@ -1006,3 +1006,63 @@ function printMonthlyGeneral() {
 
     window.print();
 }
+function exportMonthlyGeneralExcel() {
+
+    const container = document.getElementById("monthlyGeneralResult");
+
+    if (!container || container.innerHTML.trim() === "") {
+        alert("Primero debe calcular el mes.");
+        return;
+    }
+
+    const month = document.getElementById("monthGeneral").value;
+
+    const records = history.filter(r =>
+        r.date.startsWith(month)
+    );
+
+    if (records.length === 0) {
+        alert("No hay datos para exportar.");
+        return;
+    }
+
+    // Agrupar por trabajador
+    const summary = {};
+
+    records.forEach(r => {
+
+        if (!summary[r.rut]) {
+            summary[r.rut] = {
+                name: r.name,
+                total: 0,
+                dates: new Set()
+            };
+        }
+
+        summary[r.rut].total += r.total;
+        summary[r.rut].dates.add(r.date);
+    });
+
+    // Construir CSV
+    let csv = "Trabajador,Dias Trabajados,Total\n";
+
+    Object.values(summary).forEach(worker => {
+        const daysWorked = worker.dates.size;
+
+        csv +=
+            worker.name + "," +
+            daysWorked + "," +
+            worker.total + "\n";
+    });
+
+    // Crear archivo
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Resumen_Mensual_General.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
