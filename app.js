@@ -36,6 +36,20 @@ async function saveWorkerToCloud(worker) {
         );
     }
 }   
+
+async function saveProductionToCloud(record) {
+
+    const { error } = await supabaseClient
+        .from("history")
+        .insert([record]);
+
+    if (error) {
+        console.error("Error guardando producción:", error.message);
+    } else {
+        console.log("Producción guardada en Supabase");
+    }
+}
+
 async function loadWorkersFromCloud() {
 
     const { data, error } = await supabaseClient
