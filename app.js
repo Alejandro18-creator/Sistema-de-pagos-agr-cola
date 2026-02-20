@@ -764,7 +764,9 @@ function generateLiquidation() {
 }
 function generateContract() {}
 
-
+function generateMonthlySummary() {
+    alert("Función pendiente de implementar.");
+}
 // =============================
 // 🔐 SESIÓN
 // =============================
