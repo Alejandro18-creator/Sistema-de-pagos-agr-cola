@@ -883,6 +883,17 @@ function generateMonthlyGeneral() {
     });
 
     let html = "<h3>Resumen General del Mes</h3>";
+
+    // ===== MOSTRAR RESUMEN GENERAL POR LABOR =====
+html += "<h4>Labores realizadas en el mes</h4>";
+html += "<ul>";
+
+Object.entries(laborSummary).forEach(([labor, cantidad]) => {
+    html += "<li>" + labor + ": " + cantidad + "</li>";
+});
+
+html += "</ul>";
+
     html += "<table>";
     html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
 
