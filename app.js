@@ -74,6 +74,31 @@ async function loadWorkersFromCloud() {
 
     console.log("Trabajadores cargados desde Supabase");
 }
+
+async function loadHistoryFromCloud() {
+
+    const { data, error } = await supabaseClient
+        .from("history")
+        .select("*")
+        .order("date", { ascending: false });
+
+    if (error) {
+        console.error("Error cargando producción:", error.message);
+        return;
+    }
+
+    history = data || [];
+
+    localStorage.setItem(
+        "history",
+        JSON.stringify(history)
+    );
+
+    renderHistory();
+
+    console.log("Producción cargada desde Supabase");
+}
+
 // =============================
 // 🔐 PASSWORD
 // =============================
@@ -185,15 +210,16 @@ function logout() {
 // =============================
 // 🚀 INIT
 // =============================
-
 async function initSystem() {
 
     await loadWorkersFromCloud();
+    await loadHistoryFromCloud();
 
     loadLabors();
-    renderHistory();
     renderWorkersTable();
 }
+
+
 
 
 // =============================
