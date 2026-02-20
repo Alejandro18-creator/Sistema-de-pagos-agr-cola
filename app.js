@@ -855,6 +855,9 @@ function generateMonthlyGeneral() {
     // Agrupar por RUT
     const summary = {};
 
+    // ===== RESUMEN GENERAL POR LABOR DEL MES =====
+    const laborSummary = {};
+
     records.forEach(r => {
 
         if (!summary[r.rut]) {
@@ -865,6 +868,11 @@ function generateMonthlyGeneral() {
             labors: {}
           };
         }
+        if (!laborSummary[r.labor]) {
+         laborSummary[r.labor] = 0;
+            }
+        laborSummary[r.labor] += r.quantity;
+
 
         summary[r.rut].total += r.total;
         summary[r.rut].dates.add(r.date);
