@@ -784,6 +784,14 @@ function generateMonthlySummary() {
         r.date.startsWith(month)
     );
 
+    // ===== CALCULAR DÍAS TRABAJADOS =====
+
+const uniqueDates = [...new Set(
+    records.map(r => r.date)
+)];
+
+const daysWorked = uniqueDates.length;
+
     const container =
         document.getElementById("monthlyResult");
 
@@ -811,9 +819,9 @@ function generateMonthlySummary() {
 
     html += "</table>";
 
-    html += "<h2>Total del Mes: $" +
-        total.toLocaleString("es-CL") +
-        "</h2>";
+    html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
+
+    html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
     container.innerHTML = html;
 }
