@@ -759,6 +759,8 @@ function generateLiquidation() {
 
     container.innerHTML = html;
     container.classList.remove("hidden");
+
+    document.getElementById("liquidationPrint").classList.remove("hidden");
 }
 function generateContract() {}
 
