@@ -765,7 +765,57 @@ function generateLiquidation() {
 function generateContract() {}
 
 function generateMonthlySummary() {
-    alert("Función pendiente de implementar.");
+
+    const workerIndex =
+        document.getElementById("workerMonthly").value;
+
+    const month =
+        document.getElementById("monthMonthly").value;
+
+    if (workerIndex === "" || !month) {
+        alert("Seleccione trabajador y mes.");
+        return;
+    }
+
+    const worker = workers[workerIndex];
+
+    const records = history.filter(r =>
+        r.rut === worker.rut &&
+        r.date.startsWith(month)
+    );
+
+    const container =
+        document.getElementById("monthlyResult");
+
+    if (records.length === 0) {
+        container.innerHTML =
+            "<p>No hay producción ese mes.</p>";
+        return;
+    }
+
+    let total = 0;
+    let html = "<h3>Detalle del Mes</h3>";
+    html += "<table>";
+    html += "<tr><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+
+    records.forEach(r => {
+        total += r.total;
+
+        html += "<tr>";
+        html += "<td>" + r.date + "</td>";
+        html += "<td>" + r.labor + "</td>";
+        html += "<td>" + r.quantity + "</td>";
+        html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
+        html += "</tr>";
+    });
+
+    html += "</table>";
+
+    html += "<h2>Total del Mes: $" +
+        total.toLocaleString("es-CL") +
+        "</h2>";
+
+    container.innerHTML = html;
 }
 // =============================
 // 🔐 SESIÓN
