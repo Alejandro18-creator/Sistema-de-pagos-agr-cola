@@ -828,6 +828,10 @@ const daysWorked = uniqueDates.length;
 
     container.innerHTML = html;
 }
+
+function generateMonthlyGeneral() {
+    alert("Función pendiente de implementar.");
+}
 // =============================
 // 🔐 SESIÓN
 // =============================
