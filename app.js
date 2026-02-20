@@ -890,17 +890,18 @@ function generateMonthlyGeneral() {
 
     // ===== MOSTRAR RESUMEN GENERAL POR LABOR =====
 html += "<h4>Labores realizadas en el mes</h4>";
-html += "<ul>";
+html += "<div class='table-container'><table>";
+html += "<tr><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
 Object.entries(laborSummary).forEach(([labor, data]) => {
-    html += "<li>" +
-        labor +
-        " — Cantidad: " + data.cantidad +
-        " — Total: $" + data.total.toLocaleString("es-CL") +
-        "</li>";
+    html += "<tr>";
+    html += "<td>" + labor + "</td>";
+    html += "<td>" + data.cantidad + "</td>";
+    html += "<td>$" + data.total.toLocaleString("es-CL") + "</td>";
+    html += "</tr>";
 });
 
-html += "</ul>";
+html += "</table></div>";
 
     html += "<table>";
     html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
