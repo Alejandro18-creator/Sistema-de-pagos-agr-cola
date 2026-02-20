@@ -317,10 +317,12 @@ tr:hover {
     /* ===== MOSTRAR SOLO CONTRATO Y LIQIDACIONES ===== */
     #contractPrint,
     #contractPrint *,
-    #liquidationPrint,     
-    #liquidationPrint * {
-        visibility: visible;
-       }
+    #liquidationPrint,
+    #liquidationPrint *,
+    #monthlyGeneralResult,
+    #monthlyGeneralResult * {
+    visibility: visible;
+}
 
     /* ===== POSICIÓN HOJA ===== */
     #contractPrint {
