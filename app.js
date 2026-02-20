@@ -869,9 +869,13 @@ function generateMonthlyGeneral() {
           };
         }
         if (!laborSummary[r.labor]) {
-         laborSummary[r.labor] = 0;
-            }
-        laborSummary[r.labor] += r.quantity;
+    laborSummary[r.labor] = {
+        cantidad: 0,
+        total: 0
+    };
+}
+         laborSummary[r.labor].cantidad += r.quantity;
+         laborSummary[r.labor].total += r.total;
 
 
         summary[r.rut].total += r.total;
@@ -888,8 +892,12 @@ function generateMonthlyGeneral() {
 html += "<h4>Labores realizadas en el mes</h4>";
 html += "<ul>";
 
-Object.entries(laborSummary).forEach(([labor, cantidad]) => {
-    html += "<li>" + labor + ": " + cantidad + "</li>";
+Object.entries(laborSummary).forEach(([labor, data]) => {
+    html += "<li>" +
+        labor +
+        " — Cantidad: " + data.cantidad +
+        " — Total: $" + data.total.toLocaleString("es-CL") +
+        "</li>";
 });
 
 html += "</ul>";
