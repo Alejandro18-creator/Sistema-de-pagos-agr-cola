@@ -635,6 +635,9 @@ function generateLiquidation() {
         r.date.startsWith(month)
     );
 
+   // Ordenar de más antigua a más nueva
+records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
     if (records.length === 0) {
         alert("No hay producción ese mes.");
         return;
