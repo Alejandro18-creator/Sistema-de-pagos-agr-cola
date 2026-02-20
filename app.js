@@ -515,6 +515,15 @@ function registerWork() {
         total
     });
 
+    saveProductionToCloud({
+    name: worker.name,
+    rut: worker.rut,
+    date,
+    labor,
+    quantity,
+    total
+});
+
     localStorage.setItem("history", JSON.stringify(history));
 
     renderHistory();
