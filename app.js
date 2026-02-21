@@ -16,6 +16,24 @@ let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
 
+// =============================
+// 📊 TABLA INTERNA AFP (COMISIONES)
+// Fuente: Superintendencia de Pensiones
+// =============================
+
+const afpRates = {
+    "Capital": 0.0144,
+    "Cuprum": 0.0144,
+    "Habitat": 0.0127,
+    "Modelo": 0.0058,
+    "PlanVital": 0.0116,
+    "Provida": 0.0145,
+    "Uno": 0.0046
+};
+
+// Cotización obligatoria base
+const AFP_BASE = 0.10; // 10%
+
 /*☁️ GUARDAR EN SUPABASE*/
 // =============================
 
