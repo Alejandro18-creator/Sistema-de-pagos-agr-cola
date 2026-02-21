@@ -693,7 +693,18 @@ records.sort((a, b) => new Date(a.date) - new Date(b.date));
         || 0
     );
 
-    const afp = Math.round(totalHaberes * 0.1127);
+    // =============================
+// CÁLCULO AFP REAL
+// =============================
+
+const afpName = worker.afp || "";
+
+const comisionAFP = afpRates[afpName] || 0;
+
+const porcentajeAFP = AFP_BASE + comisionAFP;
+
+const afp = Math.round(totalHaberes * porcentajeAFP);
+
     const salud = Math.round(totalHaberes * 0.07);
 
     const totalDescuentos = afp + salud + anticipos;
