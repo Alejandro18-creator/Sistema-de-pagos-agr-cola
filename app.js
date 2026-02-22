@@ -706,6 +706,7 @@ const afpName = worker.afp || "";
 const comisionAFP = afpRates[afpName] || 0;
 
 const porcentajeAFP = AFP_BASE + comisionAFP;
+console.log("Porcentaje AFP real:", porcentajeAFP);
 
 const afp = Math.round(totalHaberes * porcentajeAFP);
 
