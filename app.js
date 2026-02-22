@@ -1168,3 +1168,10 @@ csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
 
     URL.revokeObjectURL(url);
 }
+// =============================
+// 📊 RESUMEN SEMANAL
+// =============================
+
+function generateWeeklySummary() {
+    alert("Resumen semanal en construcción.");
+}
