@@ -694,6 +694,8 @@ records.sort((a, b) => new Date(a.date) - new Date(b.date));
     );
 
     console.log("AFP trabajador:", worker.afp);
+    console.log("Tabla AFP:", afpRates);
+    console.log("Comisión encontrada:", afpRates[worker.afp]);
 
     // =============================
 // CÁLCULO AFP REAL
