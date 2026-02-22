@@ -693,6 +693,8 @@ records.sort((a, b) => new Date(a.date) - new Date(b.date));
         || 0
     );
 
+    console.log("AFP trabajador:", worker.afp);
+
     // =============================
 // CÁLCULO AFP REAL
 // =============================
