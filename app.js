@@ -764,7 +764,7 @@ const afp = Math.round(totalHaberes * porcentajeAFP);
 
             <table>
                 <tr>
-                    <td>AFP 11,27%</td>
+                    <td>AFP ${(porcentajeAFP * 100).toFixed(2)}%</td>
                     <td>$${afp.toLocaleString("es-CL")}</td>
                 </tr>
                 <tr>
