@@ -820,7 +820,13 @@ function generateMonthlySummary() {
         r.rut === worker.rut &&
         r.date.startsWith(month)
     );
+// =============================
+// 📊 RESUMEN SEMANAL
+// =============================
 
+function generateWeeklySummary() {
+    alert("Resumen semanal en construcción.");
+}
     // ===== CALCULAR DÍAS TRABAJADOS =====
 
 const uniqueDates = [...new Set(
