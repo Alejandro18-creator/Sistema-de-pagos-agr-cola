@@ -820,53 +820,6 @@ function generateMonthlySummary() {
         r.rut === worker.rut &&
         r.date.startsWith(month)
     );
-// =============================
-// 📊 RESUMEN SEMANAL
-// =============================
-
-function generateWeeklySummary() {
-    alert("Resumen semanal en construcción.");
-}
-    // ===== CALCULAR DÍAS TRABAJADOS =====
-
-const uniqueDates = [...new Set(
-    records.map(r => r.date)
-)];
-
-const daysWorked = uniqueDates.length;
-
-    const container =
-        document.getElementById("monthlyResult");
-
-    if (records.length === 0) {
-        container.innerHTML =
-            "<p>No hay producción ese mes.</p>";
-        return;
-    }
-
-    let total = 0;
-    let html = "<h3>Detalle del Mes</h3>";
-    html += "<table>";
-    html += "<tr><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
-
-    records.forEach(r => {
-        total += r.total;
-
-        html += "<tr>";
-        html += "<td>" + r.date + "</td>";
-        html += "<td>" + r.labor + "</td>";
-        html += "<td>" + r.quantity + "</td>";
-        html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-        html += "</tr>";
-    });
-
-    html += "</table>";
-
-    html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
-
-    html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
-
-    container.innerHTML = html;
 }
 
 function generateMonthlyGeneral() {
