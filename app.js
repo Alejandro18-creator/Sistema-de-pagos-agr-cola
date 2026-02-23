@@ -563,6 +563,7 @@ if (editProductionIndex !== null) {
 
     history[editProductionIndex] = newRecord;
     editProductionIndex = null;
+    document.querySelector("#viewProduction button[onclick='registerWork()']").textContent = "Registrar";
 
 } else {
 
@@ -1288,6 +1289,8 @@ function editLastProduction() {
 
     document.getElementById("laborSelect").value =
         lastRecord.labor;
+
+    document.querySelector("#viewProduction button[onclick='registerWork()']").textContent = "Actualizar";
 
     alert("Último registro cargado para modificar.");
 }
