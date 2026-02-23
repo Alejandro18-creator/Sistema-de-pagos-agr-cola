@@ -1294,3 +1294,51 @@ function editLastProduction() {
 
     alert("Último registro cargado para modificar.");
 }
+// =============================
+// 🔍 CARGAR REGISTROS DEL DÍA
+// =============================
+
+function loadDailyRecords() {
+
+    const workerIndex =
+        document.getElementById("workerSelect").value;
+
+    const date =
+        document.getElementById("workDate").value;
+
+    const container =
+        document.getElementById("dailyRecordsResult");
+
+    if (workerIndex === "" || !date) {
+        alert("Seleccione trabajador y fecha.");
+        return;
+    }
+
+    const worker = workers[workerIndex];
+
+    const records = history.filter(r =>
+        r.rut === worker.rut &&
+        r.date === date
+    );
+
+    if (records.length === 0) {
+        container.innerHTML = "<p>No hay registros ese día.</p>";
+        return;
+    }
+
+    let html = "<h3>Registros del día</h3>";
+    html += "<table>";
+    html += "<tr><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+
+    records.forEach(r => {
+        html += "<tr>";
+        html += "<td>" + r.labor + "</td>";
+        html += "<td>" + r.quantity + "</td>";
+        html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
+        html += "</tr>";
+    });
+
+    html += "</table>";
+
+    container.innerHTML = html;
+}
