@@ -1121,10 +1121,23 @@ csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
 
     URL.revokeObjectURL(url);
 }
+
 // =============================
 // 📊 RESUMEN SEMANAL
 // =============================
 
 function generateWeeklySummary() {
-    alert("Resumen semanal en construcción.");
+
+    const workerIndex =
+        document.getElementById("workerWeekly").value;
+
+    const week =
+        document.getElementById("weekSelected").value;
+
+    if (workerIndex === "" || !week) {
+        alert("Seleccione trabajador y semana.");
+        return;
+    }
+
+    alert("Datos recibidos correctamente.");
 }
