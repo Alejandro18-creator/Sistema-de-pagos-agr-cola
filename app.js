@@ -1328,15 +1328,28 @@ function loadDailyRecords() {
 
     let html = "<h3>Registros del día</h3>";
     html += "<table>";
-    html += "<tr><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+    html += "<tr><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
 
     records.forEach(r => {
-        html += "<tr>";
-        html += "<td>" + r.labor + "</td>";
-        html += "<td>" + r.quantity + "</td>";
-        html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-        html += "</tr>";
-    });
+
+    const index = history.findIndex(h =>
+        h.rut === r.rut &&
+        h.date === r.date &&
+        h.labor === r.labor &&
+        h.quantity === r.quantity &&
+        h.total === r.total
+    );
+
+    html += "<tr>";
+    html += "<td>" + r.labor + "</td>";
+    html += "<td>" + r.quantity + "</td>";
+    html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
+    html += "<td>" +
+            "<button onclick='editProductionByIndex(" + index + ")'>✏️</button> " +
+            "<button style=\"background:#c0392b\" onclick='deleteProductionByIndex(" + index + ")'>🗑️</button>" +
+            "</td>";
+    html += "</tr>";
+});
 
     html += "</table>";
 
