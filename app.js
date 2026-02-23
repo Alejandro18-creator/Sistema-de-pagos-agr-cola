@@ -1263,37 +1263,7 @@ document.getElementById("weeklyResult").innerHTML = html;
 // ✏️ EDITAR ÚLTIMA PRODUCCIÓN
 // =============================
 
-function editLastProduction() {
 
-    if (history.length === 0) {
-        alert("No hay registros para modificar.");
-        return;
-    }
-
-    editProductionIndex = history.length - 1;
-
-    const lastRecord = history[editProductionIndex];
-
-    document.getElementById("workerSelect").value =
-        workers.findIndex(w => w.rut === lastRecord.rut);
-
-    document.getElementById("workDate").value =
-        lastRecord.date;
-
-    document.getElementById("quantity").value =
-        lastRecord.quantity;
-
-    document.getElementById("unitValue").value =
-        "$" + (lastRecord.total / lastRecord.quantity)
-            .toLocaleString("es-CL");
-
-    document.getElementById("laborSelect").value =
-        lastRecord.labor;
-
-    document.querySelector("#viewProduction button[onclick='registerWork()']").textContent = "Actualizar";
-
-    alert("Último registro cargado para modificar.");
-}
 // =============================
 // 🔍 CARGAR REGISTROS DEL DÍA
 // =============================
