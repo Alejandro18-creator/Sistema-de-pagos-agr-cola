@@ -1125,7 +1125,6 @@ csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
 // =============================
 // 📊 RESUMEN SEMANAL
 // =============================
-
 function generateWeeklySummary() {
 
     const workerIndex =
@@ -1141,11 +1140,37 @@ function generateWeeklySummary() {
 
     const worker = workers[workerIndex];
 
-    // Filtrar registros por trabajador y semana
-    const records = history.filter(r =>
-        r.rut === worker.rut &&
-        r.date.startsWith(week)
-    );
+    // El input week devuelve algo como: 2026-W08
+    const [year, weekNumber] = week.split("-W");
+
+    // Convertir fecha del registro a número de semana ISO
+    function getWeekNumber(dateString) {
+
+        const date = new Date(dateString);
+        const tempDate = new Date(date.getTime());
+
+        tempDate.setHours(0, 0, 0, 0);
+        tempDate.setDate(tempDate.getDate() + 3 - (tempDate.getDay() + 6) % 7);
+
+        const week1 = new Date(tempDate.getFullYear(), 0, 4);
+
+        return 1 + Math.round(
+            ((tempDate - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7
+        );
+    }
+
+    const records = history.filter(r => {
+
+        const recordDate = new Date(r.date);
+        const recordYear = recordDate.getFullYear();
+        const recordWeek = getWeekNumber(r.date);
+
+        return (
+            r.rut === worker.rut &&
+            recordYear == year &&
+            recordWeek == weekNumber
+        );
+    });
 
     console.log("Registros encontrados:", records);
 
@@ -1156,3 +1181,4 @@ function generateWeeklySummary() {
 
     alert("Se encontraron " + records.length + " registros.");
 }
+
