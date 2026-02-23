@@ -1248,3 +1248,34 @@ html += "<h2>Total Semana: $" + total.toLocaleString("es-CL") + "</h2>";
 document.getElementById("weeklyResult").innerHTML = html;
 }
 
+// =============================
+// ✏️ EDITAR ÚLTIMA PRODUCCIÓN
+// =============================
+
+function editLastProduction() {
+
+    if (history.length === 0) {
+        alert("No hay registros para modificar.");
+        return;
+    }
+
+    const lastRecord = history[history.length - 1];
+
+    document.getElementById("workerSelect").value =
+        workers.findIndex(w => w.rut === lastRecord.rut);
+
+    document.getElementById("workDate").value =
+        lastRecord.date;
+
+    document.getElementById("quantity").value =
+        lastRecord.quantity;
+
+    document.getElementById("unitValue").value =
+        "$" + (lastRecord.total / lastRecord.quantity)
+            .toLocaleString("es-CL");
+
+    document.getElementById("laborSelect").value =
+        lastRecord.labor;
+
+    alert("Último registro cargado para modificar.");
+}
