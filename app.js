@@ -1139,5 +1139,20 @@ function generateWeeklySummary() {
         return;
     }
 
-    alert("Datos recibidos correctamente.");
+    const worker = workers[workerIndex];
+
+    // Filtrar registros por trabajador y semana
+    const records = history.filter(r =>
+        r.rut === worker.rut &&
+        r.date.startsWith(week)
+    );
+
+    console.log("Registros encontrados:", records);
+
+    if (records.length === 0) {
+        alert("No hay producción en esa semana.");
+        return;
+    }
+
+    alert("Se encontraron " + records.length + " registros.");
 }
