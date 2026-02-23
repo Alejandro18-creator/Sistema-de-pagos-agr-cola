@@ -1355,3 +1355,52 @@ function loadDailyRecords() {
 
     container.innerHTML = html;
 }
+// =============================
+// ✏️ EDITAR POR ÍNDICE
+// =============================
+
+function editProductionByIndex(index) {
+
+    const record = history[index];
+
+    editProductionIndex = index;
+
+    document.getElementById("workerSelect").value =
+        workers.findIndex(w => w.rut === record.rut);
+
+    document.getElementById("workDate").value =
+        record.date;
+
+    document.getElementById("quantity").value =
+        record.quantity;
+
+    document.getElementById("unitValue").value =
+        "$" + (record.total / record.quantity)
+            .toLocaleString("es-CL");
+
+    document.getElementById("laborSelect").value =
+        record.labor;
+
+    document.querySelector("#viewProduction button[onclick='registerWork()']").textContent = "Actualizar";
+
+    alert("Registro cargado para modificar.");
+}
+
+
+// =============================
+// 🗑️ ELIMINAR POR ÍNDICE
+// =============================
+
+function deleteProductionByIndex(index) {
+
+    if (!confirm("¿Está seguro de eliminar este registro?")) return;
+
+    history.splice(index, 1);
+
+    localStorage.setItem("history", JSON.stringify(history));
+
+    alert("Registro eliminado.");
+
+    // Limpiar tabla
+    document.getElementById("dailyRecordsResult").innerHTML = "";
+}
