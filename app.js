@@ -11,7 +11,7 @@ const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY,    
 );
-
+let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
@@ -550,14 +550,24 @@ function registerWork() {
 
     const total = quantity * unitValue;
 
-    history.push({
-        name: worker.name,
-        rut: worker.rut,
-        date,
-        labor,
-        quantity,
-        total
-    });
+    const newRecord = {
+    name: worker.name,
+    rut: worker.rut,
+    date,
+    labor,
+    quantity,
+    total
+};
+
+if (editProductionIndex !== null) {
+
+    history[editProductionIndex] = newRecord;
+    editProductionIndex = null;
+
+} else {
+
+    history.push(newRecord);
+}
 
     saveProductionToCloud({
     name: worker.name,
@@ -1259,7 +1269,9 @@ function editLastProduction() {
         return;
     }
 
-    const lastRecord = history[history.length - 1];
+    editProductionIndex = history.length - 1;
+
+    const lastRecord = history[editProductionIndex];
 
     document.getElementById("workerSelect").value =
         workers.findIndex(w => w.rut === lastRecord.rut);
