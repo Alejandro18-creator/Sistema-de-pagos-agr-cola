@@ -1415,3 +1415,6 @@ function updateWeeklyTotal() {
     document.getElementById("paidDays").textContent =
         paidDates.size;
 }
+    function printWeeklySummary() {
+    window.print();
+    }
