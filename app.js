@@ -1237,24 +1237,32 @@ let total = 0;
 
 let html = "<h3>Detalle de la Semana</h3>";
 html += "<table>";
-html += "<tr><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+html += "<tr><th>Pagar</th><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
 records.forEach(r => {
 
     total += r.total;
 
     html += "<tr>";
+
+    html += "<td>" +
+        "<input type='checkbox' checked " +
+        "data-total='" + r.total + "' " +
+        "onchange='updateWeeklyTotal()'>" +
+        "</td>";
+
     html += "<td>" + r.date + "</td>";
     html += "<td>" + r.labor + "</td>";
     html += "<td>" + r.quantity + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
+
     html += "</tr>";
 });
 
 html += "</table>";
 
 html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
-html += "<h2>Total Semana: $" + total.toLocaleString("es-CL") + "</h2>";
+html += "<h2 id='weeklyTotal'>Total Semana: $" + total.toLocaleString("es-CL") + "</h2>";
 
 document.getElementById("weeklyResult").innerHTML = html;
 }
@@ -1373,4 +1381,26 @@ function deleteProductionByIndex(index) {
 
     // Limpiar tabla
     document.getElementById("dailyRecordsResult").innerHTML = "";
+}
+// =============================
+// RECALCULAR TOTAL SEMANAL
+// =============================
+
+function updateWeeklyTotal() {
+
+    const checkboxes =
+        document.querySelectorAll("#weeklyResult input[type='checkbox']");
+
+    let total = 0;
+
+    checkboxes.forEach(cb => {
+
+        if (cb.checked) {
+            total += Number(cb.dataset.total);
+        }
+
+    });
+
+    document.getElementById("weeklyTotal").textContent =
+        "Total Semana: $" + total.toLocaleString("es-CL");
 }
