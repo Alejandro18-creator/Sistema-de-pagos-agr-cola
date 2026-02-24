@@ -1262,6 +1262,7 @@ records.forEach(r => {
 html += "</table>";
 
 html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
+html += "<p><strong>Días pagados:</strong> <span id='paidDays'>" + daysWorked + "</span></p>";
 html += "<h2 id='weeklyTotal'>Total Semana: $" + total.toLocaleString("es-CL") + "</h2>";
 
 document.getElementById("weeklyResult").innerHTML = html;
@@ -1392,15 +1393,25 @@ function updateWeeklyTotal() {
         document.querySelectorAll("#weeklyResult input[type='checkbox']");
 
     let total = 0;
+    let paidDates = new Set();
 
     checkboxes.forEach(cb => {
 
         if (cb.checked) {
+
             total += Number(cb.dataset.total);
+
+            const row = cb.closest("tr");
+            const date = row.children[1].textContent;
+
+            paidDates.add(date);
         }
 
     });
 
     document.getElementById("weeklyTotal").textContent =
         "Total Semana: $" + total.toLocaleString("es-CL");
+
+    document.getElementById("paidDays").textContent =
+        paidDates.size;
 }
