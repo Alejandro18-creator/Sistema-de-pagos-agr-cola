@@ -1246,9 +1246,11 @@ records.forEach(r => {
     html += "<tr>";
 
     html += "<td>" +
-        "<input type='checkbox' checked " +
-        "data-total='" + r.total + "' " +
-        "onchange='updateWeeklyTotal()'>" +
+        "<input type='checkbox' " +
+        (r.paid ? "checked" : "") +
+        " data-id='" + r.id + "' " +
+        " data-total='" + r.total + "' " +
+        " onchange='updateWeeklyTotal(this)'>" +
         "</td>";
 
     html += "<td>" + r.date + "</td>";
@@ -1415,6 +1417,7 @@ function updateWeeklyTotal() {
     document.getElementById("paidDays").textContent =
         paidDates.size;
 }
+
     function printWeeklySummary() {
     window.print();
     }
