@@ -514,3 +514,29 @@ tr:hover {
     border: 1px solid black;
     padding: 6px;
 }
+/* ============================= */
+/* 🖨️ PRINT RESUMEN SEMANAL */
+/* ============================= */
+
+@media print {
+
+    body * {
+        visibility: hidden;
+    }
+
+    #weeklyPrintArea,
+    #weeklyPrintArea * {
+        visibility: visible;
+    }
+
+    #weeklyPrintArea {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        color: black;
+        padding: 20px;
+    }
+
+}
