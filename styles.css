@@ -554,3 +554,15 @@ tr:hover {
     }
 
 }
+@media print {
+
+    .paidCheckbox {
+        display: none;
+    }
+
+    th:first-child,
+    td:first-child {
+        display: none;
+    }
+
+}
