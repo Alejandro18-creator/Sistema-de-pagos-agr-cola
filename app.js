@@ -1236,7 +1236,11 @@ const daysWorked = uniqueDates.length;
 let total = 0;
 
 let html = "<h3>Detalle de la Semana</h3>";
+
+html += "<button onclick='markAllWeeklyPaid(true)'>✅ Marcar todo pagado</button> ";
+html += "<button onclick='markAllWeeklyPaid(false)' style='background:#c0392b'>❌ Desmarcar todo</button>";
 html += "<table>";
+
 html += "<tr><th>Pagar</th><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
 records.forEach(r => {
@@ -1421,3 +1425,27 @@ function updateWeeklyTotal() {
     function printWeeklySummary() {
     window.print();
     }
+    // =============================
+// MARCAR / DESMARCAR TODA LA SEMANA
+// =============================
+
+async function markAllWeeklyPaid(state) {
+
+    const checkboxes =
+        document.querySelectorAll("#weeklyResult input[type='checkbox']");
+
+    for (const cb of checkboxes) {
+
+        cb.checked = state;
+
+        const id = cb.dataset.id;
+
+        await supabaseClient
+            .from("history")
+            .update({ paid: state })
+            .eq("id", id);
+
+    }
+
+    updateWeeklyTotal();
+}
