@@ -1425,8 +1425,34 @@ function updateWeeklyTotal() {
 }
 
     function printWeeklySummary() {
+
+    const container = document.getElementById("weeklyResult");
+
+    if (!container) return;
+
+    const rows =
+        container.querySelectorAll("table tr");
+
+    rows.forEach((row, index) => {
+
+        if (index === 0) return; // encabezado
+
+        const checkbox =
+            row.querySelector("input[type='checkbox']");
+
+        if (checkbox && !checkbox.checked) {
+            row.style.display = "none";
+        }
+
+    });
+
     window.print();
-    }
+
+    // restaurar vista después de imprimir
+    rows.forEach(row => {
+        row.style.display = "";
+    });
+}
     // =============================
 // MARCAR / DESMARCAR TODA LA SEMANA
 // =============================
