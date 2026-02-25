@@ -1249,15 +1249,14 @@ records.forEach(r => {
 
     total += r.total;
 
-    html += "<tr>";
+    html += "<tr class='weeklyRow'>";
 
     html += "<td>" +
-        "<input type='checkbox' " +
+        "<input type='checkbox' class='paidCheckbox' " +
         (r.paid ? "checked" : "") +
         " data-id='" + r.id + "' " +
         " data-total='" + r.total + "' " +
-        " onchange='updateWeeklyTotal(this)'>" +
-        "</td>";
+        " onchange='updateWeeklyTotal(this)'>"
 
     html += "<td>" + r.date + "</td>";
     html += "<td>" + r.labor + "</td>";
