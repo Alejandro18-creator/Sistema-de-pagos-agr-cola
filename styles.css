@@ -198,7 +198,7 @@ tr:hover {
 
 /* ===== PANTALLA INICIO ===== */
 
-.homeScreen {
+.homeScreen , .company-review {
     height: 60vh;
     display: flex;
     flex-direction: column;
@@ -208,7 +208,7 @@ tr:hover {
     text-align: center;
 }
 
-.homeScreen h2 {
+.homeScreen h2, .company-review p {
     font-size: 28px;
     margin-bottom: 10px;
 }
