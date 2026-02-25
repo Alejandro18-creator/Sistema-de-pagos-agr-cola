@@ -1221,6 +1221,8 @@ function generateWeeklySummary() {
         );
     });
 
+    const paidRecords = records.filter(r => r.paid === true || r.paid === 1);
+
     console.log("Registros encontrados:", records);
 
     if (records.length === 0) {
@@ -1236,20 +1238,25 @@ const daysWorked = uniqueDates.length;
 let total = 0;
 
 let html = "<h3>Detalle de la Semana</h3>";
+
+html += "<button onclick='markAllWeeklyPaid(true)'>✅ Marcar todo pagado</button> ";
+html += "<button onclick='markAllWeeklyPaid(false)' style='background:#c0392b'>❌ Desmarcar todo</button>";
 html += "<table>";
+
 html += "<tr><th>Pagar</th><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
 records.forEach(r => {
 
     total += r.total;
 
-    html += "<tr>";
+    html += "<tr class='weeklyRow'>";
 
     html += "<td>" +
-        "<input type='checkbox' checked " +
-        "data-total='" + r.total + "' " +
-        "onchange='updateWeeklyTotal()'>" +
-        "</td>";
+        "<input type='checkbox' class='paidCheckbox' " +
+        (r.paid ? "checked" : "") +
+        " data-id='" + r.id + "' " +
+        " data-total='" + r.total + "' " +
+        " onchange='updateWeeklyTotal(this)'>"
 
     html += "<td>" + r.date + "</td>";
     html += "<td>" + r.labor + "</td>";
@@ -1415,6 +1422,57 @@ function updateWeeklyTotal() {
     document.getElementById("paidDays").textContent =
         paidDates.size;
 }
+
     function printWeeklySummary() {
+
+    const container = document.getElementById("weeklyResult");
+
+    if (!container) return;
+
+    const rows =
+        container.querySelectorAll("table tr");
+
+    rows.forEach((row, index) => {
+
+        if (index === 0) return; // encabezado
+
+        const checkbox =
+            row.querySelector("input[type='checkbox']");
+
+        if (checkbox && !checkbox.checked) {
+            row.style.display = "none";
+        }
+
+    });
+
     window.print();
+
+    // restaurar vista después de imprimir
+    rows.forEach(row => {
+        row.style.display = "";
+    });
+}
+    // =============================
+// MARCAR / DESMARCAR TODA LA SEMANA
+// =============================
+
+async function markAllWeeklyPaid(state) {
+
+    const checkboxes =
+        document.querySelectorAll("#weeklyResult input[type='checkbox']");
+
+    for (const cb of checkboxes) {
+
+        cb.checked = state;
+
+        const id = cb.dataset.id;
+
+        await supabaseClient
+            .from("history")
+            .update({ paid: state })
+            .eq("id", id);
+
     }
+
+    updateWeeklyTotal();
+}

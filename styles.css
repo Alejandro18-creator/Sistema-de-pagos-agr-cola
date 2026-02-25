@@ -540,3 +540,29 @@ tr:hover {
     }
 
 }
+
+@media print {
+
+    /* ocultar filas no pagadas */
+    .weeklyRow {
+        display: none;
+    }
+
+    /* mostrar solo las que están marcadas */
+    .weeklyRow:has(.paidCheckbox:checked) {
+        display: table-row;
+    }
+
+}
+@media print {
+
+    .paidCheckbox {
+        display: none;
+    }
+
+    th:first-child,
+    td:first-child {
+        display: none;
+    }
+
+}
