@@ -1221,7 +1221,7 @@ function generateWeeklySummary() {
         );
     });
 
-    const paidRecords = records.filter(r => r.paid === true);
+    const paidRecords = records.filter(r => r.paid === true || r.paid === 1);
 
     console.log("Registros encontrados:", records);
 
@@ -1245,7 +1245,7 @@ html += "<table>";
 
 html += "<tr><th>Pagar</th><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
-paidRecords.forEach(r => {
+records.forEach(r => {
 
     total += r.total;
 
