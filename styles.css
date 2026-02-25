@@ -1,271 +1,269 @@
-
 /* ===== RESET ===== */
 
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* ===== BODY ===== */
 
 body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    min-height: 100vh;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  min-height: 100vh;
 }
 
 /* ===== GRID PRINCIPAL ===== */
 
 #app {
-    max-width: 1200px;
-    margin: auto;
+  max-width: 1200px;
+  margin: auto;
 }
 
 /* ===== HEADER ===== */
 
 header {
-    background: #ffffff;
-    padding: 18px 25px;
-    border-radius: 14px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
+  background: #ffffff;
+  padding: 18px 25px;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
 }
 
 header h1 {
-    color: #1e3c72;
-    font-size: 22px;
+  color: #1e3c72;
+  font-size: 22px;
 }
 
 /* ===== TARJETAS ===== */
 
 .card {
-    background: #ffffff;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    transition: all 0.2s ease;
+  background: #ffffff;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-4px);
+  transform: translateY(-4px);
 }
 
 .card h2 {
-    color: #1e3c72;
-    margin-bottom: 10px;
+  color: #1e3c72;
+  margin-bottom: 10px;
 }
 
 /* ===== INPUTS ===== */
 
 input,
 select {
-    width: 100%;
-    padding: 10px;
-    margin: 6px 0 14px;
-    border-radius: 10px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    transition: 0.2s;
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: 0.2s;
 }
 
 input:focus,
 select:focus {
-    outline: none;
-    border-color: #2a5298;
-    box-shadow: 0 0 6px rgba(42,82,152,0.4);
+  outline: none;
+  border-color: #2a5298;
+  box-shadow: 0 0 6px rgba(42, 82, 152, 0.4);
 }
 
 /* ===== BOTONES ===== */
 
 button {
-    background: linear-gradient(135deg, #2a5298, #1e3c72);
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.2s;
+  background: linear-gradient(135deg, #2a5298, #1e3c72);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
 }
 
 /* Hover solo en pantallas grandes */
-@media (hover:hover) {
-    button:hover {
-        transform: scale(1.05);
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-    }
+@media (hover: hover) {
+  button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+  }
 }
 
 /* ===== LOGIN ===== */
 
 #login {
-    max-width: 360px;
-    margin: 120px auto;
-    background: white;
-    padding: 30px;
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-    text-align: center;
+  max-width: 360px;
+  margin: 120px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
 }
 
 /* ===== TABLAS ===== */
 
 .table-container {
-    overflow-x: auto;
+  overflow-x: auto;
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 14px;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
 }
 
 th {
-    background: #1e3c72;
-    color: white;
-    padding: 10px;
-    text-align: center;
+  background: #1e3c72;
+  color: white;
+  padding: 10px;
+  text-align: center;
 }
 
 td {
-    padding: 8px;
-    border-bottom: 1px solid #ddd;
-    text-align: center;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
 }
 
 tr:nth-child(even) {
-    background: #f4f7ff;
+  background: #f4f7ff;
 }
 
 tr:hover {
-    background: #e6ecff;
+  background: #e6ecff;
 }
 
 /* ===== HIDDEN ===== */
 
 .hidden {
-    display: none !important;
+  display: none !important;
 }
 
 /* ===== LAYOUT LATERAL ===== */
 
 .layout {
-    display: flex;
-    min-height: 100vh;
+  display: flex;
+  min-height: 100vh;
 }
 
 /* Sidebar fija */
 .sidebar {
-    width: 220px;
-    background: #1e3c72;
-    color: white;
-    padding: 20px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
+  width: 220px;
+  background: #1e3c72;
+  color: white;
+  padding: 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar h2 {
-    margin-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .sidebar button {
-    width: 100%;
-    margin-bottom: 10px;
-    background: rgba(255,255,255,0.1);
-    border: none;
-    text-align: left;
-    padding: 10px;
-    border-radius: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  text-align: left;
+  padding: 10px;
+  border-radius: 8px;
 }
 
 .sidebar button:hover {
-    background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Contenido */
 .content {
-    flex: 1;
-    padding: 20px;
+  flex: 1;
+  padding: 20px;
 }
 
 /* ===== PANTALLA INICIO ===== */
 
-.homeScreen  {
-    height: 50vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    text-align: center;
+.homeScreen {
+  height: 50vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  text-align: center;
 }
 
 .homeScreen h2 {
-    font-size: 28px;
-    margin-bottom: 10px;
+  font-size: 28px;
+  margin-bottom: 10px;
 }
 
 /* ===== ANIMACIÓN VISTAS ===== */
 
 .view {
-    animation: fadeIn 0.3s ease;
-    padding-top: 5px;
+  animation: fadeIn 0.3s ease;
+  padding-top: 5px;
 }
 .view h2 {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ===== RESPONSIVE ===== */
 
 @media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
 
-    .layout {
-        flex-direction: column;
-    }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
 
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-    }
+  .sidebar button {
+    flex: 1 1 45%;
+    font-size: 12px;
+    text-align: center;
+  }
 
-    .sidebar button {
-        flex: 1 1 45%;
-        font-size: 12px;
-        text-align: center;
-    }
+  .content {
+    padding: 10px;
+  }
 
-    .content {
-        padding: 10px;
-    }
-
-    header {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-    }
+  header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
 }
 
 /* ============================= */
@@ -273,196 +271,192 @@ tr:hover {
 /* ============================= */
 
 #contractPrint {
-    background: white;
-    padding: 40px;
-    margin-top: 10px;
-    color: black;
-    line-height: 1;
+  background: white;
+  padding: 40px;
+  margin-top: 10px;
+  color: black;
+  line-height: 1;
 }
-
 
 /* ============================
 📄 IMPRESIÓN CONTRATO LIMPIO
 ============================ */
 
 @media print {
+  /* ===== QUITAR MENÚ ===== */
+  .layout {
+    display: block !important;
+  }
 
-    /* ===== QUITAR MENÚ ===== */
-    .layout {
-        display: block !important;
-    }
+  .sidebar {
+    display: none !important;
+  }
 
-    .sidebar {
-        display: none !important;
-    }
-
-    .content {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .titulo-contrato {
+  .content {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .titulo-contrato {
     margin-top: 0;
     padding-top: 0;
     text-align: center;
     font-size: 25px;
-}
-    .contract,
-    .card {
-        padding-top: 0;
-        margin-top: 0;
-    }
+  }
+  .contract,
+  .card {
+    padding-top: 0;
+    margin-top: 0;
+  }
 
-    /* ===== OCULTAR TODO ===== */
-    body * {
-        visibility: hidden;
-    }
+  /* ===== OCULTAR TODO ===== */
+  body * {
+    visibility: hidden;
+  }
 
-    /* ===== MOSTRAR SOLO CONTRATO Y LIQIDACIONES ===== */
-    #contractPrint,
-    #contractPrint *,
-    #liquidationPrint,
-    #liquidationPrint *,
-    #monthlyGeneralResult,
-    #monthlyGeneralResult * {
+  /* ===== MOSTRAR SOLO CONTRATO Y LIQIDACIONES ===== */
+  #contractPrint,
+  #contractPrint *,
+  #liquidationPrint,
+  #liquidationPrint *,
+  #monthlyGeneralResult,
+  #monthlyGeneralResult * {
     visibility: visible;
-}
+  }
 
-    /* ===== POSICIÓN HOJA ===== */
-    #contractPrint {
-        position: absolute;
-        top: -3.7cm;
-        left: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        background: white;
-        color: black;
-        font-size: 16px;
-        line-height: 1.2;
-        font-family: 'Times New Roman', serif;
-    }
+  /* ===== POSICIÓN HOJA ===== */
+  #contractPrint {
+    position: absolute;
+    top: -3.7cm;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: black;
+    font-size: 16px;
+    line-height: 1.2;
+    font-family: "Times New Roman", serif;
+  }
 
-    /* ===== TEXTO JUNTO ===== */
-    #contractPrint p {
-        margin: 2px 0;
-        text-align: justify;
-    }
-    .clausula {
+  /* ===== TEXTO JUNTO ===== */
+  #contractPrint p {
+    margin: 2px 0;
+    text-align: justify;
+  }
+  .clausula {
     margin: 2px 0;
     line-height: 1.2;
-}
-    #contractPrint h3 {
-        margin: 6px 0 2px 0;
-        font-size: 13px;
-    }
-    .signatures {
+  }
+  #contractPrint h3 {
+    margin: 6px 0 2px 0;
+    font-size: 13px;
+  }
+  .signatures {
     display: flex;
     justify-content: space-between;
     margin-top: 60px;
-}
-.signatures {
+  }
+  .signatures {
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
-}
+  }
 
-/* Cada firma */
-.sign {
+  /* Cada firma */
+  .sign {
     width: 45%;
     display: flex;
     flex-direction: column;
-    align-items: center;   /* 👈 centra TODO respecto a la línea */
-}
+    align-items: center; /* 👈 centra TODO respecto a la línea */
+  }
 
-/* Línea de firma */
-.line {
+  /* Línea de firma */
+  .line {
     border-top: 1px solid black;
-    width: 250px;          /* 👈 ancho fijo */
+    width: 250px; /* 👈 ancho fijo */
     margin-bottom: 10px;
-}
+  }
 
-/* Textos */
-.sign-name,
-.sign-role,
-.sign-rut {
-    width: 250px;          /* 👈 mismo ancho que la línea */
+  /* Textos */
+  .sign-name,
+  .sign-role,
+  .sign-rut {
+    width: 250px; /* 👈 mismo ancho que la línea */
     text-align: center;
     margin: 2px 0;
-}
+  }
 
-.sign-name {
+  .sign-name {
     font-weight: bold;
-}
+  }
 
-.sign-rut {
+  .sign-rut {
     font-size: 12px;
-}
+  }
 
-    
-    /* ===== OCULTAR BOTÓN ===== */
-    .no-print {
-        display: none !important;
-    }
+  /* ===== OCULTAR BOTÓN ===== */
+  .no-print {
+    display: none !important;
+  }
 
-    /* ===== MÁRGENES HOJA ===== */
-    @page {
-        margin: 1cm;
-    }
+  /* ===== MÁRGENES HOJA ===== */
+  @page {
+    margin: 1cm;
+  }
 }
 
 /* ===== PRINT ===== */
 
 @media print {
+  /* Fondo blanco */
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
 
-    /* Fondo blanco */
-    body {
-        background: white;
-        margin: 0;
-        padding: 0;
-    }
+  /* Ocultar sistema */
+  .sidebar,
+  header,
+  button {
+    display: none !important;
+  }
 
-    /* Ocultar sistema */
-    .sidebar,
-    header,
-    button {
-        display: none !important;
-    }
+  /* Quitar estilos de tarjetas */
+  .card {
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
 
-    /* Quitar estilos de tarjetas */
-    .card {
-        box-shadow: none;
-        border: none;
-        margin: 0;
-        padding: 0;
-    }
+  .content {
+    padding: 0;
+    margin: 0;
+  }
 
-    .content {
-        padding: 0;
-        margin: 0;
-    }
+  /* CONTRATO */
+  #contractPrint {
+    position: relative; /* 👈 importante */
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    page-break-inside: avoid;
+  }
 
-    /* CONTRATO */
-    #contractPrint {
-        position: relative;     /* 👈 importante */
-        top: 0;
-        left: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        page-break-inside: avoid;
-    }
+  /* Texto compacto */
+  #contractPrint p {
+    margin: 4px 0;
+    text-align: justify;
+  }
 
-    /* Texto compacto */
-    #contractPrint p {
-        margin: 4px 0;
-        text-align: justify;
-    }
-
-    /* Márgenes de hoja */
-    @page {
-        margin: 1cm;
-    }
+  /* Márgenes de hoja */
+  @page {
+    margin: 1cm;
+  }
 }
 
 /* ============================= */
@@ -470,213 +464,191 @@ tr:hover {
 /* ============================= */
 
 .liquidacion-doc {
-    background: white;
-    padding: 30px;
-    margin-top: 20px;
-    color: black;
-    border-radius: 10px;
+  background: white;
+  padding: 30px;
+  margin-top: 20px;
+  color: black;
+  border-radius: 10px;
 }
 
 .liquidacion-doc h1 {
-    text-align: center;
-    margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .liquidacion-doc table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
 .liquidacion-doc th,
 .liquidacion-doc td {
-    border: 1px solid black;
-    padding: 6px;
-    text-align: center;
+  border: 1px solid black;
+  padding: 6px;
+  text-align: center;
 }
 .liq-doc {
-    background: white;
-    padding: 40px;
-    color: black;
-    max-width: 800px;
-    margin: auto;
+  background: white;
+  padding: 40px;
+  color: black;
+  max-width: 800px;
+  margin: auto;
 }
 
 .liq-doc h1,
 .liq-doc h3 {
-    text-align: center;
+  text-align: center;
 }
 
 .liq-doc table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 15px 0;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
 }
 
 .liq-doc td,
 .liq-doc th {
-    border: 1px solid black;
-    padding: 6px;
+  border: 1px solid black;
+  padding: 6px;
 }
 /* ============================= */
 /* 🖨️ PRINT RESUMEN SEMANAL */
 /* ============================= */
 
 @media print {
+  body * {
+    visibility: hidden;
+  }
 
-    body * {
-        visibility: hidden;
-    }
+  #weeklyPrintArea,
+  #weeklyPrintArea * {
+    visibility: visible;
+  }
 
-    #weeklyPrintArea,
-    #weeklyPrintArea * {
-        visibility: visible;
-    }
-
-    #weeklyPrintArea {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background: white;
-        color: black;
-        padding: 20px;
-    }
-
+  #weeklyPrintArea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    padding: 20px;
+  }
 }
 
 @media print {
+  /* ocultar filas no pagadas */
+  .weeklyRow {
+    display: none;
+  }
 
-    /* ocultar filas no pagadas */
-    .weeklyRow {
-        display: none;
-    }
-
-    /* mostrar solo las que están marcadas */
-    .weeklyRow:has(.paidCheckbox:checked) {
-        display: table-row;
-    }
-
+  /* mostrar solo las que están marcadas */
+  .weeklyRow:has(.paidCheckbox:checked) {
+    display: table-row;
+  }
 }
 @media print {
+  .paidCheckbox {
+    display: none;
+  }
 
-    .paidCheckbox {
-        display: none;
-    }
-
-    th:first-child,
-    td:first-child {
-        display: none;
-    }
-
+  th:first-child,
+  td:first-child {
+    display: none;
+  }
 }
 .company-review {
+  margin-top: 20px;
+  padding: 25px 30px;
 
-    margin-top: 20px;
-    padding: 25px 30px;
+  background: #ffffff;
 
-    background: #ffffff;
+  border-left: 8px solid #2e7d32;
 
-    border-left: 8px solid #2e7d32;
+  border-radius: 10px;
 
-    border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 
-    box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+  width: 100%;
 
-    width: 100%;
+  box-sizing: border-box;
 
-    box-sizing: border-box;
+  font-size: 16px;
 
-    font-size: 16px;
-
-    line-height: 1.7;
-
+  line-height: 1.7;
 }
 
 .company-review strong {
+  color: #1b5e20;
 
-    color: #1b5e20;
-
-    font-size: 18px;
-
+  font-size: 18px;
 }
 .company-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 
-    display: flex;
-    align-items: center;
-    gap: 15px;
+  background: linear-gradient(90deg, #1b5e20, #2e7d32);
 
-    background: linear-gradient(90deg, #1b5e20, #2e7d32);
+  color: white;
 
-    color: white;
+  padding: 15px 20px;
 
-    padding: 15px 20px;
+  border-radius: 8px;
 
-    border-radius: 8px;
-
-    margin-bottom: 15px;
-
+  margin-bottom: 15px;
 }
 
 .company-logo {
-
-    font-size: 40px;
-
+  font-size: 40px;
 }
 
 .company-text h1 {
-
-    margin: 0;
-    font-size: 22px;
-
+  margin: 0;
+  font-size: 22px;
 }
 
 .company-slogan {
-
-    margin: 0;
-    font-size: 14px;
-    opacity: 0.9;
-
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
 }
 .company-logo img {
+  height: 80px;
 
-    height: 80px;
+  width: auto;
 
-    width: auto;
+  background: white;
 
-    background: white;
+  padding: 5px;
 
-    padding: 5px;
-
-    border-radius: 8px;
-
+  border-radius: 8px;
 }
 #viewHome {
-    margin-top: -15px;
+  margin-top: -15px;
 }
 
 .company-header {
-    margin-top: -15px;
+  margin-top: -15px;
 }
 .company-text {
-
-    margin-top: -10px;  
-
+  margin-top: -10px;
 }
 /* 1. Separar el header del botón "Cerrar sesión" */
 #viewHome .company-header {
-    margin-bottom: 25px;
+  margin-bottom: 25px;
 }
 
 /* 2. Subir el bloque Bienvenido */
 #viewHome .homeScreen {
-    height: auto;
-    justify-content: flex-start;
-    margin-top: -15px;
-    margin-bottom: 15px;
+  height: auto;
+  justify-content: flex-start;
+  margin-top: -15px;
+  margin-bottom: 15px;
 }
 
 /* 3. Logo más grande y visible */
 #viewHome .company-logo img {
-    height: 110px;
+  height: 110px;
 }

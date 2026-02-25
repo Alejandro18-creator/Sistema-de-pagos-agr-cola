@@ -1,166 +1,130 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Historial Completo</title>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="styles.css">
-</head>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-<body>
-
-<div class="content">
-
-    <header>
+  <body>
+    <div class="content">
+      <header>
         <h1>Historial Completo de Producción</h1>
         <button onclick="goBack()">Volver al Sistema</button>
-    </header>
+      </header>
 
-    <!-- ===== ACCIONES ===== -->
+      <!-- ===== ACCIONES ===== -->
 
-    <div class="card">
-
+      <div class="card">
         <h3>Borrar Registros por Mes</h3>
 
-        <input type="month" id="deleteMonth">
+        <input type="month" id="deleteMonth" />
 
-        <button
-            onclick="deleteByMonth()"
-            style="background:#e67e22;">
-            Borrar Mes Seleccionado
+        <button onclick="deleteByMonth()" style="background: #e67e22">
+          Borrar Mes Seleccionado
         </button>
 
-        <hr style="margin:20px 0;">
+        <hr style="margin: 20px 0" />
 
-        <button
-            onclick="clearHistory()"
-            style="background:#c0392b;">
-            Borrar Todo el Historial
+        <button onclick="clearHistory()" style="background: #c0392b">
+          Borrar Todo el Historial
         </button>
+      </div>
 
-    </div>
+      <!-- ===== TOTALES ===== -->
 
-    <!-- ===== TOTALES ===== -->
+      <div class="card" id="historyTotals"></div>
 
-    <div class="card" id="historyTotals"></div>
+      <!-- ===== TABLA ===== -->
 
-    <!-- ===== TABLA ===== -->
-
-    <div class="card">
+      <div class="card">
         <div id="history"></div>
+      </div>
     </div>
 
-</div>
+    <script src="app.js"></script>
 
+    <script>
+      // =============================
+      // 🚀 CARGA INICIAL
+      // =============================
 
-<script src="app.js"></script>
+      renderHistory();
+      renderTotals();
 
-<script>
+      // =============================
+      // 🔙 VOLVER
+      // =============================
 
-// =============================
-// 🚀 CARGA INICIAL
-// =============================
+      function goBack() {
+        window.location.href = "index.html";
+      }
 
-renderHistory();
-renderTotals();
+      // =============================
+      // 🗑️ BORRAR TODO
+      // =============================
 
+      function clearHistory() {
+        if (!confirm("¿Borrar TODO el historial?")) return;
 
-// =============================
-// 🔙 VOLVER
-// =============================
+        localStorage.removeItem("history");
 
-function goBack() {
-    window.location.href = "index.html";
-}
+        history = [];
 
+        renderHistory();
+        renderTotals();
+      }
 
-// =============================
-// 🗑️ BORRAR TODO
-// =============================
+      // =============================
+      // 🗑️ BORRAR POR MES
+      // =============================
 
-function clearHistory() {
+      function deleteByMonth() {
+        const month = document.getElementById("deleteMonth").value;
 
-    if (!confirm("¿Borrar TODO el historial?")) return;
+        if (!month) {
+          alert("Seleccione mes.");
+          return;
+        }
 
-    localStorage.removeItem("history");
+        if (!confirm("¿Borrar registros del mes seleccionado?")) return;
 
-    history = [];
+        history = history.filter((r) => !r.date.startsWith(month));
 
-    renderHistory();
-    renderTotals();
-}
+        localStorage.setItem("history", JSON.stringify(history));
 
+        renderHistory();
+        renderTotals();
+      }
 
-// =============================
-// 🗑️ BORRAR POR MES
-// =============================
+      // =============================
+      // 📊 TOTALES
+      // =============================
 
-function deleteByMonth() {
+      function renderTotals() {
+        const c = document.getElementById("historyTotals");
 
-    const month =
-        document.getElementById("deleteMonth").value;
+        if (history.length === 0) {
+          c.innerHTML = "<h3>No hay registros.</h3>";
 
-    if (!month) {
-        alert("Seleccione mes.");
-        return;
-    }
+          return;
+        }
 
-    if (!confirm("¿Borrar registros del mes seleccionado?"))
-        return;
+        let total = 0;
 
-    history =
-        history.filter(r =>
-            !r.date.startsWith(month)
-        );
+        history.forEach((r) => (total += Number(r.total)));
 
-    localStorage.setItem(
-        "history",
-        JSON.stringify(history)
-    );
-
-    renderHistory();
-    renderTotals();
-}
-
-
-// =============================
-// 📊 TOTALES
-// =============================
-
-function renderTotals() {
-
-    const c =
-        document.getElementById("historyTotals");
-
-    if (history.length === 0) {
-
-        c.innerHTML =
-            "<h3>No hay registros.</h3>";
-
-        return;
-    }
-
-    let total = 0;
-
-    history.forEach(r =>
-        total += Number(r.total)
-    );
-
-    c.innerHTML = `
+        c.innerHTML = `
         <h3>Resumen Histórico</h3>
         <p><strong>Registros:</strong> ${history.length}</p>
         <p><strong>Total Pagado:</strong>
            $${total.toLocaleString("es-CL")}
         </p>
     `;
-}
-
-</script>
-
-</body>
+      }
+    </script>
+  </body>
 </html>
-
