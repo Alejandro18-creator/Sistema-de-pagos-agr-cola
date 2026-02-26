@@ -63,9 +63,8 @@
         <button type="button" onclick="showView('viewBackup')">
           💾 Respaldo
         </button>
-        <button type="button" onclick="showView('viewContract')">
-          🧾 Contrato
-        </button>
+        <button type="button" onclick="showView('viewContract')">🧾 Contrato</button>
+        <button type="button" onclick="showView('viewFiniquito')">📑 Finiquito</button>
       </aside>
 
       <!-- CONTENIDO -->
@@ -81,21 +80,20 @@
             <div class="company-logo">
               <img
                 src="img/logo-san-geronimo.png"
-                alt="Servicios Agrícolas San Gerónimo SPA"
-              />
+                alt="Servicios Agrícolas San Gerónimo SPA"/>
             </div>
+
             <div class="company-text">
               <h1>SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA</h1>
-
-              <p class="company-slogan">
-                Gestión agrícola con confianza y precisión
-              </p>
+              <p class="company-slogan">Gestión agrícola con confianza y precisión</p>
             </div>
           </div>
+
           <div class="homeScreen">
             <h2>Bienvenido al Sistema Agrícola</h2>
             <p><strong>Seleccione una opción del menú lateral</strong></p>
           </div>
+
           <div class="company-review">
             <p>
               <strong>SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA</strong> es una
@@ -104,20 +102,19 @@
               responsabilidad y el cumplimiento de las normativas laborales
               vigentes.
             </p>
-
             <p>
               Nuestra labor se enfoca en coordinar, supervisar y administrar
               trabajadores agrícolas en distintas etapas productivas,
               garantizando un servicio confiable tanto para productores como
               para trabajadores.
             </p>
-
             <p>
               Este sistema permite mantener un control preciso de la producción,
               pagos y registros laborales, asegurando una gestión moderna,
               transparente y profesional.
             </p>
           </div>
+
         </section>
 
         <!-- TRABAJADORES -->
@@ -137,29 +134,13 @@
           />
           <input type="text" id="workerAddress" placeholder="Dirección" />
           <input type="text" id="workerAFP" placeholder="AFP" />
-          <input
-            type="text"
-            id="workerHealth"
-            placeholder="Salud (Fonasa / Isapre)"
-          />
+          <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)" />
           <input type="text" id="workerPosition" placeholder="Cargo" />
           <input type="text" id="workerBaseSalary" placeholder="Sueldo Base" />
           <input type="date" id="workerEntryDate" placeholder="Fecha ingreso" />
           <button type="button" onclick="addWorker()">Guardar</button>
-          <button
-            type="button"
-            onclick="clearWorkerForm()"
-            style="background: #7f8c8d"
-          >
-            Limpiar
-          </button>
-          <button
-            type="button"
-            onclick="deleteWorker()"
-            style="background: #c0392b"
-          >
-            Eliminar Trabajador
-          </button>
+          <button type="button" onclick="clearWorkerForm()" style="background: #7f8c8d">Limpiar</button>
+          <button type="button" onclick="deleteWorker()" style="background: #c0392b">Eliminar Trabajador</button>
         </section>
 
         <!-- BASE DE DATOS -->
@@ -171,7 +152,6 @@
         <!-- PRODUCCIÓN -->
         <section class="card view hidden" id="viewProduction">
           <h2>Registrar Producción</h2>
-
           <select id="workerSelect">
             <option value="">-- Seleccionar trabajador --</option>
           </select>
@@ -182,63 +162,29 @@
             <option value="">-- Seleccionar labor --</option>
           </select>
 
-          <input
-            type="text"
-            id="newLabor"
-            placeholder="Nueva labor (opcional)"
-          />
-
-          <input
-            type="number"
-            id="quantity"
-            placeholder="Cantidad"
-            min="0"
-            step="1"
-          />
-
-          <input
-            type="text"
-            id="unitValue"
-            placeholder="Valor por unidad"
-            oninput="formatCurrency(this)"
-          />
-
+          <input type="text" id="newLabor" placeholder="Nueva labor (opcional)"/>
+          <input type="number" id="quantity" placeholder="Cantidad" min="0" step="1"/>
+          <input type="text" id="unitValue" placeholder="Valor por unidad" oninput="formatCurrency(this)"/>
           <input type="text" id="observation" placeholder="Observación" />
-
           <button type="button" onclick="registerWork()">Registrar</button>
-
-          <button type="button" onclick="loadDailyRecords()">
-            🔍 Buscar registros del día
-          </button>
+          <button type="button" onclick="loadDailyRecords()"> 🔍 Buscar registros del día</button>
 
           <div id="dailyRecordsResult"></div>
         </section>
 
         <!-- LIQUIDACIÓN -->
         <section class="card view hidden" id="viewLiquidation">
-          <div id="liquidationPrint" class="liquidacion-doc hidden"></div>
+            <div id="liquidationPrint" class="liquidacion-doc hidden"></div>
+            <h2>Liquidación Mensual</h2>
 
-          <h2>Liquidación Mensual</h2>
+            <select id="workerLiquidation">
+              <option value="">-- Seleccionar trabajador --</option>
+            </select>
 
-          <select id="workerLiquidation">
-            <option value="">-- Seleccionar trabajador --</option>
-          </select>
-
-          <input type="month" id="monthLiquidation" />
-
-          <input
-            type="text"
-            id="advanceAmount"
-            placeholder="Anticipos del mes"
-          />
-
-          <button type="button" onclick="generateLiquidation()">
-            Generar Liquidación
-          </button>
-
-          <button type="button" onclick="window.print()" class="no-print">
-            🖨️ Imprimir Liquidación
-          </button>
+            <input type="month" id="monthLiquidation" />
+            <input type="text" id="advanceAmount" placeholder="Anticipos del mes"/>
+            <button type="button" onclick="generateLiquidation()"> Generar Liquidación</button>
+            <button type="button" onclick="window.print()" class="no-print">🖨️ Imprimir Liquidación</button>
         </section>
 
         <!-- CONTRATO -->
@@ -344,28 +290,27 @@
             <br /><br /><br />
 
             <div class="signatures">
-              <!-- EMPLEADOR -->
-              <div class="sign">
-                <div class="line"></div>
+                <!-- EMPLEADOR -->
+                <div class="sign">
+                   <div class="line"></div>
 
-                <p class="sign-name">Servicios Agrícolas San Gerónimo SPA</p>
+                   <p class="sign-name">Servicios Agrícolas San Gerónimo SPA</p>
 
-                <p class="sign-role">EMPLEADOR</p>
+                   <p class="sign-role">EMPLEADOR</p>
 
-                <p class="sign-rut">RUT: 78.018.478-7</p>
-              </div>
+                   <p class="sign-rut">RUT: 78.018.478-7</p>
+                </div>
 
               <!-- TRABAJADOR -->
-              <div class="sign">
-                <div class="line"></div>
+                <div class="sign">
+                  <div class="line"></div>
 
-                <p class="sign-name">TRABAJADOR</p>
-              </div>
+                  <p class="sign-name">TRABAJADOR</p>
+                </div>
             </div>
           </div>
-          <button class="no-print" onclick="window.print()">
-            🖨️ Imprimir Contrato
-          </button>
+          <button class="no-print" onclick="window.print()">🖨️ Imprimir Contrato</button>
+
           <select id="workerContract">
             <option value="">-- Seleccionar trabajador --</option>
           </select>
@@ -376,9 +321,7 @@
           <input type="date" id="startDate" />
           <input type="text" id="salary" placeholder="Sueldo / Trato" />
 
-          <button type="button" onclick="generateContract()">
-            Generar Contrato
-          </button>
+          <button type="button" onclick="generateContract()"> Generar Contrato </button>
         </section>
 
         <!-- MENSUAL -->
@@ -391,9 +334,7 @@
 
           <input type="month" id="monthMonthly" />
 
-          <button type="button" onclick="generateMonthlySummary()">
-            Calcular Mes
-          </button>
+          <button type="button" onclick="generateMonthlySummary()"> Calcular Mes </button>
 
           <div id="monthlyResult"></div>
         </section>
@@ -404,26 +345,9 @@
 
           <input type="month" id="monthGeneral" />
 
-          <button type="button" onclick="generateMonthlyGeneral()">
-            Calcular Mes
-          </button>
-
-          <button
-            type="button"
-            onclick="printMonthlyGeneral()"
-            class="no-print"
-          >
-            🖨️ Imprimir Resumen
-          </button>
-
-          <button
-            type="button"
-            onclick="exportMonthlyGeneralExcel()"
-            class="no-print"
-          >
-            📊 Exportar a Excel
-          </button>
-
+          <button type="button" onclick="generateMonthlyGeneral()"> Calcular Mes </button>
+          <button type="button" onclick="printMonthlyGeneral()" class="no-print"> 🖨️ Imprimir Resumen </button>
+          <button type="button" onclick="exportMonthlyGeneralExcel()" class="no-print"> 📊 Exportar a Excel </button>
           <div id="monthlyGeneralResult"></div>
         </section>
 
@@ -431,34 +355,21 @@
         <section class="card view hidden" id="viewWeekly">
           <h2>Resumen Semanal</h2>
 
-          <button type="button" onclick="showView('viewHistory')">
-            Ver Historial Completo
-          </button>
-
-          <input
-            type="text"
-            id="searchWorkerWeekly"
-            placeholder="Buscar por nombre o RUT"
-            oninput="filterWorkersWeekly()"
-          />
+          <button type="button" onclick="showView('viewHistory')"> Ver Historial Completo </button>
+          <input type="text" id="searchWorkerWeekly" placeholder="Buscar por nombre o RUT" oninput="filterWorkersWeekly()"/>
 
           <select id="workerWeekly">
             <option value="">-- Seleccionar trabajador --</option>
           </select>
 
           <input type="week" id="weekSelected" />
-
-          <button type="button" onclick="generateWeeklySummary()">
-            Calcular Semana
-          </button>
+          <button type="button" onclick="generateWeeklySummary()"> Calcular Semana </button>
 
           <div id="weeklyPrintArea">
             <div id="weeklyResult"></div>
           </div>
 
-          <button onclick="printWeeklySummary()" class="no-print">
-            🖨️ Imprimir Resumen Semanal
-          </button>
+          <button onclick="printWeeklySummary()" class="no-print"> 🖨️ Imprimir Resumen Semanal </button>
         </section>
 
         <!-- HISTORIAL -->
@@ -471,24 +382,73 @@
         <section class="card view hidden" id="viewBackup">
           <h3>Respaldo del Sistema</h3>
 
-          <button type="button" onclick="exportData()">
-            Exportar Respaldo
-          </button>
-
-          <input
-            type="file"
-            id="importFile"
-            style="display: none"
-            onchange="importData(event)"
-          />
-
-          <button
-            type="button"
-            onclick="document.getElementById('importFile').click()"
-          >
-            Importar Respaldo
-          </button>
+          <button type="button" onclick="exportData()"> Exportar Respaldo </button>
+          <input type="file" id="importFile" style="display: none" onchange="importData(event)"/>
+          <button type="button" onclick="document.getElementById('importFile').click()">Importar Respaldo</button>
         </section>
+        <section class="card view hidden" id="viewFiniquito">
+
+    <div id="finiquitoPrint">
+
+        <h2 style="text-align:center;">FINIQUITO TRABAJADOR</h2>
+
+        <p>
+        En San Clemente, a ____ de __________________ de 20____,
+        entre el empleador SERVICIO AGRÍCOLA SAN GERÓNIMO SPA,
+        con domicilio en 1 SUR 690 OF 815 EDIFICIO OFICINA PLAZA MAULE,
+        y el trabajador que se indica por la otra, se acuerda el siguiente finiquito:
+        </p>
+
+        <p>
+        <strong>PRIMERO:</strong>
+        Don(a) ___________________________________________,
+        declara haber prestado servicios desde el ____ / ____ / ______
+        hasta el ____ / ____ / ______,
+        fecha de terminación por lo dispuesto en el Art. 159 N°5
+        (Conclusión del trabajo que dio origen al contrato).
+        </p>
+
+        <p>
+        <strong>SEGUNDO:</strong>
+        Con motivo de la terminación del contrato,
+        el trabajador declara recibir a su entera satisfacción
+        las siguientes sumas:
+        </p>
+
+        <br><br>
+
+        <h3 style="text-align:center;">
+            TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN
+        </h3>
+
+        <h1 style="text-align:center;">
+            $ _______________________
+        </h1>
+
+        <br><br><br>
+
+        <div class="signatures">
+
+            <div class="sign">
+                <div class="line"></div>
+                <p class="sign-name">TRABAJADOR</p>
+            </div>
+
+            <div class="sign">
+                <div class="line"></div>
+                <p class="sign-name">SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA</p>
+                <p class="sign-rut">RUT: 78.018.478-7</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <button class="no-print" onclick="window.print()">
+        🖨️ Imprimir Finiquito
+    </button>
+
+</section>
       </main>
     </div>
 
