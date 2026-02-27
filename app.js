@@ -199,6 +199,7 @@ async function initSystem() {
 
   loadLabors();
   renderWorkersTable();
+  loadAFPOptions();
 }
 
 // =============================
@@ -218,11 +219,9 @@ function addWorker() {
   const position = document.getElementById("workerPosition").value.trim();
   const nationality = document.getElementById("workerNationality").value.trim();
 
-  const entryDate = document.getElementById("workerEntryDate").value;
 
-  const baseSalary = document.getElementById("workerBaseSalary").value.trim();
 
-  if (!name || !rut || !entryDate) {
+  if (!name || !rut) {
     alert(
       "Falta completar campos obligatorios (Nombre, RUT y Fecha de ingreso).",
     );
@@ -254,8 +253,7 @@ function addWorker() {
         afp,
         health,
         position,
-        baseSalary,
-        entryDate,
+        nationality
       };
 
       editIndexWorker = null;
@@ -268,8 +266,6 @@ function addWorker() {
         afp,
         health,
         position,
-        baseSalary,
-        entryDate,
         nationality
       });
 
@@ -280,8 +276,6 @@ function addWorker() {
         afp,
         health,
         position,
-        baseSalary,
-        entryDate,
         nationality
       });
     }
@@ -318,23 +312,18 @@ function loadWorkerToEdit() {
 
   document.getElementById("workerPosition").value = worker.position || "";
 
-  document.getElementById("workerBaseSalary").value = worker.baseSalary || "";
-
-  document.getElementById("workerEntryDate").value = worker.entryDate || "";
   document.getElementById("workerNationality").value = worker.nationality || "";
 }
 
 function clearWorkerForm() {
   document.getElementById("workerEditSelect").value = "";
-
   document.getElementById("workerName").value = "";
   document.getElementById("workerRut").value = "";
   document.getElementById("workerAddress").value = "";
   document.getElementById("workerAFP").value = "";
   document.getElementById("workerHealth").value = "";
   document.getElementById("workerPosition").value = "";
-  document.getElementById("workerBaseSalary").value = "";
-  document.getElementById("workerEntryDate").value = "";
+  document.getElementById("workerNationality").value = "";
 }
 
 function clearWorkerInputs() {
@@ -419,6 +408,24 @@ function loadLabors() {
     opt.textContent = l;
 
     select.appendChild(opt);
+  });
+}
+// =============================
+// 🏦 CARGAR AFP EN SELECT
+// =============================
+
+function loadAFPOptions() {
+  const select = document.getElementById("workerAFP");
+  if (!select) return;
+
+  // Limpiar por seguridad
+  select.innerHTML = "<option value=''>-- Seleccionar AFP --</option>";
+
+  Object.keys(afpRates).forEach((afp) => {
+    const option = document.createElement("option");
+    option.value = afp;
+    option.textContent = afp;
+    select.appendChild(option);
   });
 }
 
@@ -964,6 +971,47 @@ function showView(id) {
 // =============================
 // 💾 EXPORTAR RESPALDO
 // =============================
+
+// =============================
+// 🗑️ ELIMINAR TRABAJADOR
+// =============================
+
+async function deleteWorker() {
+  const index = document.getElementById("workerEditSelect").value;
+
+  if (index === "") {
+    alert("Seleccione un trabajador para eliminar.");
+    return;
+  }
+
+  const worker = workers[index];
+
+  if (!confirm("¿Está seguro de eliminar este trabajador?")) return;
+
+  // 🔹 1. Eliminar en Supabase
+  const { error } = await supabaseClient
+    .from("workers")
+    .delete()
+    .eq("rut", worker.rut);
+
+  if (error) {
+    console.error("Error eliminando en Supabase:", error.message);
+    alert("Error al eliminar en la base de datos.");
+    return;
+  }
+
+  // 🔹 2. Eliminar local
+  workers.splice(index, 1);
+  localStorage.setItem("workers", JSON.stringify(workers));
+
+  // 🔹 3. Actualizar sistema
+  loadWorkers();
+  renderWorkersTable();
+  clearWorkerForm();
+
+  alert("Trabajador eliminado correctamente.");
+}
+
 
 function exportData() {
   const data = {

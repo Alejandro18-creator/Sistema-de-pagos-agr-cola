@@ -133,12 +133,10 @@
             oninput="formatRutInput(this)"
           />
           <input type="text" id="workerAddress" placeholder="Dirección" />
-          <input type="text" id="workerAFP" placeholder="AFP" />
+          <select id="workerAFP"><option value="">-- Seleccionar AFP --</option></select>
           <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)" />
           <input type="text" id="workerNationality" placeholder="Nacionalidad">
           <input type="text" id="workerPosition" placeholder="Cargo" />
-          <input type="text" id="workerBaseSalary" placeholder="Sueldo Base" />
-          <input type="date" id="workerEntryDate" placeholder="Fecha ingreso" />
           <button type="button" onclick="addWorker()">Guardar</button>
           <button type="button" onclick="clearWorkerForm()" style="background: #7f8c8d">Limpiar</button>
           <button type="button" onclick="deleteWorker()" style="background: #c0392b">Eliminar Trabajador</button>
