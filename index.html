@@ -135,6 +135,7 @@
           <input type="text" id="workerAddress" placeholder="Dirección" />
           <input type="text" id="workerAFP" placeholder="AFP" />
           <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)" />
+          <input type="text" id="workerNationality" placeholder="Nacionalidad">
           <input type="text" id="workerPosition" placeholder="Cargo" />
           <input type="text" id="workerBaseSalary" placeholder="Sueldo Base" />
           <input type="date" id="workerEntryDate" placeholder="Fecha ingreso" />
@@ -192,15 +193,19 @@
           <div id="contractPrint">
             <h2 class="titulo-contrato">Contrato de Trabajo de Temporada</h2>
             <p>
-              En Santiago, a ____ de __________________ de 20____, entre
+              En Santiago, a <span id="c_day">____</span> de 
+<span id="c_month">__________________</span> de 
+<span id="c_year">20____</span>, entre
               SERVICIOS AGRICOLAS SAN GERONIMO SPA, RUT Nº 78.018.478-7 con
               domicilio en 1 Sur 690 of 815 Edificio Oficina Plaza Talca comuna
               Talca que adelante se denominará "<b>el empleador</b>", y don(a)
-              _________________________________,Cédula de Identidad n°
-              ______________________, Nacionalidad ______________________,Estado
+<span id="c_name">_______________________________</span>,
+Cédula de Identidad n°
+<span id="c_rut">______________________</span>,Estado
               Civil ______________________, fecha de Nacimiento ____ / ____ /
               20____, de oficio trabajador Agrícola, con domicilio en
-              _________________________________, que adelante se denominará
+              _________________________________, Nacionalidad <span id="c_nationality">______________________</span>, 
+              que adelante se denominará
               <b>"el trabajador"</b>, se ha convenido en el siguiente contrato
               de trabajo de temporada o de faena transitoria.
             </p>

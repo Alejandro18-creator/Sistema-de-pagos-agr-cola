@@ -216,6 +216,7 @@ function addWorker() {
   const health = document.getElementById("workerHealth").value.trim();
 
   const position = document.getElementById("workerPosition").value.trim();
+  const nationality = document.getElementById("workerNationality").value.trim();
 
   const entryDate = document.getElementById("workerEntryDate").value;
 
@@ -269,6 +270,7 @@ function addWorker() {
         position,
         baseSalary,
         entryDate,
+        nationality
       });
 
       saveWorkerToCloud({
@@ -280,6 +282,7 @@ function addWorker() {
         position,
         baseSalary,
         entryDate,
+        nationality
       });
     }
 
@@ -318,6 +321,7 @@ function loadWorkerToEdit() {
   document.getElementById("workerBaseSalary").value = worker.baseSalary || "";
 
   document.getElementById("workerEntryDate").value = worker.entryDate || "";
+  document.getElementById("workerNationality").value = worker.nationality || "";
 }
 
 function clearWorkerForm() {
@@ -543,36 +547,55 @@ function formatCurrency(input) {
 
 function filterWorkersWeekly() {
 
-    const search = document
-        .getElementById("searchWorkerWeekly")
-        .value
-        .toLowerCase()
-        .trim();
-
+    const searchInput = document.getElementById("searchWorkerWeekly");
     const select = document.getElementById("workerWeekly");
 
-    if (!search) {
-        select.selectedIndex = 0;
+    if (!searchInput || !select) return;
+
+    const search = searchInput.value
+        .toLowerCase()
+        .replace(/\./g, "")
+        .replace(/-/g, "")
+        .trim();
+
+    // Limpiar select
+    select.innerHTML = "<option value=''>-- Seleccionar trabajador --</option>";
+
+    // Si está vacío, mostrar todos
+    if (search === "") {
+
+        workers.forEach((worker, index) => {
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = worker.name + " - " + worker.rut;
+            select.appendChild(option);
+        });
+
         return;
     }
 
-    let found = false;
-
+    // Filtrar
     workers.forEach((worker, index) => {
 
         const name = (worker.name || "").toLowerCase();
-        const rut = (worker.rut || "").toLowerCase();
 
-        if (!found && (name.includes(search) || rut.includes(search))) {
-            select.value = index;
-            found = true;
+        const cleanRut = (worker.rut || "")
+            .toLowerCase()
+            .replace(/\./g, "")
+            .replace(/-/g, "");
+
+        const matchRut = cleanRut.startsWith(search);
+        const matchName = name.includes(search);
+
+        if (matchRut || matchName) {
+
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = worker.name + " - " + worker.rut;
+
+            select.appendChild(option);
         }
-
     });
-
-    if (!found) {
-        select.selectedIndex = 0;
-    }
 }
 
 function generateLiquidation() {
@@ -725,7 +748,46 @@ function generateLiquidation() {
 
   document.getElementById("liquidationPrint").classList.remove("hidden");
 }
-function generateContract() {}
+function generateContract() {
+
+    const workerIndex = document.getElementById("workerContract").value;
+
+    if (workerIndex === "") {
+        alert("Seleccione un trabajador.");
+        return;
+    }
+
+    const worker = workers[workerIndex];
+
+    // 🔹 COMPLETAR NOMBRE Y RUT
+    document.getElementById("c_name").textContent = worker.name;
+    document.getElementById("c_rut").textContent = worker.rut;
+
+    // 🔹 AQUÍ VA EL PASO 2 👇
+
+    const startDate = document.getElementById("startDate").value;
+
+    if (!startDate) {
+        alert("Ingrese la fecha del contrato.");
+        return;
+    }
+
+    const [year, monthNumber, day] = startDate.split("-");
+
+const months = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+];
+
+const month = months[parseInt(monthNumber) - 1];
+
+    document.getElementById("c_day").textContent = day;
+    document.getElementById("c_month").textContent = month;
+    document.getElementById("c_year").textContent = year;
+    document.getElementById("c_nationality").textContent = worker.nationality || "Chilena";
+
+    alert("Contrato completado correctamente.");
+}
 
 function generateMonthlySummary() {
   const workerIndex = document.getElementById("workerMonthly").value;
