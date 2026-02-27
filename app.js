@@ -541,7 +541,39 @@ function formatCurrency(input) {
   input.value = "$" + Number(value).toLocaleString("es-CL");
 }
 
-function filterWorkersWeekly() {}
+function filterWorkersWeekly() {
+
+    const search = document
+        .getElementById("searchWorkerWeekly")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const select = document.getElementById("workerWeekly");
+
+    if (!search) {
+        select.selectedIndex = 0;
+        return;
+    }
+
+    let found = false;
+
+    workers.forEach((worker, index) => {
+
+        const name = (worker.name || "").toLowerCase();
+        const rut = (worker.rut || "").toLowerCase();
+
+        if (!found && (name.includes(search) || rut.includes(search))) {
+            select.value = index;
+            found = true;
+        }
+
+    });
+
+    if (!found) {
+        select.selectedIndex = 0;
+    }
+}
 
 function generateLiquidation() {
   const workerIndex = document.getElementById("workerLiquidation").value;
