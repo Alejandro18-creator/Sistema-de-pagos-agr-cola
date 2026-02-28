@@ -45,6 +45,23 @@
         <button type="button" onclick="showView('viewProduction')">
           🛠️ Producción
         </button>
+        <button type="button" onclick="toggleSubmenu('weeklySubmenu')">
+          📊 Resumen Semanal ▼
+        </button>
+        <div id="weeklySubmenu" class="sidebar-submenu">
+          <button type="button" onclick="showView('viewWeekly')">
+            • Resumen Semanal
+          </button>
+          
+          <button type="button" onclick="generateWeeklySummary()">
+            • Generar Resumen
+          </button>
+        </div>
+        <div class="sub-menu">
+       <button type="button" onclick="showView('viewPagos')">
+        💰 Pagos / Pendientes
+       </button>
+       </div>
         <button type="button" onclick="showView('viewLiquidation')">
           📄 Liquidación
         </button>
@@ -54,9 +71,8 @@
         <button type="button" onclick="showView('viewMonthlyGeneral')">
           🧾 Mensual General
         </button>
-        <button type="button" onclick="showView('viewWeekly')">
-          📊 Resumen Semanal
-        </button>
+        
+        
         <button type="button" onclick="showView('viewHistory')">
           📜 Historial
         </button>
@@ -155,6 +171,7 @@
             <option value="">-- Seleccionar trabajador --</option>
           </select>
 
+          <input type="text" id="fundoProduction" placeholder="Nombre del fundo/campo" />
           <input type="date" id="workDate" />
 
           <select id="laborSelect">
@@ -359,14 +376,15 @@ Cédula de Identidad n°
           <h2>Resumen Semanal</h2>
 
           <button type="button" onclick="showView('viewHistory')"> Ver Historial Completo </button>
-          <input type="text" id="searchWorkerWeekly" placeholder="Buscar por nombre o RUT" oninput="filterWorkersWeekly()"/>
-
-          <select id="workerWeekly">
-            <option value="">-- Seleccionar trabajador --</option>
-          </select>
-
-          <input type="week" id="weekSelected" />
-          <button type="button" onclick="generateWeeklySummary()"> Calcular Semana </button>
+          
+          <div style="position: relative; max-width: 400px;">
+            <input type="text" id="searchWorkerWeekly" placeholder="Buscar trabajador por nombre o RUT" oninput="filterWorkersWeekly()" autocomplete="off" />
+            <div id="workerWeeklyList" style="position: absolute; width: 100%; background: white; border: 1px solid #ccc; border-top: none; max-height: 300px; overflow-y: auto; display: none; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+          </div>
+          
+          <input type="hidden" id="workerWeekly" />
+          
+          <div id="calendarContainer"></div>
 
           <div id="weeklyPrintArea">
             <div id="weeklyResult"></div>
@@ -374,6 +392,18 @@ Cédula de Identidad n°
 
           <button onclick="printWeeklySummary()" class="no-print"> 🖨️ Imprimir Resumen Semanal </button>
         </section>
+
+        <section class="card view hidden" id="viewPagos">
+
+    <h2>Resumen Pagado / Pendiente</h2>
+
+    <button onclick="generatePagosResumen()">
+        Calcular Resumen
+    </button>
+
+    <div id="pagosResult"></div>
+
+    </section>
 
         <!-- HISTORIAL -->
         <section class="card view hidden" id="viewHistory">

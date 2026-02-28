@@ -189,6 +189,25 @@ tr:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Submenú del sidebar */
+.sidebar-submenu {
+  display: none;
+  margin-left: 15px;
+  border-left: 2px solid #2ecc71;
+}
+
+.sidebar-submenu button {
+  font-size: 13px;
+  padding: 8px 15px;
+  text-align: left;
+  background: rgba(46, 204, 113, 0.1);
+  margin: 2px 0;
+}
+
+.sidebar-submenu button:hover {
+  background: rgba(46, 204, 113, 0.2);
+}
+
 /* Contenido */
 .content {
   flex: 1;
@@ -672,4 +691,12 @@ tr:hover {
         padding: 40px;
     }
 
+}
+.sub-menu {
+    margin-left: 20px;
+}
+
+.sub-menu button {
+    font-size: 13px;
+    background: rgba(255,255,255,0.08);
 }

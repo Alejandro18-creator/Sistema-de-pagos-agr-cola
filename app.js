@@ -441,6 +441,7 @@ function registerWork() {
   let labor = document.getElementById("laborSelect").value;
 
   const newLabor = document.getElementById("newLabor").value.trim();
+  const fundo = document.getElementById("fundoProduction").value.trim();
 
   const quantity = Number(document.getElementById("quantity").value);
 
@@ -475,6 +476,7 @@ function registerWork() {
     labor,
     quantity,
     total,
+    fundo: fundo || "",
   };
 
   if (editProductionIndex !== null) {
@@ -494,6 +496,7 @@ function registerWork() {
     labor,
     quantity,
     total,
+    fundo: fundo || "",
   });
 
   localStorage.setItem("history", JSON.stringify(history));
@@ -553,11 +556,11 @@ function formatCurrency(input) {
 }
 
 function filterWorkersWeekly() {
-
     const searchInput = document.getElementById("searchWorkerWeekly");
-    const select = document.getElementById("workerWeekly");
+    const resultsList = document.getElementById("workerWeeklyList");
+    const hiddenSelect = document.getElementById("workerWeekly");
 
-    if (!searchInput || !select) return;
+    if (!searchInput || !resultsList) return;
 
     const search = searchInput.value
         .toLowerCase()
@@ -565,44 +568,64 @@ function filterWorkersWeekly() {
         .replace(/-/g, "")
         .trim();
 
-    // Limpiar select
-    select.innerHTML = "<option value=''>-- Seleccionar trabajador --</option>";
-
-    // Si está vacío, mostrar todos
+    // Si está vacío, ocultar lista y limpiar selección
     if (search === "") {
-
-        workers.forEach((worker, index) => {
-            const option = document.createElement("option");
-            option.value = index;
-            option.textContent = worker.name + " - " + worker.rut;
-            select.appendChild(option);
-        });
-
+        resultsList.style.display = "none";
+        resultsList.innerHTML = "";
+        hiddenSelect.value = "";
+        document.getElementById("calendarContainer").innerHTML = "";
+        document.getElementById("weeklyResult").innerHTML = "";
         return;
     }
 
-    // Filtrar
-    workers.forEach((worker, index) => {
-
+    // Filtrar trabajadores
+    const filtered = workers.filter((worker, index) => {
         const name = (worker.name || "").toLowerCase();
-
         const cleanRut = (worker.rut || "")
             .toLowerCase()
             .replace(/\./g, "")
             .replace(/-/g, "");
 
-        const matchRut = cleanRut.startsWith(search);
+        const matchRut = cleanRut.includes(search);
         const matchName = name.includes(search);
 
-        if (matchRut || matchName) {
-
-            const option = document.createElement("option");
-            option.value = index;
-            option.textContent = worker.name + " - " + worker.rut;
-
-            select.appendChild(option);
-        }
+        return matchRut || matchName;
     });
+
+    // Mostrar resultados
+    if (filtered.length === 0) {
+        resultsList.innerHTML = "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+        resultsList.style.display = "block";
+        return;
+    }
+
+    let html = "";
+    filtered.forEach((worker, i) => {
+        const originalIndex = workers.indexOf(worker);
+        html += "<div onclick='selectWorkerWeekly(" + originalIndex + ", \"" + worker.name.replace(/"/g, '&quot;') + "\")' style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;' onmouseover='this.style.background=\"#f0f0f0\"' onmouseout='this.style.background=\"white\"'>";
+        html += "<strong>" + worker.name + "</strong><br>";
+        html += "<small style='color: #666;'>" + worker.rut + "</small>";
+        html += "</div>";
+    });
+
+    resultsList.innerHTML = html;
+    resultsList.style.display = "block";
+}
+
+function selectWorkerWeekly(index, name) {
+    document.getElementById("workerWeekly").value = index;
+    document.getElementById("searchWorkerWeekly").value = name;
+    document.getElementById("workerWeeklyList").style.display = "none";
+    document.getElementById("workerWeeklyList").innerHTML = "";
+    
+    // Limpiar días seleccionados del trabajador anterior
+    selectedDays.clear();
+    
+    // Limpiar el resumen si había uno generado
+    document.getElementById("weeklyResult").innerHTML = "";
+    
+    // Mostrar calendario automáticamente
+    showCalendar();
 }
 
 function generateLiquidation() {
@@ -968,6 +991,21 @@ function showView(id) {
 
   document.getElementById(id).classList.remove("hidden");
 }
+
+// =============================
+// 📂 TOGGLE SUBMENU
+// =============================
+function toggleSubmenu(id) {
+  const submenu = document.getElementById(id);
+  const currentDisplay = window.getComputedStyle(submenu).display;
+  
+  if (currentDisplay === "none") {
+    submenu.style.display = "block";
+  } else {
+    submenu.style.display = "none";
+  }
+}
+
 // =============================
 // 💾 EXPORTAR RESPALDO
 // =============================
@@ -1157,59 +1195,146 @@ function exportMonthlyGeneralExcel() {
 }
 
 // =============================
-// 📊 RESUMEN SEMANAL
+// 📊 RESUMEN SEMANAL - MOSTRAR CALENDARIO DEL MES
+// =============================
+let currentCalendarDate = new Date();
+let selectedDays = new Set();
+
+function showCalendar(year = null, month = null) {
+  const workerIndex = document.getElementById("workerWeekly").value;
+  
+  if (!workerIndex) {
+    document.getElementById("calendarContainer").innerHTML = "";
+    return;
+  }
+
+  // Si no se pasa año/mes, usar la fecha actual guardada
+  if (year === null || month === null) {
+    year = currentCalendarDate.getFullYear();
+    month = currentCalendarDate.getMonth();
+  } else {
+    currentCalendarDate = new Date(year, month);
+  }
+  
+  const monthNum = month;
+  
+  // Generar todos los días del mes
+  const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
+  const firstDay = new Date(year, monthNum, 1).getDay();
+  
+  const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
+                      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const dayNames = ['do', 'lu', 'ma', 'mi', 'ju', 'vi', 'sá'];
+
+  let html = "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
+  
+  // Header con navegación
+  html += "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
+  html += "<button type='button' onclick='changeMonth(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+  html += "<span style='font-weight: bold; text-transform: capitalize;'>" + monthNames[monthNum] + " de " + year + "</span>";
+  html += "<button type='button' onclick='changeMonth(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+  html += "</div>";
+  
+  // Calendario
+  html += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
+  
+  // Encabezados de días
+  dayNames.forEach(day => {
+    html += "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" + day + "</div>";
+  });
+  
+  // Espacios vacíos antes del primer día
+  for (let i = 0; i < firstDay; i++) {
+    html += "<div style='padding: 8px;'></div>";
+  }
+  
+  // Días del mes
+  for (let day = 1; day <= daysInMonth; day++) {
+    const monthStr = String(monthNum + 1).padStart(2, '0');
+    const dateStr = year + "-" + monthStr + "-" + String(day).padStart(2, '0');
+    const isSelected = selectedDays.has(dateStr);
+    const bgColor = isSelected ? '#1a73e8' : 'transparent';
+    const textColor = isSelected ? 'white' : '#000';
+    const fontWeight = isSelected ? 'bold' : 'normal';
+    
+    html += "<div onclick='toggleDay(\"" + dateStr + "\")' style='text-align: center; padding: 8px; cursor: pointer; border-radius: 50%; background: " + bgColor + "; color: " + textColor + "; font-weight: " + fontWeight + "; transition: all 0.2s;' onmouseover='this.style.backgroundColor=\"" + (isSelected ? '#1557b0' : '#f0f0f0') + "\"' onmouseout='this.style.backgroundColor=\"" + bgColor + "\"'>";
+    html += day;
+    html += "</div>";
+  }
+  
+  html += "</div>";
+  
+  // Botones inferiores
+  html += "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
+  html += "<button type='button' onclick='clearSelectedDays()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+  html += "<button type='button' onclick='todayDate()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
+  html += "</div>";
+  
+  html += "</div>";
+  
+  document.getElementById("calendarContainer").innerHTML = html;
+}
+
+function toggleDay(dateStr) {
+  if (selectedDays.has(dateStr)) {
+    selectedDays.delete(dateStr);
+  } else {
+    selectedDays.add(dateStr);
+  }
+  showCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+}
+
+function clearSelectedDays() {
+  selectedDays.clear();
+  showCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+}
+
+function todayDate() {
+  currentCalendarDate = new Date();
+  showCalendar();
+}
+
+// Función para cambiar de mes
+function changeMonth(direction) {
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+  
+  const newDate = new Date(year, month + direction);
+  showCalendar(newDate.getFullYear(), newDate.getMonth());
+}
+
+// 📊 RESUMEN SEMANAL - GENERAR CON DÍAS SELECCIONADOS
 // =============================
 function generateWeeklySummary() {
   const workerIndex = document.getElementById("workerWeekly").value;
 
-  const week = document.getElementById("weekSelected").value;
-
-  if (workerIndex === "" || !week) {
-    alert("Seleccione trabajador y semana.");
+  if (workerIndex === "") {
+    alert("Seleccione un trabajador.");
     return;
   }
 
   const worker = workers[workerIndex];
+  
+  // Obtener días seleccionados del Set
+  const selectedDates = Array.from(selectedDays);
 
-  // El input week devuelve algo como: 2026-W08
-  const [year, weekNumber] = week.split("-W");
-
-  // Convertir fecha del registro a número de semana ISO
-  function getWeekNumber(dateString) {
-    const date = new Date(dateString);
-    const tempDate = new Date(date.getTime());
-
-    tempDate.setHours(0, 0, 0, 0);
-    tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
-
-    const week1 = new Date(tempDate.getFullYear(), 0, 4);
-
-    return (
-      1 +
-      Math.round(
-        ((tempDate - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7,
-      )
-    );
-  }
-
-  const records = history.filter((r) => {
-    const recordDate = new Date(r.date);
-    const recordYear = recordDate.getFullYear();
-    const recordWeek = getWeekNumber(r.date);
-
-    return (
-      r.rut === worker.rut && recordYear == year && recordWeek == weekNumber
-    );
-  });
-
-  const paidRecords = records.filter((r) => r.paid === true || r.paid === 1);
-
-  console.log("Registros encontrados:", records);
-
-  if (records.length === 0) {
-    alert("No hay producción en esa semana.");
+  if (selectedDates.length === 0) {
+    alert("Seleccione al menos un día del calendario.");
     return;
   }
+
+  // Filtrar registros solo de los días seleccionados
+  const records = history.filter((r) => {
+    return r.rut === worker.rut && selectedDates.includes(r.date);
+  });
+
+  if (records.length === 0) {
+    alert("No hay registros en los días seleccionados.");
+    return;
+  }
+
+  // Ocultar el calendario
+  document.getElementById("calendarContainer").innerHTML = "";
 
   // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [...new Set(records.map((r) => r.date))];
@@ -1218,38 +1343,37 @@ function generateWeeklySummary() {
   // ===== CALCULAR TOTAL =====
   let total = 0;
 
-  let html = "<h3>Detalle de la Semana</h3>";
+  let html = "<h3>Detalle de Días Seleccionados</h3>";
+  
+  html += "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
 
-  html +=
-    "<button onclick='markAllWeeklyPaid(true)'>✅ Marcar todo pagado</button> ";
-  html +=
-    "<button onclick='markAllWeeklyPaid(false)' style='background:#c0392b'>❌ Desmarcar todo</button>";
   html += "<table>";
 
   html +=
-    "<tr><th>Pagar</th><th>Fecha</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+    "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
 
   records.forEach((r) => {
     total += r.total;
+    
+    // Encontrar el índice real en history
+    const index = history.findIndex(
+      (h) =>
+        h.rut === r.rut &&
+        h.date === r.date &&
+        h.labor === r.labor &&
+        h.quantity === r.quantity &&
+        h.total === r.total &&
+        (h.fundo || "") === (r.fundo || "")
+    );
 
     html += "<tr class='weeklyRow'>";
 
-    html +=
-      "<td>" +
-      "<input type='checkbox' class='paidCheckbox' " +
-      (r.paid ? "checked" : "") +
-      " data-id='" +
-      r.id +
-      "' " +
-      " data-total='" +
-      r.total +
-      "' " +
-      " onchange='updateWeeklyTotal(this)'>";
-
     html += "<td>" + r.date + "</td>";
+    html += "<td>" + (r.fundo || "-") + "</td>";
     html += "<td>" + r.labor + "</td>";
     html += "<td>" + r.quantity + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
+    html += "<td><button style='background:#c0392b' onclick='deleteFromWeeklySummary(" + index + ")'>🗑️</button></td>";
 
     html += "</tr>";
   });
@@ -1262,7 +1386,7 @@ function generateWeeklySummary() {
     daysWorked +
     "</span></p>";
   html +=
-    "<h2 id='weeklyTotal'>Total Semana: $" +
+    "<h2 id='weeklyTotal'>Total: $" +
     total.toLocaleString("es-CL") +
     "</h2>";
 
@@ -1368,17 +1492,64 @@ function editProductionByIndex(index) {
 // 🗑️ ELIMINAR POR ÍNDICE
 // =============================
 
-function deleteProductionByIndex(index) {
+async function deleteProductionByIndex(index) {
   if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
-  history.splice(index, 1);
+  const record = history[index];
+  
+  // Eliminar de Supabase si tiene id
+  if (record.id) {
+    const { error } = await supabaseClient
+      .from("history")
+      .delete()
+      .eq("id", record.id);
 
+    if (error) {
+      console.error("Error eliminando en Supabase:", error.message);
+      alert("Error al eliminar en la base de datos.");
+      return;
+    }
+  }
+
+  // Eliminar local
+  history.splice(index, 1);
   localStorage.setItem("history", JSON.stringify(history));
 
   alert("Registro eliminado.");
 
   // Limpiar tabla
   document.getElementById("dailyRecordsResult").innerHTML = "";
+}
+
+// 🗑️ ELIMINAR DESDE RESUMEN SEMANAL
+// =============================
+async function deleteFromWeeklySummary(index) {
+  if (!confirm("¿Está seguro de eliminar este registro?")) return;
+
+  const record = history[index];
+  
+  // Eliminar de Supabase si tiene id
+  if (record.id) {
+    const { error } = await supabaseClient
+      .from("history")
+      .delete()
+      .eq("id", record.id);
+
+    if (error) {
+      console.error("Error eliminando en Supabase:", error.message);
+      alert("Error al eliminar en la base de datos.");
+      return;
+    }
+  }
+
+  // Eliminar local
+  history.splice(index, 1);
+  localStorage.setItem("history", JSON.stringify(history));
+
+  alert("Registro eliminado.");
+
+  // Regenerar el resumen
+  generateWeeklySummary();
 }
 // =============================
 // RECALCULAR TOTAL SEMANAL
@@ -1451,4 +1622,89 @@ async function markAllWeeklyPaid(state) {
   }
 
   updateWeeklyTotal();
+}
+
+function generatePagosResumen() {
+
+    if (history.length === 0) {
+        alert("No hay registros.");
+        return;
+    }
+
+    const resumenTrabajador = {};
+    const resumenFundo = {};
+
+    history.forEach(r => {
+
+        const total = Number(r.total);
+        const pagado = r.paid === true || r.paid === 1;
+
+        // ===== POR TRABAJADOR =====
+        if (!resumenTrabajador[r.rut]) {
+            resumenTrabajador[r.rut] = {
+                name: r.name,
+                trabajado: 0,
+                pagado: 0,
+                pendiente: 0
+            };
+        }
+
+        resumenTrabajador[r.rut].trabajado += total;
+
+        if (pagado) {
+            resumenTrabajador[r.rut].pagado += total;
+        } else {
+            resumenTrabajador[r.rut].pendiente += total;
+        }
+
+        // ===== POR FUNDO =====
+        const fundo = r.fundo || "Sin fundo";
+
+        if (!resumenFundo[fundo]) {
+            resumenFundo[fundo] = {
+                trabajado: 0,
+                pagado: 0,
+                pendiente: 0
+            };
+        }
+
+        resumenFundo[fundo].trabajado += total;
+
+        if (pagado) {
+            resumenFundo[fundo].pagado += total;
+        } else {
+            resumenFundo[fundo].pendiente += total;
+        }
+
+    });
+
+    let html = "<h3>Por Trabajador</h3>";
+    html += "<table><tr><th>Trabajador</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
+
+    Object.values(resumenTrabajador).forEach(w => {
+        html += "<tr>";
+        html += "<td>" + w.name + "</td>";
+        html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
+        html += "<td style='color:green'>$" + w.pagado.toLocaleString("es-CL") + "</td>";
+        html += "<td style='color:red'>$" + w.pendiente.toLocaleString("es-CL") + "</td>";
+        html += "</tr>";
+    });
+
+    html += "</table>";
+
+    html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
+    html += "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
+
+    Object.entries(resumenFundo).forEach(([fundo, data]) => {
+        html += "<tr>";
+        html += "<td>" + fundo + "</td>";
+        html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
+        html += "<td style='color:green'>$" + data.pagado.toLocaleString("es-CL") + "</td>";
+        html += "<td style='color:red'>$" + data.pendiente.toLocaleString("es-CL") + "</td>";
+        html += "</tr>";
+    });
+
+    html += "</table>";
+
+    document.getElementById("pagosResult").innerHTML = html;
 }
