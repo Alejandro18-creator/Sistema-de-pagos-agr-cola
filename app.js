@@ -93,6 +93,35 @@ async function loadHistoryFromCloud() {
   console.log("Producción cargada desde Supabase");
 }
 
+async function pruneHistoryOrphaned() {
+  const workerRuts = new Set((workers || []).map((w) => w.rut));
+
+  if (workerRuts.size === 0) {
+    return;
+  }
+
+  const orphaned = (history || []).filter((r) => !workerRuts.has(r.rut));
+
+  if (orphaned.length === 0) {
+    return;
+  }
+
+  const orphanedRuts = [...new Set(orphaned.map((r) => r.rut))];
+
+  const { error } = await supabaseClient
+    .from("history")
+    .delete()
+    .in("rut", orphanedRuts);
+
+  if (error) {
+    console.error("Error eliminando historial huérfano en Supabase:", error.message);
+  }
+
+  history = history.filter((r) => workerRuts.has(r.rut));
+  localStorage.setItem("history", JSON.stringify(history));
+  renderHistory();
+}
+
 // =============================
 // 🔐 PASSWORD
 // =============================
@@ -197,9 +226,12 @@ async function initSystem() {
   await loadWorkersFromCloud();
   await loadHistoryFromCloud();
 
+
   loadLabors();
   renderWorkersTable();
   loadAFPOptions();
+  loadPagosWorkerFilter();
+  await pruneHistoryOrphaned();
 }
 
 // =============================
@@ -210,6 +242,9 @@ function addWorker() {
   const name = document.getElementById("workerName").value.trim();
 
   const rut = document.getElementById("workerRut").value.trim();
+
+  const birthDate = document.getElementById("workerBirthDate").value.trim();
+  const maritalStatus = document.getElementById("workerMaritalStatus").value.trim();
 
   const address = document.getElementById("workerAddress").value.trim();
   const afp = document.getElementById("workerAFP").value.trim();
@@ -249,11 +284,13 @@ function addWorker() {
       workers[editIndexWorker] = {
         name,
         rut,
+        birthDate,
+        maritalStatus,
         address,
         afp,
         health,
         position,
-        nationality
+        nationality,
       };
 
       editIndexWorker = null;
@@ -262,21 +299,25 @@ function addWorker() {
       workers.push({
         name,
         rut,
+        birthDate,
+        maritalStatus,
         address,
         afp,
         health,
         position,
-        nationality
+        nationality,
       });
 
       saveWorkerToCloud({
         name,
         rut,
+        birthDate,
+        maritalStatus,
         address,
         afp,
         health,
         position,
-        nationality
+        nationality,
       });
     }
 
@@ -313,12 +354,17 @@ function loadWorkerToEdit() {
   document.getElementById("workerPosition").value = worker.position || "";
 
   document.getElementById("workerNationality").value = worker.nationality || "";
+  document.getElementById("workerBirthDate").value = worker.birthDate || "";
+  document.getElementById("workerMaritalStatus").value =
+    worker.maritalStatus || "";
 }
 
 function clearWorkerForm() {
   document.getElementById("workerEditSelect").value = "";
   document.getElementById("workerName").value = "";
   document.getElementById("workerRut").value = "";
+  document.getElementById("workerBirthDate").value = "";
+  document.getElementById("workerMaritalStatus").value = "";
   document.getElementById("workerAddress").value = "";
   document.getElementById("workerAFP").value = "";
   document.getElementById("workerHealth").value = "";
@@ -329,7 +375,19 @@ function clearWorkerForm() {
 function clearWorkerInputs() {
   document.getElementById("workerName").value = "";
   document.getElementById("workerRut").value = "";
+  document.getElementById("workerBirthDate").value = "";
+  document.getElementById("workerMaritalStatus").value = "";
   document.getElementById("workerAddress").value = "";
+}
+
+function formatBirthDate(input) {
+  let value = input.value.replace(/\D/g, "").slice(0, 8);
+  if (value.length >= 5) {
+    value = value.replace(/(\d{2})(\d{2})(\d{0,4})/, "$1/$2/$3");
+  } else if (value.length >= 3) {
+    value = value.replace(/(\d{2})(\d{0,2})/, "$1/$2");
+  }
+  input.value = value;
 }
 
 // =============================
@@ -359,6 +417,21 @@ function loadWorkers() {
 
       select.appendChild(opt);
     });
+  });
+}
+
+function loadPagosWorkerFilter() {
+
+  const select = document.getElementById("filterPagosWorker");
+  if (!select) return;
+
+  select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
+
+  workers.forEach((w, i) => {
+    const opt = document.createElement("option");
+    opt.value = w.rut;
+    opt.textContent = w.name + " (" + w.rut + ")";
+    select.appendChild(opt);
   });
 }
 
@@ -556,76 +629,76 @@ function formatCurrency(input) {
 }
 
 function filterWorkersWeekly() {
-    const searchInput = document.getElementById("searchWorkerWeekly");
-    const resultsList = document.getElementById("workerWeeklyList");
-    const hiddenSelect = document.getElementById("workerWeekly");
+  const searchInput = document.getElementById("searchWorkerWeekly");
+  const resultsList = document.getElementById("workerWeeklyList");
+  const hiddenSelect = document.getElementById("workerWeekly");
 
-    if (!searchInput || !resultsList) return;
+  if (!searchInput || !resultsList) return;
 
-    const search = searchInput.value
-        .toLowerCase()
-        .replace(/\./g, "")
-        .replace(/-/g, "")
-        .trim();
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
 
-    // Si está vacío, ocultar lista y limpiar selección
-    if (search === "") {
-        resultsList.style.display = "none";
-        resultsList.innerHTML = "";
-        hiddenSelect.value = "";
-        document.getElementById("calendarContainer").innerHTML = "";
-        document.getElementById("weeklyResult").innerHTML = "";
-        return;
-    }
+  // Si está vacío, ocultar lista y limpiar selección
+  if (search === "") {
+    resultsList.style.display = "none";
+    resultsList.innerHTML = "";
+    hiddenSelect.value = "";
+    document.getElementById("calendarContainer").innerHTML = "";
+    document.getElementById("weeklyResult").innerHTML = "";
+    return;
+  }
 
-    // Filtrar trabajadores
-    const filtered = workers.filter((worker, index) => {
-        const name = (worker.name || "").toLowerCase();
-        const cleanRut = (worker.rut || "")
-            .toLowerCase()
-            .replace(/\./g, "")
-            .replace(/-/g, "");
+  // Filtrar trabajadores
+  const filtered = workers.filter((worker, index) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
 
-        const matchRut = cleanRut.includes(search);
-        const matchName = name.includes(search);
+    const matchRut = cleanRut.includes(search);
+    const matchName = name.includes(search);
 
-        return matchRut || matchName;
-    });
+    return matchRut || matchName;
+  });
 
-    // Mostrar resultados
-    if (filtered.length === 0) {
-        resultsList.innerHTML = "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
-        resultsList.style.display = "block";
-        return;
-    }
-
-    let html = "";
-    filtered.forEach((worker, i) => {
-        const originalIndex = workers.indexOf(worker);
-        html += "<div onclick='selectWorkerWeekly(" + originalIndex + ", \"" + worker.name.replace(/"/g, '&quot;') + "\")' style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;' onmouseover='this.style.background=\"#f0f0f0\"' onmouseout='this.style.background=\"white\"'>";
-        html += "<strong>" + worker.name + "</strong><br>";
-        html += "<small style='color: #666;'>" + worker.rut + "</small>";
-        html += "</div>";
-    });
-
-    resultsList.innerHTML = html;
+  // Mostrar resultados
+  if (filtered.length === 0) {
+    resultsList.innerHTML = "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
     resultsList.style.display = "block";
+    return;
+  }
+
+  let html = "";
+  filtered.forEach((worker, i) => {
+    const originalIndex = workers.indexOf(worker);
+    html += "<div onclick='selectWorkerWeekly(" + originalIndex + ", \"" + worker.name.replace(/"/g, '&quot;') + "\")' style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;' onmouseover='this.style.background=\"#f0f0f0\"' onmouseout='this.style.background=\"white\"'>";
+    html += "<strong>" + worker.name + "</strong><br>";
+    html += "<small style='color: #666;'>" + worker.rut + "</small>";
+    html += "</div>";
+  });
+
+  resultsList.innerHTML = html;
+  resultsList.style.display = "block";
 }
 
 function selectWorkerWeekly(index, name) {
-    document.getElementById("workerWeekly").value = index;
-    document.getElementById("searchWorkerWeekly").value = name;
-    document.getElementById("workerWeeklyList").style.display = "none";
-    document.getElementById("workerWeeklyList").innerHTML = "";
-    
-    // Limpiar días seleccionados del trabajador anterior
-    selectedDays.clear();
-    
-    // Limpiar el resumen si había uno generado
-    document.getElementById("weeklyResult").innerHTML = "";
-    
-    // Mostrar calendario automáticamente
-    showCalendar();
+  document.getElementById("workerWeekly").value = index;
+  document.getElementById("searchWorkerWeekly").value = name;
+  document.getElementById("workerWeeklyList").style.display = "none";
+  document.getElementById("workerWeeklyList").innerHTML = "";
+
+  // Limpiar días seleccionados del trabajador anterior
+  selectedDays.clear();
+
+  // Limpiar el resumen si había uno generado
+  document.getElementById("weeklyResult").innerHTML = "";
+
+  // Mostrar calendario automáticamente
+  showCalendar();
 }
 
 function generateLiquidation() {
@@ -780,43 +853,46 @@ function generateLiquidation() {
 }
 function generateContract() {
 
-    const workerIndex = document.getElementById("workerContract").value;
+  const workerIndex = document.getElementById("workerContract").value;
 
-    if (workerIndex === "") {
-        alert("Seleccione un trabajador.");
-        return;
-    }
+  if (workerIndex === "") {
+    alert("Seleccione un trabajador.");
+    return;
+  }
 
-    const worker = workers[workerIndex];
+  const worker = workers[workerIndex];
 
-    // 🔹 COMPLETAR NOMBRE Y RUT
-    document.getElementById("c_name").textContent = worker.name;
-    document.getElementById("c_rut").textContent = worker.rut;
+  // 🔹 COMPLETAR NOMBRE Y RUT
+  document.getElementById("c_name").textContent = worker.name;
+  document.getElementById("c_rut").textContent = worker.rut;
 
-    // 🔹 AQUÍ VA EL PASO 2 👇
 
-    const startDate = document.getElementById("startDate").value;
+  // 🔹 AQUÍ VA EL PASO 2 👇
 
-    if (!startDate) {
-        alert("Ingrese la fecha del contrato.");
-        return;
-    }
+  const startDate = document.getElementById("startDate").value.trim();
 
-    const [year, monthNumber, day] = startDate.split("-");
+  if (!startDate) {
+    alert("Ingrese la fecha del contrato.");
+    return;
+  }
 
-const months = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-];
+  const [day, monthNumber, year] = startDate.split("/");
 
-const month = months[parseInt(monthNumber) - 1];
+  const months = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+  ];
 
-    document.getElementById("c_day").textContent = day;
-    document.getElementById("c_month").textContent = month;
-    document.getElementById("c_year").textContent = year;
-    document.getElementById("c_nationality").textContent = worker.nationality || "Chilena";
+  const month = months[parseInt(monthNumber) - 1];
 
-    alert("Contrato completado correctamente.");
+  document.getElementById("c_day").textContent = day || "__";
+  document.getElementById("c_month").textContent = month || "__________";
+  document.getElementById("c_year").textContent = year || "____";
+  document.getElementById("c_nationality").textContent = worker.nationality || "Chilena";
+  document.getElementById("c_maritalStatus").textContent =
+    worker.maritalStatus || "______________________";
+
+  alert("Contrato completado correctamente.");
 }
 
 function generateMonthlySummary() {
@@ -990,6 +1066,10 @@ function showView(id) {
   });
 
   document.getElementById(id).classList.remove("hidden");
+
+  if (id === "viewContract") {
+    loadWorkers();
+  }
 }
 
 // =============================
@@ -998,7 +1078,7 @@ function showView(id) {
 function toggleSubmenu(id) {
   const submenu = document.getElementById(id);
   const currentDisplay = window.getComputedStyle(submenu).display;
-  
+
   if (currentDisplay === "none") {
     submenu.style.display = "block";
   } else {
@@ -1042,10 +1122,24 @@ async function deleteWorker() {
   workers.splice(index, 1);
   localStorage.setItem("workers", JSON.stringify(workers));
 
+  // 🔹 2.1 Eliminar historial asociado
+  const { error: historyError } = await supabaseClient
+    .from("history")
+    .delete()
+    .eq("rut", worker.rut);
+
+  if (historyError) {
+    console.error("Error eliminando historial en Supabase:", historyError.message);
+  }
+
+  history = history.filter((r) => r.rut !== worker.rut);
+  localStorage.setItem("history", JSON.stringify(history));
+
   // 🔹 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
+  renderHistory();
 
   alert("Trabajador eliminado correctamente.");
 }
@@ -1199,10 +1293,11 @@ function exportMonthlyGeneralExcel() {
 // =============================
 let currentCalendarDate = new Date();
 let selectedDays = new Set();
+let pendingCalendarMode = false;
 
 function showCalendar(year = null, month = null) {
   const workerIndex = document.getElementById("workerWeekly").value;
-  
+
   if (!workerIndex) {
     document.getElementById("calendarContainer").innerHTML = "";
     return;
@@ -1215,39 +1310,39 @@ function showCalendar(year = null, month = null) {
   } else {
     currentCalendarDate = new Date(year, month);
   }
-  
+
   const monthNum = month;
-  
+
   // Generar todos los días del mes
   const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
   const firstDay = new Date(year, monthNum, 1).getDay();
-  
-  const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 
-                      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const dayNames = ['do', 'lu', 'ma', 'mi', 'ju', 'vi', 'sá'];
 
   let html = "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
-  
+
   // Header con navegación
   html += "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
   html += "<button type='button' onclick='changeMonth(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
   html += "<span style='font-weight: bold; text-transform: capitalize;'>" + monthNames[monthNum] + " de " + year + "</span>";
   html += "<button type='button' onclick='changeMonth(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
   html += "</div>";
-  
+
   // Calendario
   html += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
-  
+
   // Encabezados de días
   dayNames.forEach(day => {
     html += "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" + day + "</div>";
   });
-  
+
   // Espacios vacíos antes del primer día
   for (let i = 0; i < firstDay; i++) {
     html += "<div style='padding: 8px;'></div>";
   }
-  
+
   // Días del mes
   for (let day = 1; day <= daysInMonth; day++) {
     const monthStr = String(monthNum + 1).padStart(2, '0');
@@ -1256,22 +1351,26 @@ function showCalendar(year = null, month = null) {
     const bgColor = isSelected ? '#1a73e8' : 'transparent';
     const textColor = isSelected ? 'white' : '#000';
     const fontWeight = isSelected ? 'bold' : 'normal';
-    
+
     html += "<div onclick='toggleDay(\"" + dateStr + "\")' style='text-align: center; padding: 8px; cursor: pointer; border-radius: 50%; background: " + bgColor + "; color: " + textColor + "; font-weight: " + fontWeight + "; transition: all 0.2s;' onmouseover='this.style.backgroundColor=\"" + (isSelected ? '#1557b0' : '#f0f0f0') + "\"' onmouseout='this.style.backgroundColor=\"" + bgColor + "\"'>";
     html += day;
     html += "</div>";
   }
-  
+
   html += "</div>";
-  
+
   // Botones inferiores
   html += "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
-  html += "<button type='button' onclick='clearSelectedDays()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+  if (pendingCalendarMode) {
+    html += "<button type='button' onclick='exitPendingCalendar()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 600;'>Volver</button>";
+  } else {
+    html += "<button type='button' onclick='clearSelectedDays()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+  }
   html += "<button type='button' onclick='todayDate()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
   html += "</div>";
-  
+
   html += "</div>";
-  
+
   document.getElementById("calendarContainer").innerHTML = html;
 }
 
@@ -1294,11 +1393,58 @@ function todayDate() {
   showCalendar();
 }
 
+function exitPendingCalendar() {
+  pendingCalendarMode = false;
+  selectedDays.clear();
+  document.getElementById("calendarContainer").innerHTML = "";
+  document.getElementById("weeklyResult").innerHTML = "";
+  showView("viewPagos");
+}
+
+function showPendingDaysCalendar(rut, dates) {
+  if (!Array.isArray(dates) || dates.length === 0) {
+    alert("No hay días pendientes.");
+    return;
+  }
+
+  const workerIndex = workers.findIndex((w) => w.rut === rut);
+  if (workerIndex === -1) {
+    alert("Trabajador no encontrado.");
+    return;
+  }
+
+  document.getElementById("workerWeekly").value = workerIndex;
+  document.getElementById("searchWorkerWeekly").value =
+    workers[workerIndex].name || "";
+  document.getElementById("workerWeeklyList").style.display = "none";
+  document.getElementById("workerWeeklyList").innerHTML = "";
+
+  pendingCalendarMode = true;
+  selectedDays.clear();
+  dates.forEach((dateStr) => {
+    if (dateStr) {
+      selectedDays.add(dateStr);
+    }
+  });
+
+  const firstDate = dates[0];
+  if (firstDate) {
+    const [year, month] = firstDate.split("-").map(Number);
+    if (year && month) {
+      currentCalendarDate = new Date(year, month - 1, 1);
+    }
+  }
+
+  showView("viewWeekly");
+  document.getElementById("weeklyResult").innerHTML = "";
+  showCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+}
+
 // Función para cambiar de mes
 function changeMonth(direction) {
   const year = currentCalendarDate.getFullYear();
   const month = currentCalendarDate.getMonth();
-  
+
   const newDate = new Date(year, month + direction);
   showCalendar(newDate.getFullYear(), newDate.getMonth());
 }
@@ -1314,7 +1460,7 @@ function generateWeeklySummary() {
   }
 
   const worker = workers[workerIndex];
-  
+
   // Obtener días seleccionados del Set
   const selectedDates = Array.from(selectedDays);
 
@@ -1344,7 +1490,7 @@ function generateWeeklySummary() {
   let total = 0;
 
   let html = "<h3>Detalle de Días Seleccionados</h3>";
-  
+
   html += "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
 
   html += "<table>";
@@ -1354,7 +1500,7 @@ function generateWeeklySummary() {
 
   records.forEach((r) => {
     total += r.total;
-    
+
     // Encontrar el índice real en history
     const index = history.findIndex(
       (h) =>
@@ -1496,7 +1642,7 @@ async function deleteProductionByIndex(index) {
   if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
   const record = history[index];
-  
+
   // Eliminar de Supabase si tiene id
   if (record.id) {
     const { error } = await supabaseClient
@@ -1527,7 +1673,7 @@ async function deleteFromWeeklySummary(index) {
   if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
   const record = history[index];
-  
+
   // Eliminar de Supabase si tiene id
   if (record.id) {
     const { error } = await supabaseClient
@@ -1626,85 +1772,182 @@ async function markAllWeeklyPaid(state) {
 
 function generatePagosResumen() {
 
-    if (history.length === 0) {
-        alert("No hay registros.");
-        return;
+  const selectedRut =
+    document.getElementById("filterPagosWorker")?.value ||
+    document.getElementById("workerResumenSelect")?.value ||
+    "";
+
+  if (history.length === 0) {
+    alert("No hay registros.");
+    return;
+  }
+
+  const resumenTrabajador = {};
+  const resumenFundo = {};
+
+  history
+    .filter(r => !selectedRut || r.rut === selectedRut)
+    .forEach(r => {
+      const totalValue = Number.isFinite(Number(r.total)) ? Number(r.total) : 0;
+      const pagado = Boolean(r.paid);
+      const fundo = (r.fundo && r.fundo.trim()) ? r.fundo.trim() : "Sin fundo";
+
+      // ===== POR TRABAJADOR =====
+      if (!resumenTrabajador[r.rut]) {
+        resumenTrabajador[r.rut] = {
+          rut: r.rut,
+          name: r.name,
+          trabajado: 0,
+          pagado: 0,
+          pendiente: 0,
+          diasPendientes: new Set(),
+          laboresPendientes: {}
+        };
+      }
+
+      resumenTrabajador[r.rut].trabajado += totalValue;
+
+      if (pagado) {
+        resumenTrabajador[r.rut].pagado += totalValue;
+      } else {
+        resumenTrabajador[r.rut].pendiente += totalValue;
+        resumenTrabajador[r.rut].diasPendientes.add(r.date);
+
+        if (!resumenTrabajador[r.rut].laboresPendientes[r.labor]) {
+          resumenTrabajador[r.rut].laboresPendientes[r.labor] = 0;
+        }
+        resumenTrabajador[r.rut].laboresPendientes[r.labor] += totalValue;
+      }
+
+      // ===== POR FUNDO =====
+      if (!resumenFundo[fundo]) {
+        resumenFundo[fundo] = {
+          trabajado: 0,
+          pagado: 0,
+          pendiente: 0
+        };
+      }
+
+      resumenFundo[fundo].trabajado += totalValue;
+
+      if (pagado) {
+        resumenFundo[fundo].pagado += totalValue;
+      } else {
+        resumenFundo[fundo].pendiente += totalValue;
+      }
+
+    });
+
+  let html = "<h3>Por Trabajador</h3>";
+
+  html += "<table>";
+  html += "<tr>";
+
+  html += "<th>";
+  html += "<select id='workerResumenSelect' onchange='generatePagosResumen()'>";
+  html += "<option value=''>-- Todos --</option>";
+
+  workers.forEach(w => {
+    html += "<option value='" + w.rut + "'>" + w.name + "</option>";
+  });
+
+  html += "</select>";
+  html += "</th>";
+
+  html += "<th>Total</th>";
+  html += "<th>Pagado</th>";
+  html += "<th>Pendiente</th>";
+  html += "<th>Días Pendientes</th>";
+  html += "<th>Labor Pendiente</th>";
+
+  html += "</tr>";
+
+  Object.values(resumenTrabajador).forEach(w => {
+
+    let laboresTexto = "";
+
+    Object.entries(w.laboresPendientes).forEach(([labor, total]) => {
+      laboresTexto += labor + " ($" + total.toLocaleString("es-CL") + ")<br>";
+    });
+
+    html += "<tr>";
+    html += "<td>" + w.name + "</td>";
+    html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
+    html += "<td style='color:green'>$" + w.pagado.toLocaleString("es-CL") + "</td>";
+    html += "<td style='color:red'>$" + w.pendiente.toLocaleString("es-CL") + "</td>";
+    if (w.diasPendientes.size > 0) {
+      const pendingDatesJson = JSON.stringify(Array.from(w.diasPendientes));
+      html +=
+        "<td>" +
+        "<button type='button' onclick='showPendingDaysCalendar(\"" +
+        w.rut +
+        "\", " +
+        pendingDatesJson +
+        ")' style='background: none; border: none; color: #1a73e8; cursor: pointer; font-weight: 600; text-decoration: underline;'>" +
+        w.diasPendientes.size +
+        "</button>" +
+        "</td>";
+    } else {
+      html += "<td>0</td>";
     }
+    html += "<td>" + (laboresTexto || "-") + "</td>";
+    html += "</tr>";
+  });
 
-    const resumenTrabajador = {};
-    const resumenFundo = {};
+  html += "</table>";
 
-    history.forEach(r => {
+  html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
+  html += "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
 
-        const total = Number(r.total);
-        const pagado = r.paid === true || r.paid === 1;
+  Object.entries(resumenFundo).forEach(([fundo, data]) => {
+    html += "<tr>";
+    html += "<td>" + fundo + "</td>";
+    html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
+    html += "<td style='color:green'>$" + data.pagado.toLocaleString("es-CL") + "</td>";
+    html += "<td style='color:red'>$" + data.pendiente.toLocaleString("es-CL") + "</td>";
+    html += "</tr>";
+  });
 
-        // ===== POR TRABAJADOR =====
-        if (!resumenTrabajador[r.rut]) {
-            resumenTrabajador[r.rut] = {
-                name: r.name,
-                trabajado: 0,
-                pagado: 0,
-                pendiente: 0
-            };
-        }
+  html += "</table>";
 
-        resumenTrabajador[r.rut].trabajado += total;
+  document.getElementById("pagosResult").innerHTML = html;
+}
 
-        if (pagado) {
-            resumenTrabajador[r.rut].pagado += total;
-        } else {
-            resumenTrabajador[r.rut].pendiente += total;
-        }
+function exitWeeklyToPagos() {
+  pendingCalendarMode = false;
+  selectedDays.clear();
+  const calendar = document.getElementById("calendarContainer");
+  const weeklyResult = document.getElementById("weeklyResult");
+  if (calendar) calendar.innerHTML = "";
+  if (weeklyResult) weeklyResult.innerHTML = "";
 
-        // ===== POR FUNDO =====
-        const fundo = r.fundo || "Sin fundo";
+  const workerWeekly = document.getElementById("workerWeekly");
+  const searchWeekly = document.getElementById("searchWorkerWeekly");
+  const listWeekly = document.getElementById("workerWeeklyList");
+  if (workerWeekly) workerWeekly.value = "";
+  if (searchWeekly) searchWeekly.value = "";
+  if (listWeekly) {
+    listWeekly.style.display = "none";
+    listWeekly.innerHTML = "";
+  }
 
-        if (!resumenFundo[fundo]) {
-            resumenFundo[fundo] = {
-                trabajado: 0,
-                pagado: 0,
-                pendiente: 0
-            };
-        }
+  showView("viewPagos");
+}
 
-        resumenFundo[fundo].trabajado += total;
+function clearWeeklySearch() {
+  const searchInput = document.getElementById("searchWorkerWeekly");
+  const resultsList = document.getElementById("workerWeeklyList");
+  const hiddenSelect = document.getElementById("workerWeekly");
+  const calendar = document.getElementById("calendarContainer");
+  const weeklyResult = document.getElementById("weeklyResult");
 
-        if (pagado) {
-            resumenFundo[fundo].pagado += total;
-        } else {
-            resumenFundo[fundo].pendiente += total;
-        }
-
-    });
-
-    let html = "<h3>Por Trabajador</h3>";
-    html += "<table><tr><th>Trabajador</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
-
-    Object.values(resumenTrabajador).forEach(w => {
-        html += "<tr>";
-        html += "<td>" + w.name + "</td>";
-        html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
-        html += "<td style='color:green'>$" + w.pagado.toLocaleString("es-CL") + "</td>";
-        html += "<td style='color:red'>$" + w.pendiente.toLocaleString("es-CL") + "</td>";
-        html += "</tr>";
-    });
-
-    html += "</table>";
-
-    html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
-    html += "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
-
-    Object.entries(resumenFundo).forEach(([fundo, data]) => {
-        html += "<tr>";
-        html += "<td>" + fundo + "</td>";
-        html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
-        html += "<td style='color:green'>$" + data.pagado.toLocaleString("es-CL") + "</td>";
-        html += "<td style='color:red'>$" + data.pendiente.toLocaleString("es-CL") + "</td>";
-        html += "</tr>";
-    });
-
-    html += "</table>";
-
-    document.getElementById("pagosResult").innerHTML = html;
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (resultsList) {
+    resultsList.style.display = "none";
+    resultsList.innerHTML = "";
+  }
+  if (calendar) calendar.innerHTML = "";
+  if (weeklyResult) weeklyResult.innerHTML = "";
+  selectedDays.clear();
 }

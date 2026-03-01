@@ -237,6 +237,7 @@ tr:hover {
   animation: fadeIn 0.3s ease;
   padding-top: 5px;
 }
+
 .view h2 {
   margin-top: 0;
 }
@@ -246,6 +247,7 @@ tr:hover {
     opacity: 0;
     transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -302,6 +304,7 @@ tr:hover {
 ============================ */
 
 @media print {
+
   /* ===== QUITAR MENÚ ===== */
   .layout {
     display: block !important;
@@ -316,12 +319,14 @@ tr:hover {
     margin: 0 !important;
     padding: 0 !important;
   }
+
   .titulo-contrato {
     margin-top: 0;
     padding-top: 0;
     text-align: center;
     font-size: 25px;
   }
+
   .contract,
   .card {
     padding-top: 0;
@@ -363,19 +368,23 @@ tr:hover {
     margin: 2px 0;
     text-align: justify;
   }
+
   .clausula {
     margin: 2px 0;
     line-height: 1.2;
   }
+
   #contractPrint h3 {
     margin: 6px 0 2px 0;
     font-size: 13px;
   }
+
   .signatures {
     display: flex;
     justify-content: space-between;
     margin-top: 60px;
   }
+
   .signatures {
     display: flex;
     justify-content: space-between;
@@ -387,13 +396,15 @@ tr:hover {
     width: 45%;
     display: flex;
     flex-direction: column;
-    align-items: center; /* 👈 centra TODO respecto a la línea */
+    align-items: center;
+    /* 👈 centra TODO respecto a la línea */
   }
 
   /* Línea de firma */
   .line {
     border-top: 1px solid black;
-    width: 250px; /* 👈 ancho fijo */
+    width: 250px;
+    /* 👈 ancho fijo */
     margin-bottom: 10px;
   }
 
@@ -401,7 +412,8 @@ tr:hover {
   .sign-name,
   .sign-role,
   .sign-rut {
-    width: 250px; /* 👈 mismo ancho que la línea */
+    width: 250px;
+    /* 👈 mismo ancho que la línea */
     text-align: center;
     margin: 2px 0;
   }
@@ -428,6 +440,7 @@ tr:hover {
 /* ===== PRINT ===== */
 
 @media print {
+
   /* Fondo blanco */
   body {
     background: white;
@@ -457,7 +470,8 @@ tr:hover {
 
   /* CONTRATO */
   #contractPrint {
-    position: relative; /* 👈 importante */
+    position: relative;
+    /* 👈 importante */
     top: 0;
     left: 0;
     width: 100%;
@@ -507,6 +521,7 @@ tr:hover {
   padding: 6px;
   text-align: center;
 }
+
 .liq-doc {
   background: white;
   padding: 40px;
@@ -531,6 +546,7 @@ tr:hover {
   border: 1px solid black;
   padding: 6px;
 }
+
 /* ============================= */
 /* 🖨️ PRINT RESUMEN SEMANAL */
 /* ============================= */
@@ -557,6 +573,7 @@ tr:hover {
 }
 
 @media print {
+
   /* ocultar filas no pagadas */
   .weeklyRow {
     display: none;
@@ -567,6 +584,7 @@ tr:hover {
     display: table-row;
   }
 }
+
 @media print {
   .paidCheckbox {
     display: none;
@@ -577,6 +595,7 @@ tr:hover {
     display: none;
   }
 }
+
 .company-review {
   margin-top: 20px;
   padding: 25px 30px;
@@ -603,6 +622,7 @@ tr:hover {
 
   font-size: 18px;
 }
+
 .company-header {
   display: flex;
   align-items: center;
@@ -633,6 +653,7 @@ tr:hover {
   font-size: 14px;
   opacity: 0.9;
 }
+
 .company-logo img {
   height: 80px;
 
@@ -644,6 +665,7 @@ tr:hover {
 
   border-radius: 8px;
 }
+
 #viewHome {
   margin-top: -15px;
 }
@@ -651,9 +673,11 @@ tr:hover {
 .company-header {
   margin-top: -15px;
 }
+
 .company-text {
   margin-top: -10px;
 }
+
 /* 1. Separar el header del botón "Cerrar sesión" */
 #viewHome .company-header {
   margin-bottom: 25px;
@@ -671,32 +695,34 @@ tr:hover {
 #viewHome .company-logo img {
   height: 110px;
 }
+
 @media print {
 
-    body * {
-        visibility: hidden;
-    }
+  body * {
+    visibility: hidden;
+  }
 
-    #finiquitoPrint,
-    #finiquitoPrint * {
-        visibility: visible;
-    }
+  #finiquitoPrint,
+  #finiquitoPrint * {
+    visibility: visible;
+  }
 
-    #finiquitoPrint {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background: white;
-        padding: 40px;
-    }
+  #finiquitoPrint {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 40px;
+  }
 
 }
+
 .sub-menu {
-    margin-left: 20px;
+  margin-left: 20px;
 }
 
 .sub-menu button {
-    font-size: 13px;
-    background: rgba(255,255,255,0.08);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.08);
 }
