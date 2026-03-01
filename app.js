@@ -141,6 +141,17 @@ function formatMoney(value) {
     })
   );
 }
+function formatCLPCurrency(value) {
+  if (!value) return "";
+
+  const numericValue = Number(
+    value.replace(/\$/g, "").replace(/\./g, "").replace(/,/g, "")
+  );
+
+  if (isNaN(numericValue)) return value;
+
+  return "$" + numericValue.toLocaleString("es-CL");
+}
 
 // =============================
 // 🔄 CARGAR RESPALDO SI NO HAY DATOS
@@ -239,6 +250,7 @@ async function initSystem() {
 // =============================
 
 async function addWorker() {
+  console.log("editIndexWorker:", editIndexWorker);
   const name = document.getElementById("workerName").value.trim();
 
   const rut = document.getElementById("workerRut").value.trim();
@@ -280,20 +292,21 @@ async function addWorker() {
     }
 
     if (editIndexWorker !== null) {
-      // ✏️ EDITAR EXISTENTE
       workers[editIndexWorker] = {
-        name,
-        rut,
-        birthDate,
-        maritalStatus,
-        address,
-        afp,
-        health,
-        position,
-        nationality,
-      };
-      
-      await supabaseClient
+  ...workers[editIndexWorker], // 👈 conserva id y otros campos
+  name,
+  rut,
+  birthDate,
+  maritalStatus,
+  address,
+  afp,
+  health,
+  position,
+  nationality,
+};
+      console.log("WORKER COMPLETO:", workers[editIndexWorker]);
+
+     const { data, error } = await supabaseClient
   .from("workers")
   .update({
     name,
@@ -306,7 +319,10 @@ async function addWorker() {
     position,
     nationality,
   })
-  .eq("rut", rut);
+  .eq("id", workers[editIndexWorker].id);
+
+console.log("UPDATE RESULT:", data);
+console.log("UPDATE ERROR:", error);
 
       editIndexWorker = null;
     } 
@@ -904,11 +920,21 @@ function generateContract() {
   document.getElementById("c_day").textContent = day || "__";
   document.getElementById("c_month").textContent = month || "__________";
   document.getElementById("c_year").textContent = year || "____";
+  document.getElementById("c_startDate").textContent = startDate || "___/___/20__";
   document.getElementById("c_nationality").textContent = worker.nationality || "Chilena";
-  document.getElementById("c_maritalStatus").textContent =
-    worker.maritalStatus || "______________________";
-    document.getElementById("c_birthDate").textContent =
-  worker.birthDate || "____ / ____ / ____";
+  document.getElementById("c_maritalStatus").textContent = worker.maritalStatus || "______________________";
+  document.getElementById("c_address").textContent = worker.address || "_________________________";
+  document.getElementById("c_afp").textContent = worker.afp || "______________";
+  document.getElementById("c_health").textContent = worker.health || "____________";
+
+  const salaryInput = document.getElementById("salary").value.trim();
+
+  const formattedSalary = formatCLPCurrency(salaryInput);
+
+  document.getElementById("c_salary").textContent =
+  formattedSalary || "____________";
+
+  document.getElementById("c_birthDate").textContent =worker.birthDate || "____ / ____ / ____";
 
   alert("Contrato completado correctamente.");
 }
