@@ -238,7 +238,7 @@ async function initSystem() {
 // 👨‍🌾 TRABAJADORES
 // =============================
 
-function addWorker() {
+async function addWorker() {
   const name = document.getElementById("workerName").value.trim();
 
   const rut = document.getElementById("workerRut").value.trim();
@@ -292,9 +292,25 @@ function addWorker() {
         position,
         nationality,
       };
+      
+      await supabaseClient
+  .from("workers")
+  .update({
+    name,
+    rut,
+    birthDate,
+    maritalStatus,
+    address,
+    afp,
+    health,
+    position,
+    nationality,
+  })
+  .eq("rut", rut);
 
       editIndexWorker = null;
-    } else {
+    } 
+    else {
       // ➕ NUEVO TRABAJADOR
       workers.push({
         name,
@@ -891,6 +907,8 @@ function generateContract() {
   document.getElementById("c_nationality").textContent = worker.nationality || "Chilena";
   document.getElementById("c_maritalStatus").textContent =
     worker.maritalStatus || "______________________";
+    document.getElementById("c_birthDate").textContent =
+  worker.birthDate || "____ / ____ / ____";
 
   alert("Contrato completado correctamente.");
 }
