@@ -726,3 +726,27 @@ tr:hover {
   font-size: 13px;
   background: rgba(255, 255, 255, 0.08);
 }
+/* ===== BOTÓN PAGAR ===== */
+
+.btn-pay {
+  background: linear-gradient(135deg, #27ae60, #1e8449);
+  color: white;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pay:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #1e8449, #27ae60);
+}
+
+/* Contenedor alineado derecha */
+.action-right {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}

@@ -1392,13 +1392,38 @@ function showCalendar(year = null, month = null) {
     const monthStr = String(monthNum + 1).padStart(2, '0');
     const dateStr = year + "-" + monthStr + "-" + String(day).padStart(2, '0');
     const isSelected = selectedDays.has(dateStr);
-    const bgColor = isSelected ? '#1a73e8' : 'transparent';
-    const textColor = isSelected ? 'white' : '#000';
-    const fontWeight = isSelected ? 'bold' : 'normal';
+    // 🔹 Detectar si ese día ya fue pagado
+    const isPaid = history.some(r => r.rut === workers[document.getElementById("workerWeekly").value]?.rut && r.date === dateStr &&
+    r.paid === true
+);
+    let bgColor = 'transparent';
+let textColor = '#000';
+let fontWeight = 'normal';
+let cursorStyle = 'pointer';
+let clickAction = 'toggleDay("' + dateStr + '")';
 
-    html += "<div onclick='toggleDay(\"" + dateStr + "\")' style='text-align: center; padding: 8px; cursor: pointer; border-radius: 50%; background: " + bgColor + "; color: " + textColor + "; font-weight: " + fontWeight + "; transition: all 0.2s;' onmouseover='this.style.backgroundColor=\"" + (isSelected ? '#1557b0' : '#f0f0f0') + "\"' onmouseout='this.style.backgroundColor=\"" + bgColor + "\"'>";
-    html += day;
-    html += "</div>";
+if (isPaid) {
+  bgColor = '#d5f5e3';      // verde claro
+  textColor = '#1e8449';
+  fontWeight = 'bold';
+  cursorStyle = 'not-allowed';
+  clickAction = '';         // no permite clic
+} else if (isSelected) {
+  bgColor = '#1a73e8';
+  textColor = 'white';
+  fontWeight = 'bold';
+}
+
+    html += "<div " +
+  (clickAction ? "onclick='" + clickAction + "'" : "") +
+  " style='text-align:center; padding:8px; border-radius:50%; background:" + bgColor +
+  "; color:" + textColor +
+  "; font-weight:" + fontWeight +
+  "; cursor:" + cursorStyle +
+  "; transition:all 0.2s;'>";
+
+html += isPaid ? "✔" : day;
+html += "</div>";
   }
 
   html += "</div>";
@@ -1568,7 +1593,13 @@ function generateWeeklySummary() {
 
   html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2 id='weeklyTotal'>Total: $" + total.toLocaleString("es-CL") + "</h2>";
-  html += "<button type='button' onclick='payWeekly()' style='margin-top:15px;background:#27ae60;'>💰 Pagar</button>";
+ html += `
+  <div class="action-right">
+    <button type="button" class="btn-pay" onclick="payWeekly()">
+      💰 Pagar
+    </button>
+  </div>
+`;
 
   document.getElementById("weeklyResult").innerHTML = html;
 }
@@ -1627,6 +1658,23 @@ async function payWeekly() {
         .eq("id", record.id);
     }
   }
+  // 🔹 GUARDAR REGISTRO EN TABLA payments
+
+const paymentRecord = {
+  rut: worker.rut,
+  name: worker.name,
+  total_paid: totalToPay,
+  payment_date: new Date().toISOString().split("T")[0],
+  dates_paid: selectedDates
+};
+
+const { error: paymentError } = await supabaseClient
+  .from("payments")
+  .insert([paymentRecord]);
+
+if (paymentError) {
+  console.error("Error guardando pago:", paymentError);
+}
 
   localStorage.setItem("history", JSON.stringify(history));
 
@@ -1678,6 +1726,49 @@ async function payWeekly() {
   );
 
   doc.save("Comprobante_Pago_" + worker.rut + ".pdf");
+
+  // 🔹 GENERAR EXCEL
+const workbook = XLSX.utils.book_new();
+
+const todayExcel = new Date().toLocaleDateString("es-CL");
+
+// Construir datos
+let excelData = [];
+
+// Encabezado empresa
+excelData.push(["COMPROBANTE DE PAGO SEMANAL"]);
+excelData.push([]);
+excelData.push(["Trabajador:", worker.name]);
+excelData.push(["RUT:", worker.rut]);
+excelData.push(["Fecha de pago:", todayExcel]);
+excelData.push([]);
+
+// Encabezado tabla
+excelData.push(["Fecha", "Fundo", "Labor", "Cantidad", "Total"]);
+
+// Filas detalle
+recordsToPay.forEach(r => {
+  excelData.push([
+    r.date,
+    r.fundo || "-",
+    r.labor,
+    r.quantity,
+    r.total
+  ]);
+});
+
+// Línea total
+excelData.push([]);
+excelData.push(["TOTAL PAGADO", "", "", "", totalToPay]);
+
+// Crear hoja
+const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+// Agregar hoja al libro
+XLSX.utils.book_append_sheet(workbook, worksheet, "Pago Semanal");
+
+// Descargar archivo
+XLSX.writeFile(workbook, "Pago_Semanal_" + worker.rut + ".xlsx");
 
   // Limpiar selección
   selectedDays.clear();
@@ -2095,4 +2186,78 @@ function clearWeeklySearch() {
   if (calendar) calendar.innerHTML = "";
   if (weeklyResult) weeklyResult.innerHTML = "";
   selectedDays.clear();
+}
+// =============================
+// 📂 HISTORIAL DE PAGOS
+// =============================
+
+async function loadPaymentsHistory() {
+
+  console.log("ENTRÓ A loadPaymentsHistory");
+
+  const container = document.getElementById("paymentsHistoryTable");
+
+  const { data, error } = await supabaseClient
+    .from("payments")
+    .select("*")
+    .order("payment_date", { ascending: false });
+
+  console.log("DATA PAYMENTS:", data);
+  console.log("ERROR PAYMENTS:", error);
+
+  if (error) {
+    container.innerHTML = "<p>Error cargando pagos.</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = "<p>No hay pagos registrados.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Fecha</th>
+        <th>Trabajador</th>
+        <th>Total Pagado</th>
+      </tr>
+  `;
+
+  data.forEach(p => {
+    html += `
+      <tr>
+        <td>${p.payment_date}</td>
+        <td>${p.name}</td>
+        <td>$${Number(p.total_paid).toLocaleString("es-CL")}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+// 🔷 RESUMEN SUPERIOR
+const summaryContainer = document.getElementById("paymentsSummary");
+
+let totalGeneral = 0;
+let workersSet = new Set();
+
+data.forEach(p => {
+  totalGeneral += Number(p.total_paid);
+  workersSet.add(p.rut);
+});
+
+summaryContainer.innerHTML = `
+  <div>
+    <strong>Total Pagado:</strong> $${totalGeneral.toLocaleString("es-CL")}
+  </div>
+  <div>
+    <strong>Cantidad de Pagos:</strong> ${data.length}
+  </div>
+  <div>
+    <strong>Trabajadores Pagados:</strong> ${workersSet.size}
+  </div>
+`;
+
+  container.innerHTML = html;
 }

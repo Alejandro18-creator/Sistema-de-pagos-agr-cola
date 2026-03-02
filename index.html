@@ -59,6 +59,16 @@
         <button type="button" onclick="showView('viewHistory')">
           • Ver Historial Completo
         </button>
+
+
+
+
+
+
+
+
+
+
       </div>
       <button type="button" onclick="showView('viewLiquidation')">
         📄 Liquidación
@@ -74,6 +84,9 @@
       <button type="button" onclick="showView('viewHistory')">
         📜 Historial
       </button>
+      <button onclick="showView('viewPaymentsHistory'); loadPaymentsHistory();">
+        📂 Historial de Pagos
+         </button>
       <button type="button" onclick="showView('viewBackup')">
         💾 Respaldo
       </button>
@@ -148,6 +161,8 @@
         </select>
         <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)" />
         <input type="text" id="workerNationality" placeholder="Nacionalidad">
+        <label for="workerIdPhoto">Foto Carnet</label>
+        <input type="file" id="workerIdPhoto" accept="image/*" capture="environment">
         <input type="text" id="workerPosition" placeholder="Cargo" value="Trabajador Agricola" readonly />
         <button type="button" onclick="addWorker()">Guardar</button>
         <button type="button" onclick="clearWorkerForm()" style="background: #7f8c8d">Limpiar</button>
@@ -392,6 +407,23 @@
       <section class="card view hidden" id="viewPagos">
 
         <h2>Resumen Pagado / Pendiente</h2>
+        
+
+  <!-- 🔷 FILTROS -->
+  <div class="card">
+    <label>Filtrar por mes:</label>
+    <input type="month" id="filterPaymentsMonth" onchange="loadPaymentsHistory()" />
+
+    <label style="margin-top:10px;">Filtrar por trabajador:</label>
+    <select id="filterPaymentsWorker" onchange="loadPaymentsHistory()">
+      <option value="">-- Todos --</option>
+    </select>
+  </div>
+
+  <!-- 🔷 TABLA -->
+  <div class="card">
+    <div id="paymentsHistoryTablePanel"></div>
+  </div>
 
         <button onclick="generatePagosResumen()">
           Calcular Resumen
@@ -400,6 +432,16 @@
         <div id="pagosResult"></div>
 
       </section>
+
+      <section class="card view hidden" id="viewPaymentsHistory">
+
+  <h2>📂 Historial de Pagos</h2>
+
+  <div id="paymentsSummary"></div>
+
+  <div id="paymentsHistoryTable"></div>
+
+</section>
 
       <!-- HISTORIAL -->
       <section class="card view hidden" id="viewHistory">
@@ -483,6 +525,7 @@
 
   <!-- LIBRERÍA PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
