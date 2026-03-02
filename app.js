@@ -1496,6 +1496,7 @@ function changeMonth(direction) {
 // 📊 RESUMEN SEMANAL - GENERAR CON DÍAS SELECCIONADOS
 // =============================
 function generateWeeklySummary() {
+
   const workerIndex = document.getElementById("workerWeekly").value;
 
   if (workerIndex === "") {
@@ -1538,14 +1539,11 @@ function generateWeeklySummary() {
   html += "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
 
   html += "<table>";
-
-  html +=
-    "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
+  html += "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
 
   records.forEach((r) => {
     total += r.total;
 
-    // Encontrar el índice real en history
     const index = history.findIndex(
       (h) =>
         h.rut === r.rut &&
@@ -1557,30 +1555,133 @@ function generateWeeklySummary() {
     );
 
     html += "<tr class='weeklyRow'>";
-
     html += "<td>" + r.date + "</td>";
     html += "<td>" + (r.fundo || "-") + "</td>";
     html += "<td>" + r.labor + "</td>";
     html += "<td>" + r.quantity + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
     html += "<td><button style='background:#c0392b' onclick='deleteFromWeeklySummary(" + index + ")'>🗑️</button></td>";
-
     html += "</tr>";
   });
 
   html += "</table>";
 
   html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
-  html +=
-    "<p><strong>Días pagados:</strong> <span id='paidDays'>" +
-    daysWorked +
-    "</span></p>";
-  html +=
-    "<h2 id='weeklyTotal'>Total: $" +
-    total.toLocaleString("es-CL") +
-    "</h2>";
+  html += "<h2 id='weeklyTotal'>Total: $" + total.toLocaleString("es-CL") + "</h2>";
+  html += "<button type='button' onclick='payWeekly()' style='margin-top:15px;background:#27ae60;'>💰 Pagar</button>";
 
   document.getElementById("weeklyResult").innerHTML = html;
+}
+
+async function payWeekly() {
+
+  const workerIndex = document.getElementById("workerWeekly").value;
+
+  if (workerIndex === "") {
+    alert("No hay trabajador seleccionado.");
+    return;
+  }
+
+  const worker = workers[workerIndex];
+
+  const selectedDates = Array.from(selectedDays);
+
+  if (selectedDates.length === 0) {
+    alert("No hay días seleccionados.");
+    return;
+  }
+
+  // Filtrar registros a pagar
+  const recordsToPay = history.filter(
+    (r) => r.rut === worker.rut && selectedDates.includes(r.date)
+  );
+
+  if (recordsToPay.length === 0) {
+    alert("No hay registros para pagar.");
+    return;
+  }
+
+  // 🔹 Calcular total UNA SOLA VEZ
+  let totalToPay = 0;
+  recordsToPay.forEach(r => totalToPay += r.total);
+
+  const confirmPayment = confirm(
+    "Se pagarán " + recordsToPay.length +
+    " registros.\nTotal: $" + totalToPay.toLocaleString("es-CL") +
+    "\n\n¿Confirmar pago?"
+  );
+
+  if (!confirmPayment) return;
+
+  // Marcar como pagado en memoria
+  recordsToPay.forEach(r => {
+    r.paid = true;
+  });
+
+  // 🔹 Actualizar en Supabase
+  for (const record of recordsToPay) {
+    if (record.id) {
+      await supabaseClient
+        .from("history")
+        .update({ paid: true })
+        .eq("id", record.id);
+    }
+  }
+
+  localStorage.setItem("history", JSON.stringify(history));
+
+  alert("Pago registrado correctamente.");
+
+  // 🔹 GENERAR PDF DETALLADO
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const today = new Date().toLocaleDateString("es-CL");
+
+  doc.setFontSize(16);
+  doc.text("COMPROBANTE DE PAGO SEMANAL", 20, 20);
+
+  doc.setFontSize(12);
+  doc.text("Trabajador: " + worker.name, 20, 35);
+  doc.text("RUT: " + worker.rut, 20, 43);
+  doc.text("Fecha de pago: " + today, 20, 51);
+
+  doc.text("Detalle:", 20, 65);
+
+  let y = 75;
+
+  recordsToPay.forEach((r) => {
+
+    const line =
+      r.date + " | " +
+      (r.fundo || "-") + " | " +
+      r.labor + " | " +
+      r.quantity + " | $" +
+      Number(r.total).toLocaleString("es-CL");
+
+    doc.text(line, 20, y);
+    y += 8;
+
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+  });
+
+  y += 10;
+
+  doc.setFontSize(14);
+  doc.text(
+    "TOTAL PAGADO: $" + totalToPay.toLocaleString("es-CL"),
+    20,
+    y
+  );
+
+  doc.save("Comprobante_Pago_" + worker.rut + ".pdf");
+
+  // Limpiar selección
+  selectedDays.clear();
+  document.getElementById("weeklyResult").innerHTML = "";
 }
 
 // =============================
