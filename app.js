@@ -326,6 +326,33 @@ console.log("UPDATE ERROR:", error);
 
       editIndexWorker = null;
     } 
+
+    // 🔷 FOTO CARNET (solo nuevo trabajador)
+let photoUrl = null;
+
+const fileInput = document.getElementById("workerIdPhoto");
+
+if (fileInput && fileInput.files.length > 0) {
+  const file = fileInput.files[0];
+  const fileName = Date.now() + "_" + file.name;
+
+  const { error } = await supabaseClient
+    .storage
+    .from("worker-documents")
+    .upload(fileName, file);
+
+  if (!error) {
+    const { data } = supabaseClient
+      .storage
+      .from("worker-documents")
+      .getPublicUrl(fileName);
+
+    photoUrl = data.publicUrl;
+  } else {
+    console.error("Error subiendo imagen:", error);
+  }
+}
+
     else {
       // ➕ NUEVO TRABAJADOR
       workers.push({
@@ -338,6 +365,7 @@ console.log("UPDATE ERROR:", error);
         health,
         position,
         nationality,
+        id_card_photo: photoUrl,
       });
 
       saveWorkerToCloud({
@@ -350,6 +378,7 @@ console.log("UPDATE ERROR:", error);
         health,
         position,
         nationality,
+        id_card_photo: photoUrl,
       });
     }
 
