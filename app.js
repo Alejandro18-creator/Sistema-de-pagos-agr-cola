@@ -341,6 +341,9 @@ if (fileInput && fileInput.files.length > 0) {
     .from("worker-documents")
     .upload(fileName, file);
 
+    console.log("UPLOAD ERROR:", error);
+    console.log("FILE NAME:", fileName);
+
   if (!error) {
     const { data } = supabaseClient
       .storage
