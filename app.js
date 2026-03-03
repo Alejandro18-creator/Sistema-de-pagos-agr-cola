@@ -251,153 +251,126 @@ async function initSystem() {
 
 async function addWorker() {
   console.log("editIndexWorker:", editIndexWorker);
+
   const name = document.getElementById("workerName").value.trim();
-
   const rut = document.getElementById("workerRut").value.trim();
-
   const birthDate = document.getElementById("workerBirthDate").value.trim();
   const maritalStatus = document.getElementById("workerMaritalStatus").value.trim();
-
   const address = document.getElementById("workerAddress").value.trim();
   const afp = document.getElementById("workerAFP").value.trim();
-
   const health = document.getElementById("workerHealth").value.trim();
-
   const position = document.getElementById("workerPosition").value.trim();
   const nationality = document.getElementById("workerNationality").value.trim();
 
-
+  let photoUrl = null;
 
   if (!name || !rut) {
-    alert(
-      "Falta completar campos obligatorios (Nombre, RUT y Fecha de ingreso).",
-    );
+    alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
-  } else {
-    let exists = false;
-
-    if (editIndexWorker === null) {
-      // Solo validar duplicado si es nuevo
-      exists = workers.some((w) => w.rut === rut);
-    } else {
-      // Validar duplicado excluyendo el editado
-      exists = workers.some(
-        (w, index) => w.rut === rut && index != editIndexWorker,
-      );
-    }
-
-    if (exists) {
-      alert("Trabajador ya existe.");
-      return;
-    }
-
-    if (editIndexWorker !== null) {
-      workers[editIndexWorker] = {
-  ...workers[editIndexWorker], // 👈 conserva id y otros campos
-  name,
-  rut,
-  birthDate,
-  maritalStatus,
-  address,
-  afp,
-  health,
-  position,
-  nationality,
-};
-      console.log("WORKER COMPLETO:", workers[editIndexWorker]);
-
-     const { data, error } = await supabaseClient
-  .from("workers")
-  .update({
-    name,
-    rut,
-    birthDate,
-    maritalStatus,
-    address,
-    afp,
-    health,
-    position,
-    nationality,
-  })
-  .eq("id", workers[editIndexWorker].id);
-
-console.log("UPDATE RESULT:", data);
-console.log("UPDATE ERROR:", error);
-
-      editIndexWorker = null;
-    } 
-
-    // 🔷 FOTO CARNET (solo nuevo trabajador)
-let photoUrl = null;
-
-const fileInput = document.getElementById("workerIdPhoto");
-
-if (fileInput && fileInput.files.length > 0) {
-  const file = fileInput.files[0];
-  const fileName = Date.now() + "_" + file.name;
-
-  const { error } = await supabaseClient
-    .storage
-    .from("worker-documents")
-    .upload(fileName, file);
-
-    console.log("UPLOAD ERROR:", error);
-    console.log("FILE NAME:", fileName);
-
-  if (!error) {
-  const publicUrlData = supabaseClient
-    .storage
-    .from("worker-documents")
-    .getPublicUrl(fileName);
-
-  photoUrl = publicUrlData.data.publicUrl;
-
-  console.log("PHOTO URL GENERADA:", photoUrl);
-}
-  else {
-    console.error("Error subiendo imagen:", error);
   }
-}
 
-    if (editIndexWorker === null) {
-      // ➕ NUEVO TRABAJADOR
-      workers.push({
-        name,
-        rut,
-        birthDate,
-        maritalStatus,
-        address,
-        afp,
-        health,
-        position,
-        nationality,
-        id_card_photo: photoUrl,
-      });
+  // 🔹 Subir imagen si existe
+  const fileInput = document.getElementById("workerIdPhoto");
+  if (fileInput && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const fileName = Date.now() + "_" + file.name;
+    const filePath = rut + "/" + fileName;
 
-      console.log("PHOTO URL FINAL:", photoUrl);
+    const { error: uploadError } = await supabaseClient
+      .storage
+      .from("worker-files")
+      .upload(filePath, file);
 
-      saveWorkerToCloud({
-        name,
-        rut,
-        birthDate,
-        maritalStatus,
-        address,
-        afp,
-        health,
-        position,
-        nationality,
-        id_card_photo: photoUrl,
-      });
+    console.log("UPLOAD ERROR:", uploadError);
+
+    if (!uploadError) {
+      const publicUrlData = supabaseClient
+        .storage
+        .from("worker-files")
+        .getPublicUrl(filePath);
+
+      photoUrl = publicUrlData.data.publicUrl;
+      console.log("PHOTO URL GENERADA:", photoUrl);
+    } else {
+      console.error("Error subiendo imagen:", uploadError);
     }
+  }
 
-    alert("Trabajador guardado.");
+  // 🔹 EDICIÓN
+  if (editIndexWorker !== null) {
+
+    workers[editIndexWorker] = {
+      ...workers[editIndexWorker],
+      name,
+      rut,
+      birthDate,
+      maritalStatus,
+      address,
+      afp,
+      health,
+      position,
+      nationality,
+      id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
+    };
+    console.log("VALOR FINAL photoUrl:", photoUrl);
+    const { data, error } = await supabaseClient
+      .from("workers")
+      .update({
+        name,
+        rut,
+        birthDate,
+        maritalStatus,
+        address,
+        afp,
+        health,
+        position,
+        nationality,
+        id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
+      })
+      .eq("id", workers[editIndexWorker].id);
+
+    console.log("UPDATE RESULT:", data);
+    console.log("UPDATE ERROR:", error);
+
+    editIndexWorker = null;
+  }
+
+  // 🔹 NUEVO TRABAJADOR
+  else {
+
+    const newWorker = {
+      name,
+      rut,
+      birthDate,
+      maritalStatus,
+      address,
+      afp,
+      health,
+      position,
+      nationality,
+      id_card_photo: photoUrl,
+    };
+
+    workers.push(newWorker);
+
+    const { error } = await supabaseClient
+      .from("workers")
+      .insert([newWorker]);
+
+    if (error) {
+      console.error("Error guardando en nube:", error.message);
+    } else {
+      console.log("Trabajador guardado en Supabase");
+    }
   }
 
   localStorage.setItem("workers", JSON.stringify(workers));
 
-  clearWorkerInputs();
+  clearWorkerForm();
   loadWorkers();
   renderWorkersTable();
+
+  alert("Trabajador guardado correctamente.");
 }
 
 function loadWorkerToEdit() {
@@ -518,15 +491,25 @@ function renderWorkersTable() {
   }
 
   let html = "<div class='table-container'><table>";
-  html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th></tr>";
+  html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th></tr>";
 
   workers.forEach((w) => {
-    html += "<tr>";
-    html += "<td>" + w.name + "</td>";
-    html += "<td>" + w.rut + "</td>";
-    html += "<td>" + (w.address || "-") + "</td>";
-    html += "</tr>";
-  });
+  html += "<tr>";
+  html += "<td>" + w.name + "</td>";
+  html += "<td>" + w.rut + "</td>";
+  html += "<td>" + (w.address || "-") + "</td>";
+
+  html += "<td>";
+  if (w.id_card_photo) {
+    html += "<img src='" + w.id_card_photo + "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
+  } 
+  else {
+    html += "—";
+  }
+  html += "</td>";
+
+  html += "</tr>";
+});
 
   html += "</table></div>";
 
