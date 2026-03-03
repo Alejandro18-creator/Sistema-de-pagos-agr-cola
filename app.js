@@ -345,18 +345,21 @@ if (fileInput && fileInput.files.length > 0) {
     console.log("FILE NAME:", fileName);
 
   if (!error) {
-    const { data } = supabaseClient
-      .storage
-      .from("worker-documents")
-      .getPublicUrl(fileName);
+  const publicUrlData = supabaseClient
+    .storage
+    .from("worker-documents")
+    .getPublicUrl(fileName);
 
-    photoUrl = data.publicUrl;
-  } else {
+  photoUrl = publicUrlData.data.publicUrl;
+
+  console.log("PHOTO URL GENERADA:", photoUrl);
+}
+  else {
     console.error("Error subiendo imagen:", error);
   }
 }
 
-    else {
+    if (editIndexWorker === null) {
       // ➕ NUEVO TRABAJADOR
       workers.push({
         name,
@@ -370,6 +373,8 @@ if (fileInput && fileInput.files.length > 0) {
         nationality,
         id_card_photo: photoUrl,
       });
+
+      console.log("PHOTO URL FINAL:", photoUrl);
 
       saveWorkerToCloud({
         name,
