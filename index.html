@@ -234,10 +234,10 @@
             de trabajo de temporada o de faena transitoria.
           </p>
           <p class="clausula">
-            <b>PRIMERO:</b>
-            El trabajador prestará sus servicios como Trabajador Agrícola en
-            Avda Miguel Vial Echenique s/n comuna de Coltauco.
-          </p>
+          <b>PRIMERO:</b>
+El trabajador prestará sus servicios como Trabajador en
+<span id="c_faena">________________________</span>.
+</p>
           <p class="clausula">
             <b>SEGUNDO:</b>
             El presente contrato se entenderá terminado automáticamente, en la
@@ -331,10 +331,11 @@
 
             <!-- TRABAJADOR -->
             <div class="sign">
-              <div class="line"></div>
+  <div class="line"></div>
 
-              <p class="sign-name">TRABAJADOR</p>
-            </div>
+  <p class="sign-name" id="c_workerSign">________________</p>
+  <p class="sign-role">TRABAJADOR</p>
+</div>
           </div>
         </div>
         <button class="no-print" onclick="window.print()">🖨️ Imprimir Contrato</button>
@@ -457,6 +458,31 @@
         <input type="file" id="importFile" style="display: none" onchange="importData(event)" />
         <button type="button" onclick="document.getElementById('importFile').click()">Importar Respaldo</button>
       </section>
+      <section class="card view hidden" id="viewWorkerFolder">
+
+      <h2>📂 Carpeta del Trabajador</h2>
+      <p><strong>Nombre:</strong> <span id="folderWorkerName"></span></p>
+<p><strong>RUT:</strong> <span id="folderWorkerRut"></span></p>
+
+  <p>Aquí aparecerán los documentos del trabajador.</p>
+  <h3>Documentos</h3>
+
+<div id="workerDocuments">
+  <p>No hay documentos aún.</p>
+</div>
+<br>
+
+<input type="file" id="workerFileUpload">
+
+<button onclick="uploadWorkerDocument()">
+  ⬆ Subir documento
+</button>
+
+  <button onclick="showView('viewWorkersDB')">
+    ← Volver a trabajadores
+  </button>
+
+</section>
       <section class="card view hidden" id="viewFiniquito">
 
         <div id="finiquitoPrint">
@@ -469,7 +495,6 @@
             con domicilio en 1 SUR 690 OF 815 EDIFICIO OFICINA PLAZA MAULE,
             y el trabajador que se indica por la otra, se acuerda el siguiente finiquito:
           </p>
-
           <p>
             <strong>PRIMERO:</strong>
             Don(a) ___________________________________________,

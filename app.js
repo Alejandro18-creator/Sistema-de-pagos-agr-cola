@@ -38,8 +38,17 @@ async function saveWorkerToCloud(worker) {
   const { error } = await supabaseClient.from("workers").insert([worker]);
 
   if (error) {
-    console.error("Error guardando en nube:", error.message);
-  } else {
+
+  if (error.message.includes("duplicate key")) {
+    alert("Este RUT ya está registrado.");
+    return;
+  }
+  console.error("Error guardando en nube:", error.message);
+  alert("Error guardando trabajador.");
+
+}
+  
+  else {
     console.log("Trabajador guardado en Supabase");
   }
 }
@@ -49,7 +58,8 @@ async function saveProductionToCloud(record) {
 
   if (error) {
     console.error("Error guardando producción:", error.message);
-  } else {
+  } 
+  else {
     console.log("Producción guardada en Supabase");
   }
 }
@@ -268,6 +278,13 @@ async function addWorker() {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
+  // 🔹 VALIDAR RUT DUPLICADO
+const rutExists = workers.some(w => w.rut === rut);
+
+if (rutExists && editIndexWorker === null) {
+  alert("Este RUT ya está registrado.");
+  return;
+}
 
   // 🔹 Subir imagen si existe
   const fileInput = document.getElementById("workerIdPhoto");
@@ -491,10 +508,12 @@ function renderWorkersTable() {
   }
 
   let html = "<div class='table-container'><table>";
-  html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th></tr>";
+  html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
 
-  workers.forEach((w) => {
+ workers.forEach((w) => {
+
   html += "<tr>";
+
   html += "<td>" + w.name + "</td>";
   html += "<td>" + w.rut + "</td>";
   html += "<td>" + (w.address || "-") + "</td>";
@@ -508,7 +527,13 @@ function renderWorkersTable() {
   }
   html += "</td>";
 
+  // 📁 BOTÓN CARPETA
+  html += "<td>";
+  html += "<button onclick=\"openWorkerFolder('" + w.rut + "')\">📁</button>";
+  html += "</td>";
+
   html += "</tr>";
+
 });
 
   html += "</table></div>";
@@ -753,9 +778,9 @@ function selectWorkerWeekly(index, name) {
   showCalendar();
 }
 
-function generateLiquidation() {
-  const workerIndex = document.getElementById("workerLiquidation").value;
+async function generateLiquidation() {
 
+  const workerIndex = document.getElementById("workerLiquidation").value;
   const month = document.getElementById("monthLiquidation").value;
 
   if (workerIndex === "" || !month) {
@@ -768,10 +793,9 @@ function generateLiquidation() {
   // ===== PRODUCCIÓN DEL MES =====
 
   const records = history.filter(
-    (r) => r.rut === worker.rut && r.date.startsWith(month),
+    (r) => r.rut === worker.rut && r.date.startsWith(month)
   );
 
-  // Ordenar de más antigua a más nueva
   records.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   if (records.length === 0) {
@@ -784,126 +808,159 @@ function generateLiquidation() {
   const semanaCorrida = Math.round(sueldoImponible * 0.1);
 
   const sueldoBase = Number(
-    (worker.baseSalary || "0").replace(/\$/g, "").replace(/\./g, ""),
+    (worker.baseSalary || "0").replace(/\$/g, "").replace(/\./g, "")
   );
 
-  // Gratificación (25% de imponible + base)
   const gratificacion = Math.round((sueldoBase + sueldoImponible) * 0.25);
 
   const totalHaberes =
     sueldoBase + sueldoImponible + semanaCorrida + gratificacion;
 
-  // ===== DESCUENTOS LEGALES =====
+  // ===== DESCUENTOS =====
 
   const anticipos = Number(
-    document.getElementById("advanceAmount").value.replace(/\./g, "") || 0,
+    document.getElementById("advanceAmount").value.replace(/\./g, "") || 0
   );
 
-  console.log("AFP trabajador:", worker.afp);
-  console.log("Tabla AFP:", afpRates);
-  console.log("Comisión encontrada:", afpRates[worker.afp]);
-
-  // =============================
-  // CÁLCULO AFP REAL
-  // =============================
-
   const afpName = worker.afp || "";
-
   const comisionAFP = afpRates[afpName] || 0;
-
   const porcentajeAFP = AFP_BASE + comisionAFP;
-  console.log("Porcentaje AFP real:", porcentajeAFP);
 
   const afp = Math.round(totalHaberes * porcentajeAFP);
-
   const salud = Math.round(totalHaberes * 0.07);
 
   const totalDescuentos = afp + salud + anticipos;
 
   const liquido = totalHaberes - totalDescuentos;
 
-  // ===== DOCUMENTO LEGAL =====
+  // ===== DOCUMENTO HTML =====
 
   const html = `
-        <div class="liq-doc">
+<div class="liq-doc">
 
-            <h1>LIQUIDACIÓN DE SUELDO</h1>
-            <h3>${month}</h3>
+<h1>LIQUIDACIÓN DE SUELDO</h1>
+<h3>${month}</h3>
 
-            <p><strong>Nombre:</strong> ${worker.name}</p>
-            <p><strong>RUT:</strong> ${worker.rut}</p>
-            <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
-            <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
-            <p><strong>Salud:</strong> ${worker.health || "-"}</p>
+<p><strong>Nombre:</strong> ${worker.name}</p>
+<p><strong>RUT:</strong> ${worker.rut}</p>
+<p><strong>Cargo:</strong> ${worker.position || "-"}</p>
+<p><strong>AFP:</strong> ${worker.afp || "-"}</p>
+<p><strong>Salud:</strong> ${worker.health || "-"}</p>
 
-            <hr>
+<hr>
 
-            <h3>HABERES IMPONIBLES</h3>
+<h3>HABERES IMPONIBLES</h3>
 
-            <table>
-                
-    <td>Sueldo Base</td>
-    <td>$${sueldoBase.toLocaleString("es-CL")}</td>
+<table>
+<tr>
+<td>Sueldo Base</td>
+<td>$${sueldoBase.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-    <td>Producción del Mes</td>
-    <td>$${sueldoImponible.toLocaleString("es-CL")}</td>
+<td>Producción del Mes</td>
+<td>$${sueldoImponible.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-    <td>Semana Corrida</td>
-    <td>${formatMoney(semanaCorrida)}</td>
+<td>Semana Corrida</td>
+<td>${formatMoney(semanaCorrida)}</td>
 </tr>
 
-    <tr>
-    <td>Gratificación Legal 25%</td>
-    <td>${formatMoney(gratificacion)}</td>
-</tr>
 <tr>
-    <th>Total Haberes</th>
-    <th>$${totalHaberes.toLocaleString("es-CL")}</th>
+<td>Gratificación Legal 25%</td>
+<td>${formatMoney(gratificacion)}</td>
 </tr>
-            </table>
 
-            <h3>DESCUENTOS</h3>
+<tr>
+<th>Total Haberes</th>
+<th>$${totalHaberes.toLocaleString("es-CL")}</th>
+</tr>
+</table>
 
-            <table>
-                <tr>
-                    <td>AFP ${(porcentajeAFP * 100).toFixed(2)}%</td>
-                    <td>$${afp.toLocaleString("es-CL")}</td>
-                </tr>
-                <tr>
-                    <td>Salud 7%</td>
-                    <td>$${salud.toLocaleString("es-CL")}</td>
-                </tr>
-                <tr>
-                
-                <td>Anticipos del Mes</td>
-                <td>${formatMoney(anticipos)}</td>
-                </tr>
-                <tr>
-                    <th>Total Descuentos</th>
-                    <th>$${totalDescuentos.toLocaleString("es-CL")}</th>
-                </tr>
-            </table>
+<h3>DESCUENTOS</h3>
 
-            <h2>
-                LÍQUIDO A PAGAR:
-               ${formatMoney(liquido)}
-            </h2>
+<table>
+<tr>
+<td>AFP ${(porcentajeAFP * 100).toFixed(2)}%</td>
+<td>$${afp.toLocaleString("es-CL")}</td>
+</tr>
 
-        </div>
-    `;
+<tr>
+<td>Salud 7%</td>
+<td>$${salud.toLocaleString("es-CL")}</td>
+</tr>
+
+<tr>
+<td>Anticipos del Mes</td>
+<td>${formatMoney(anticipos)}</td>
+</tr>
+
+<tr>
+<th>Total Descuentos</th>
+<th>$${totalDescuentos.toLocaleString("es-CL")}</th>
+</tr>
+</table>
+
+<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+
+</div>
+`;
 
   const container = document.getElementById("liquidationPrint");
-
   container.innerHTML = html;
   container.classList.remove("hidden");
 
-  document.getElementById("liquidationPrint").classList.remove("hidden");
+  // ===== CREAR PDF =====
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const contenido = document.getElementById("liquidationPrint").innerText;
+
+  const lineas = doc.splitTextToSize(contenido, 190);
+
+  let y = 20;
+
+  lineas.forEach((linea) => {
+
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.text(linea, 10, y);
+    y += 4;
+
+  });
+
+  // ===== CREAR ARCHIVO PDF =====
+
+  const pdfBlob = doc.output("blob");
+
+  const fileName = "liquidacion_" + month + ".pdf";
+  const filePath = worker.rut + "/" + fileName;
+
+  // ===== SUBIR A SUPABASE =====
+
+  const { error } = await supabaseClient
+    .storage
+    .from("worker-files")
+    .upload(filePath, pdfBlob, {
+      contentType: "application/pdf",
+      upsert: true
+    });
+
+  if (error) {
+    console.error("Error subiendo liquidación:", error);
+  } else {
+    console.log("Liquidación guardada en Supabase");
+  }
+
 }
-function generateContract() {
+
+
+async function generateContract() {
 
   const workerIndex = document.getElementById("workerContract").value;
 
@@ -912,11 +969,17 @@ function generateContract() {
     return;
   }
 
+  
+
   const worker = workers[workerIndex];
 
   // 🔹 COMPLETAR NOMBRE Y RUT
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
+  document.getElementById("c_faena").textContent =
+  document.getElementById("faena").value;
+  document.getElementById("c_workerSign").textContent = worker.name;
+
 
 
   // 🔹 AQUÍ VA EL PASO 2 👇
@@ -957,8 +1020,94 @@ function generateContract() {
   document.getElementById("c_birthDate").textContent =worker.birthDate || "____ / ____ / ____";
 
   alert("Contrato completado correctamente.");
+
+const { jsPDF } = window.jspdf;
+
+const doc = new jsPDF();
+
+/*TAMAÑO Y TIPO DE LETRAS*/
+doc.setFont("times", "normal");
+doc.setFontSize(12);   // letra más chica
+
+const title = document.querySelector("#contractPrint .titulo-contrato")?.innerText?.trim() || "Contrato de Trabajo de Temporada";
+const bodyParagraphs = Array.from(
+  document.querySelectorAll("#contractPrint p:not(.sign-name):not(.sign-role):not(.sign-rut)")
+)
+  .map((p) => p.innerText.trim())
+  .filter(Boolean);
+
+const contratoTexto = bodyParagraphs.join("\n\n");
+const lineas = doc.splitTextToSize(contratoTexto, 190); // menos márgenes
+
+let y = 15;
+
+doc.setFont("times", "bold");
+doc.text(title, 105, y, { align: "center" });
+doc.setFont("times", "normal");
+y += 8;
+
+lineas.forEach((linea) => {
+  if (y > 260) {
+    doc.addPage();
+    y = 15;
+  }
+
+  doc.text(linea, 10, y);
+  y += 4;   // menos espacio entre líneas
+});
+
+const pdfBlob = doc.output("blob");
+
+const fileName = "liquidacion_" + month + ".pdf";
+
+const filePath = worker.rut + "/" + fileName;
+
+const { error } = await supabaseClient
+  .storage
+  .from("worker-files")
+  .upload(filePath, pdfBlob, {
+    contentType: "application/pdf",
+    upsert: true
+  });
+
+if (error) {
+  console.error("Error subiendo liquidación:", error);
+} else {
+  console.log("Liquidación guardada en Supabase");
 }
 
+
+if (y > 250) {
+  doc.addPage();
+  y = 20;
+}
+
+const leftX = 20;
+const rightX = 120;
+const lineWidth = 70;
+
+y += 10;
+doc.line(leftX, y, leftX + lineWidth, y);
+doc.line(rightX, y, rightX + lineWidth, y);
+
+doc.setFontSize(11);
+doc.text("Servicios Agrícolas San Gerónimo SPA", leftX + lineWidth / 2, y + 6, { align: "center" });
+doc.text("EMPLEADOR", leftX + lineWidth / 2, y + 11, { align: "center" });
+doc.text("RUT: 78.018.478-7", leftX + lineWidth / 2, y + 16, { align: "center" });
+
+doc.text(worker.name || "________________", rightX + lineWidth / 2, y + 6, { align: "center" });
+doc.text("TRABAJADOR", rightX + lineWidth / 2, y + 11, { align: "center" });
+
+
+
+
+if (error) {
+  console.error("Error subiendo contrato:", error);
+} else {
+  console.log("Contrato guardado en Supabase");
+}
+
+ }
 function generateMonthlySummary() {
   const workerIndex = document.getElementById("workerMonthly").value;
 
@@ -2280,4 +2429,109 @@ summaryContainer.innerHTML = `
 `;
 
   container.innerHTML = html;
+}
+
+function openWorkerFolder(rut) {
+
+  const worker = workers.find(w => w.rut === rut);
+
+  if (!worker) return;
+
+  document.getElementById("folderWorkerName").textContent = worker.name;
+  document.getElementById("folderWorkerRut").textContent = worker.rut;
+
+  loadWorkerDocuments(rut);
+
+  showView("viewWorkerFolder");
+
+}
+async function uploadWorkerDocument() {
+
+  const fileInput = document.getElementById("workerFileUpload");
+
+  if (!fileInput.files.length) {
+    alert("Seleccione un archivo.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+
+  const rut = document.getElementById("folderWorkerRut").textContent;
+
+  const filePath = rut + "/" + Date.now() + "_" + file.name;
+
+  const { error } = await supabaseClient
+    .storage
+    .from("worker-files")
+    .upload(filePath, file);
+
+  if (error) {
+    console.error(error);
+    alert("Error subiendo archivo.");
+    return;
+  }
+
+  alert("Documento subido correctamente.");
+
+
+loadWorkerDocuments(rut);
+
+}
+async function loadWorkerDocuments(rut) {
+
+  const { data, error } = await supabaseClient
+    .storage
+    .from("worker-files")
+    .list(rut);
+
+  const container = document.getElementById("workerDocuments");
+
+  if (error) {
+    console.error(error);
+    container.innerHTML = "<p>Error cargando documentos.</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = "<p>No hay documentos aún.</p>";
+    return;
+  }
+
+  let html = "<ul>";
+
+  data.forEach(file => {
+
+    const publicUrl = supabaseClient
+      .storage
+      .from("worker-files")
+      .getPublicUrl(rut + "/" + file.name).data.publicUrl;
+
+    html += "<li>";
+html += "<a href='" + publicUrl + "' target='_blank'>" + file.name + "</a> ";
+html += "<button onclick=\"deleteWorkerDocument('" + rut + "','" + file.name + "')\">🗑</button>";
+html += "</li>";
+
+  });
+
+  html += "</ul>";
+
+  container.innerHTML = html;
+
+}
+async function deleteWorkerDocument(rut, fileName) {
+
+  if (!confirm("¿Eliminar este documento?")) return;
+
+  const { error } = await supabaseClient
+    .storage
+    .from("worker-files")
+    .remove([rut + "/" + fileName]);
+
+  if (error) { console.error(error); alert("Error eliminando documento."); return;
+  }
+
+  alert("Documento eliminado.");
+
+  loadWorkerDocuments(rut);
+
 }
