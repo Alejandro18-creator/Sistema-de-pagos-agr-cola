@@ -532,6 +532,7 @@ tr:hover {
   color: black;
   max-width: 800px;
   margin: auto;
+  font-size:11px;
 }
 
 .liq-doc h1,

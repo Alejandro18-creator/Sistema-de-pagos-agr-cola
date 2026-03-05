@@ -913,30 +913,22 @@ async function generateLiquidation() {
 
   // ===== CREAR PDF =====
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const contenido = document.getElementById("liquidationPrint").innerText;
-
-  const lineas = doc.splitTextToSize(contenido, 190);
-
-  let y = 20;
-
-  lineas.forEach((linea) => {
-
-    if (y > 280) {
-      doc.addPage();
-      y = 20;
-    }
-
-    doc.text(linea, 10, y);
-    y += 4;
-
+  const pdfBlob = await createPdfBlobFromElement(container, {
+    scale: 0.6,
+    styleText: `
+      .pdf-liquidacion { font-size: 11px; }
+      .pdf-liquidacion h1 { font-size: 18px; }
+      .pdf-liquidacion h2 { font-size: 14px; }
+      .pdf-liquidacion h3 { font-size: 12px; }
+      .pdf-liquidacion table td,
+      .pdf-liquidacion table th { padding: 4px; }
+    `,
+    className: "pdf-liquidacion"
   });
 
-  // ===== CREAR ARCHIVO PDF =====
-
-  const pdfBlob = doc.output("blob");
+  if (!pdfBlob) {
+    return;
+  }
 
   const fileName = "liquidacion_" + month + ".pdf";
   const filePath = worker.rut + "/" + fileName;
@@ -957,6 +949,229 @@ async function generateLiquidation() {
     console.log("Liquidación guardada en Supabase");
   }
 
+}
+
+async function createPdfBlobFromElement(element, options = {}) {
+  const { jsPDF } = window.jspdf || {};
+
+  if (!jsPDF) {
+    alert("No se encontró la librería PDF.");
+    return null;
+  }
+
+  if (!window.html2canvas) {
+    alert("No se encontró la librería de renderizado HTML para PDF.");
+    return null;
+  }
+
+  const doc = new jsPDF("p", "mm", "a4");
+
+  const { scale = 2, styleText = "", className = "" } = options;
+  let styleNode = null;
+
+  if (styleText) {
+    styleNode = document.createElement("style");
+    styleNode.setAttribute("data-pdf-style", "true");
+    styleNode.textContent = styleText;
+    document.head.appendChild(styleNode);
+  }
+
+  if (className) {
+    element.classList.add(className);
+  }
+
+  await doc.html(element, {
+  x: 10,
+  y: 10,
+  width: 190,
+  windowWidth: 1200,
+  html2canvas: {
+    scale: 0.6,
+    useCORS: true,
+    backgroundColor: "#ffffff"
+  }
+});
+
+  if (className) {
+    element.classList.remove(className);
+  }
+
+  if (styleNode) {
+    styleNode.remove();
+  }
+
+  return doc.output("blob");
+}
+
+function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
+  const printWindow = window.open("", "_blank");
+
+  if (!printWindow) {
+    alert("No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.");
+    return;
+  }
+
+  const baseStyles = `
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: white;
+      margin: 20px;
+      color: black;
+    }
+
+    .liquidacion-doc {
+      background: white;
+      padding: 30px;
+      margin-top: 20px;
+      color: black;
+      border-radius: 10px;
+    }
+
+    .liquidacion-doc h1,
+    .liquidacion-doc h3 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .liquidacion-doc table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .liquidacion-doc th,
+    .liquidacion-doc td {
+      border: 1px solid black;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .liq-doc {
+      background: white;
+      padding: 40px;
+      color: black;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .liq-doc h1,
+    .liq-doc h3 {
+      text-align: center;
+    }
+
+    .liq-doc table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .liq-doc td,
+    .liq-doc th {
+      border: 1px solid black;
+      padding: 6px;
+    }
+
+    #contractPrint {
+      background: white;
+      padding: 40px;
+      margin-top: 10px;
+      color: black;
+      line-height: 1;
+    }
+
+    #contractPrint p {
+      margin: 4px 0;
+      text-align: justify;
+    }
+
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .sign {
+      width: 45%;
+      text-align: center;
+    }
+
+    .line {
+      border-top: 1px solid black;
+      width: 250px;
+      margin: 0 auto 10px;
+    }
+
+    .sign-name,
+    .sign-role,
+    .sign-rut {
+      width: 250px;
+      text-align: center;
+      margin: 2px auto;
+    }
+
+    .sign-name {
+      font-weight: bold;
+    }
+
+    .sign-rut {
+      font-size: 12px;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+      }
+    }
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="es">
+      <head>
+        <meta charset="UTF-8" />
+        <title>${title}</title>
+        <style>${baseStyles}${extraStyles}</style>
+      </head>
+      <body>
+        ${contentHtml}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+}
+
+function printLiquidationScreen() {
+  const container = document.getElementById("liquidationPrint");
+
+  if (!container || !container.innerHTML.trim()) {
+    alert("Primero genere la liquidación para imprimir.");
+    return;
+  }
+
+  openScreenPrintWindow({
+    title: "Liquidación de Sueldo",
+    contentHtml: container.outerHTML
+  });
+}
+
+function printContractScreen() {
+  const container = document.getElementById("contractPrint");
+
+  if (!container || !container.innerHTML.trim()) {
+    alert("No hay contrato para imprimir.");
+    return;
+  }
+
+  openScreenPrintWindow({
+    title: "Contrato de Trabajo de Temporada",
+    contentHtml: container.outerHTML
+  });
 }
 
 
@@ -1021,60 +1236,30 @@ async function generateContract() {
 
   alert("Contrato completado correctamente.");
 
-const { jsPDF } = window.jspdf;
+  const contractContainer = document.getElementById("contractPrint");
+  const pdfBlob = await createPdfBlobFromElement(contractContainer);
 
-const doc = new jsPDF();
-
-/*TAMAÑO Y TIPO DE LETRAS*/
-doc.setFont("times", "normal");
-doc.setFontSize(12);   // letra más chica
-
-const title = document.querySelector("#contractPrint .titulo-contrato")?.innerText?.trim() || "Contrato de Trabajo de Temporada";
-const bodyParagraphs = Array.from(
-  document.querySelectorAll("#contractPrint p:not(.sign-name):not(.sign-role):not(.sign-rut)")
-)
-  .map((p) => p.innerText.trim())
-  .filter(Boolean);
-
-const contratoTexto = bodyParagraphs.join("\n\n");
-const lineas = doc.splitTextToSize(contratoTexto, 190); // menos márgenes
-
-let y = 15;
-
-doc.setFont("times", "bold");
-doc.text(title, 105, y, { align: "center" });
-doc.setFont("times", "normal");
-y += 8;
-
-lineas.forEach((linea) => {
-  if (y > 260) {
-    doc.addPage();
-    y = 15;
+  if (!pdfBlob) {
+    return;
   }
 
-  doc.text(linea, 10, y);
-  y += 4;   // menos espacio entre líneas
-});
+  const fileName = "liquidacion_" + month + ".pdf";
 
-const pdfBlob = doc.output("blob");
+  const filePath = worker.rut + "/" + fileName;
 
-const fileName = "liquidacion_" + month + ".pdf";
+  const { error } = await supabaseClient
+    .storage
+    .from("worker-files")
+    .upload(filePath, pdfBlob, {
+      contentType: "application/pdf",
+      upsert: true
+    });
 
-const filePath = worker.rut + "/" + fileName;
-
-const { error } = await supabaseClient
-  .storage
-  .from("worker-files")
-  .upload(filePath, pdfBlob, {
-    contentType: "application/pdf",
-    upsert: true
-  });
-
-if (error) {
-  console.error("Error subiendo liquidación:", error);
-} else {
-  console.log("Liquidación guardada en Supabase");
-}
+  if (error) {
+    console.error("Error subiendo contrato:", error);
+  } else {
+    console.log("Contrato guardado en Supabase");
+  }
 
 
 if (y > 250) {

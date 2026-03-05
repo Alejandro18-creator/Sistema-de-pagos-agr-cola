@@ -211,7 +211,7 @@
         <input type="month" id="monthLiquidation" />
         <input type="text" id="advanceAmount" placeholder="Anticipos del mes" />
         <button type="button" onclick="generateLiquidation()"> Generar Liquidación</button>
-        <button type="button" onclick="window.print()" class="no-print">🖨️ Imprimir Liquidación</button>
+        <button type="button" onclick="printLiquidationScreen()" class="no-print">🖨️ Imprimir Liquidación</button>
       </section>
 
       <!-- CONTRATO -->
@@ -338,7 +338,7 @@ El trabajador prestará sus servicios como Trabajador en
 </div>
           </div>
         </div>
-        <button class="no-print" onclick="window.print()">🖨️ Imprimir Contrato</button>
+        <button class="no-print" onclick="printContractScreen()">🖨️ Imprimir Contrato</button>
 
         <select id="workerContract">
           <option value="">-- Seleccionar trabajador --</option>
@@ -549,6 +549,7 @@ El trabajador prestará sus servicios como Trabajador en
   </div>
 
   <!-- LIBRERÍA PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
