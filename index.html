@@ -353,6 +353,8 @@ El trabajador prestará sus servicios como Trabajador en
         <input type="text" id="salary" placeholder="Sueldo / Trato" />
 
         <button type="button" onclick="generateContract()"> Generar Contrato </button>
+        
+
       </section>
 
       <!-- MENSUAL -->
@@ -489,6 +491,10 @@ El trabajador prestará sus servicios como Trabajador en
 
           <h2 style="text-align:center;">FINIQUITO TRABAJADOR</h2>
 
+          <select id="workerFiniquito">
+            <option value="">-- Seleccionar trabajador --</option>
+          </select>
+
           <p>
             En San Clemente, a ____ de __________________ de 20____,
             entre el empleador SERVICIO AGRÍCOLA SAN GERÓNIMO SPA,
@@ -542,6 +548,10 @@ El trabajador prestará sus servicios como Trabajador en
 
         <button class="no-print" onclick="window.print()">
           🖨️ Imprimir Finiquito
+        </button>
+
+        <button type="button" onclick="generateFiniquito()">
+        Generar Finiquito
         </button>
 
       </section>

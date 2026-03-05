@@ -54,14 +54,23 @@ async function saveWorkerToCloud(worker) {
 }
 
 async function saveProductionToCloud(record) {
-  const { error } = await supabaseClient.from("history").insert([record]);
+
+  const { data, error } = await supabaseClient
+    .from("history")
+    .insert([record])
+    .select()
+    .single();
 
   if (error) {
     console.error("Error guardando producción:", error.message);
-  } 
-  else {
-    console.log("Producción guardada en Supabase");
+    return;
   }
+
+  console.log("Producción guardada en Supabase");
+
+  // guardar el ID que genera Supabase
+  record.id = data.id;
+
 }
 
 async function loadWorkersFromCloud() {
@@ -913,24 +922,22 @@ async function generateLiquidation() {
 
   // ===== CREAR PDF =====
 
-  const pdfBlob = await createPdfBlobFromElement(container, {
-    scale: 0.6,
-    styleText: `
-      .pdf-liquidacion { font-size: 11px; }
-      .pdf-liquidacion h1 { font-size: 18px; }
-      .pdf-liquidacion h2 { font-size: 14px; }
-      .pdf-liquidacion h3 { font-size: 12px; }
-      .pdf-liquidacion table td,
-      .pdf-liquidacion table th { padding: 4px; }
+  const pdfBlob = await createPdfBlobFromHtml(html, {
+    extraStyles: `
+      .liq-doc {
+        max-width: 760px;
+        margin: 0 auto;
+      }
     `,
-    className: "pdf-liquidacion"
+    scale: 2
   });
 
   if (!pdfBlob) {
     return;
   }
 
-  const fileName = "liquidacion_" + month + ".pdf";
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const fileName = "liquidacion_" + month + "_" + stamp + ".pdf";
   const filePath = worker.rut + "/" + fileName;
 
   // ===== SUBIR A SUPABASE =====
@@ -951,67 +958,8 @@ async function generateLiquidation() {
 
 }
 
-async function createPdfBlobFromElement(element, options = {}) {
-  const { jsPDF } = window.jspdf || {};
-
-  if (!jsPDF) {
-    alert("No se encontró la librería PDF.");
-    return null;
-  }
-
-  if (!window.html2canvas) {
-    alert("No se encontró la librería de renderizado HTML para PDF.");
-    return null;
-  }
-
-  const doc = new jsPDF("p", "mm", "a4");
-
-  const { scale = 2, styleText = "", className = "" } = options;
-  let styleNode = null;
-
-  if (styleText) {
-    styleNode = document.createElement("style");
-    styleNode.setAttribute("data-pdf-style", "true");
-    styleNode.textContent = styleText;
-    document.head.appendChild(styleNode);
-  }
-
-  if (className) {
-    element.classList.add(className);
-  }
-
-  await doc.html(element, {
-  x: 10,
-  y: 10,
-  width: 190,
-  windowWidth: 1200,
-  html2canvas: {
-    scale: 0.6,
-    useCORS: true,
-    backgroundColor: "#ffffff"
-  }
-});
-
-  if (className) {
-    element.classList.remove(className);
-  }
-
-  if (styleNode) {
-    styleNode.remove();
-  }
-
-  return doc.output("blob");
-}
-
-function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
-  const printWindow = window.open("", "_blank");
-
-  if (!printWindow) {
-    alert("No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.");
-    return;
-  }
-
-  const baseStyles = `
+function getDocumentBaseStyles() {
+  return `
     body {
       font-family: "Segoe UI", Tahoma, sans-serif;
       background: white;
@@ -1052,6 +1000,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
       color: black;
       max-width: 800px;
       margin: auto;
+      font-size: 11px;
     }
 
     .liq-doc h1,
@@ -1077,11 +1026,14 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
       margin-top: 10px;
       color: black;
       line-height: 1;
+      font-family: "Times New Roman", serif;
+      font-size: 16px;
     }
 
     #contractPrint p {
       margin: 4px 0;
       text-align: justify;
+      line-height: 1.2;
     }
 
     .signatures {
@@ -1123,6 +1075,88 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
       }
     }
   `;
+}
+
+async function createPdfBlobFromHtml(contentHtml, { extraStyles = "", scale = 2 } = {}) {
+  const exportRoot = document.createElement("div");
+
+  exportRoot.style.position = "fixed";
+  exportRoot.style.left = "-99999px";
+  exportRoot.style.top = "0";
+  exportRoot.style.width = "794px";
+  exportRoot.style.background = "#fff";
+  exportRoot.style.padding = "20px";
+  exportRoot.style.zIndex = "-1";
+
+  exportRoot.innerHTML = `
+    <style>${getDocumentBaseStyles()}${extraStyles}</style>
+    ${contentHtml}
+  `;
+
+  document.body.appendChild(exportRoot);
+
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+
+  const blob = await createPdfBlobFromElement(exportRoot, { scale });
+
+  document.body.removeChild(exportRoot);
+
+  return blob;
+}
+
+async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
+
+  const { jsPDF } = window.jspdf;
+
+  const canvas = await html2canvas(element, {
+    scale,
+    backgroundColor: "#ffffff"
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  const imgWidth = 210;
+  const pageHeight = 297;
+
+  const imgHeight = canvas.height * imgWidth / canvas.width;
+
+  let heightLeft = imgHeight;
+
+  let position = 0;
+
+  pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+
+    position = heightLeft - imgHeight;
+
+    pdf.addPage();
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+
+    heightLeft -= pageHeight;
+
+  }
+
+  return pdf.output("blob");
+
+}
+
+function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
+  const printWindow = window.open("", "_blank");
+
+  if (!printWindow) {
+    alert("No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.");
+    return;
+  }
+
+  const baseStyles = getDocumentBaseStyles();
 
   printWindow.document.open();
   printWindow.document.write(`
@@ -1237,13 +1271,48 @@ async function generateContract() {
   alert("Contrato completado correctamente.");
 
   const contractContainer = document.getElementById("contractPrint");
-  const pdfBlob = await createPdfBlobFromElement(contractContainer);
+  const pdfBlob = await createPdfBlobFromHtml(contractContainer.outerHTML, {
+    extraStyles: `
+      #contractPrint {
+        padding: 0;
+        margin: 0 auto;
+        max-width: 740px;
+        font-family: "Times New Roman", serif;
+        font-size: 13px;
+        line-height: 1.2;
+      }
+
+      #contractPrint .titulo-contrato {
+        text-align: center;
+        font-size: 23px;
+        margin: 0 0 14px 0;
+      }
+
+      #contractPrint p,
+      #contractPrint .clausula {
+        margin: 4px 0;
+        text-align: justify;
+        line-height: 1.2;
+      }
+
+      #contractPrint h3 {
+        margin: 10px 0 6px;
+        text-align: center;
+      }
+
+      #contractPrint .signatures {
+        margin-top: 55px;
+      }
+    `,
+    scale: 2
+  });
 
   if (!pdfBlob) {
     return;
   }
 
-  const fileName = "liquidacion_" + month + ".pdf";
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const fileName = "contrato_" + worker.rut + "_" + stamp + ".pdf";
 
   const filePath = worker.rut + "/" + fileName;
 
@@ -1261,38 +1330,93 @@ async function generateContract() {
     console.log("Contrato guardado en Supabase");
   }
 
-
-if (y > 250) {
-  doc.addPage();
-  y = 20;
-}
-
-const leftX = 20;
-const rightX = 120;
-const lineWidth = 70;
-
-y += 10;
-doc.line(leftX, y, leftX + lineWidth, y);
-doc.line(rightX, y, rightX + lineWidth, y);
-
-doc.setFontSize(11);
-doc.text("Servicios Agrícolas San Gerónimo SPA", leftX + lineWidth / 2, y + 6, { align: "center" });
-doc.text("EMPLEADOR", leftX + lineWidth / 2, y + 11, { align: "center" });
-doc.text("RUT: 78.018.478-7", leftX + lineWidth / 2, y + 16, { align: "center" });
-
-doc.text(worker.name || "________________", rightX + lineWidth / 2, y + 6, { align: "center" });
-doc.text("TRABAJADOR", rightX + lineWidth / 2, y + 11, { align: "center" });
-
-
-
-
-if (error) {
-  console.error("Error subiendo contrato:", error);
-} else {
-  console.log("Contrato guardado en Supabase");
-}
-
  }
+async function generateFiniquito() {
+
+  const workerIndex = document.getElementById("workerContract").value;
+
+  if (workerIndex === "") {
+    alert("Seleccione un trabajador.");
+    return;
+  }
+
+  const worker = workers[workerIndex];
+
+  const today = new Date().toLocaleDateString("es-CL");
+
+  const html = `
+  <div id="finiquitoDoc">
+
+  <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
+
+  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
+
+  <p><strong>Trabajador:</strong> ${worker.name}</p>
+  <p><strong>RUT:</strong> ${worker.rut}</p>
+  <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
+
+  <br>
+
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
+
+  <br><br>
+
+  <p>Firmado en conformidad.</p>
+
+  <br><br>
+
+  <p>Fecha: ${today}</p>
+
+  <br><br><br>
+
+  <div style="display:flex; justify-content:space-between;">
+
+  <div style="text-align:center;">
+  <div style="border-top:1px solid black; width:200px;"></div>
+  <p>Firma Trabajador</p>
+  <p>${worker.name}</p>
+  <p>${worker.rut}</p>
+  </div>
+
+  <div style="text-align:center;">
+  <div style="border-top:1px solid black; width:200px;"></div>
+  <p>Firma Empleador</p>
+  </div>
+
+  </div>
+
+  </div>
+  `;
+
+  const pdfBlob = await createPdfBlobFromHtml(html, {
+    scale: 2
+  });
+
+  if (!pdfBlob) return;
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+  const fileName = "finiquito_" + worker.rut + "_" + stamp + ".pdf";
+
+  const filePath = worker.rut + "/" + fileName;
+
+  const { error } = await supabaseClient
+    .storage
+    .from("worker-files")
+    .upload(filePath, pdfBlob, {
+      contentType: "application/pdf",
+      upsert: true
+    });
+
+  if (error) {
+    console.error("Error subiendo finiquito:", error);
+  } else {
+    console.log("Finiquito guardado en Supabase");
+    alert("Finiquito generado y guardado.");
+  }
+
+}
+
 function generateMonthlySummary() {
   const workerIndex = document.getElementById("workerMonthly").value;
 
@@ -2691,8 +2815,12 @@ async function loadWorkerDocuments(rut) {
       .from("worker-files")
       .getPublicUrl(rut + "/" + file.name).data.publicUrl;
 
+    // Evita mostrar PDF en caché cuando se sobrescribe el mismo nombre.
+    const version = encodeURIComponent(file.updated_at || file.created_at || Date.now());
+    const freshUrl = publicUrl + "?v=" + version;
+
     html += "<li>";
-html += "<a href='" + publicUrl + "' target='_blank'>" + file.name + "</a> ";
+html += "<a href='" + freshUrl + "' target='_blank'>" + file.name + "</a> ";
 html += "<button onclick=\"deleteWorkerDocument('" + rut + "','" + file.name + "')\">🗑</button>";
 html += "</li>";
 
