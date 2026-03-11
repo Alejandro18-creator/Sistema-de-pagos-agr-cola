@@ -10,6 +10,7 @@ const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
+let contracts = JSON.parse(localStorage.getItem("contracts")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
 
@@ -489,17 +490,20 @@ function loadWorkers() {
 }
 
 function loadPagosWorkerFilter() {
+  const selectIds = ["filterPagosWorker", "filterPaymentsWorker"];
 
-  const select = document.getElementById("filterPagosWorker");
-  if (!select) return;
+  selectIds.forEach((id) => {
+    const select = document.getElementById(id);
+    if (!select) return;
 
-  select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
+    select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
 
-  workers.forEach((w, i) => {
-    const opt = document.createElement("option");
-    opt.value = w.rut;
-    opt.textContent = w.name + " (" + w.rut + ")";
-    select.appendChild(opt);
+    workers.forEach((w) => {
+      const opt = document.createElement("option");
+      opt.value = w.rut;
+      opt.textContent = w.name + " (" + w.rut + ")";
+      select.appendChild(opt);
+    });
   });
 }
 
@@ -799,6 +803,37 @@ async function generateLiquidation() {
 
   const worker = workers[workerIndex];
 
+ const workerContracts = contracts.filter(c => {
+
+  if (c.rut !== worker.rut) return false;
+
+  const parts = c.startDate.split("/");
+  const day = parts[0];
+  const monthC = parts[1];
+  const year = parts[2];
+
+  const contractDate = new Date(year, monthC - 1, day);
+  const liquidationDate = new Date(month + "-01");
+
+  return contractDate <= liquidationDate;
+
+});
+
+// ordenar por fecha más reciente
+workerContracts.sort((a, b) => {
+  const [d1,m1,y1] = a.startDate.split("/");
+  const [d2,m2,y2] = b.startDate.split("/");
+
+  const dateA = new Date(y1, m1-1, d1);
+  const dateB = new Date(y2, m2-1, d2);
+
+  return dateB - dateA;
+});
+
+const contract = workerContracts[0];
+
+const sueldoBase = contract ? Number(contract.salary) : 0;
+
   // ===== PRODUCCIÓN DEL MES =====
 
   const records = history.filter(
@@ -816,9 +851,6 @@ async function generateLiquidation() {
 
   const semanaCorrida = Math.round(sueldoImponible * 0.1);
 
-  const sueldoBase = Number(
-    (worker.baseSalary || "0").replace(/\$/g, "").replace(/\./g, "")
-  );
 
   const gratificacion = Math.round((sueldoBase + sueldoImponible) * 0.25);
 
@@ -1022,12 +1054,19 @@ function getDocumentBaseStyles() {
 
     #contractPrint {
       background: white;
-      padding: 40px;
-      margin-top: 10px;
+      padding: 10px 35px 24px 35px;
+      margin-top: 0px;
       color: black;
       line-height: 1;
       font-family: "Times New Roman", serif;
       font-size: 16px;
+    }
+
+    #contractPrint .titulo-contrato {
+      text-align: center;
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      line-height: 1.15;
     }
 
     #contractPrint p {
@@ -1070,8 +1109,35 @@ function getDocumentBaseStyles() {
     }
 
     @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm 10mm 10mm;
+      }
+
       body {
         margin: 0;
+      }
+
+      #contractPrint {
+        margin: 0 auto;
+        padding: 10px 34px 20px 34px;
+        font-size: 17px;
+        line-height: 1.18;
+      }
+
+      #contractPrint .titulo-contrato {
+        font-size: 23px;
+        margin: 0 0 7px 0;
+      }
+
+      #contractPrint p,
+      #contractPrint .clausula {
+        margin: 4px 0;
+        line-height: 1.18;
+      }
+
+      #contractPrint .signatures {
+        margin-top: 46px;
       }
     }
   `;
@@ -1107,7 +1173,6 @@ async function createPdfBlobFromHtml(contentHtml, { extraStyles = "", scale = 2 
 }
 
 async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
-
   const { jsPDF } = window.jspdf;
 
   const canvas = await html2canvas(element, {
@@ -1133,7 +1198,6 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
   heightLeft -= pageHeight;
 
   while (heightLeft > 0) {
-
     position = heightLeft - imgHeight;
 
     pdf.addPage();
@@ -1141,14 +1205,56 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
     pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
 
     heightLeft -= pageHeight;
-
   }
 
   return pdf.output("blob");
-
 }
 
-function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
+function fitPrintElementToA4(printWindow, {
+  selector,
+  pageMarginTopMm = 8,
+  pageMarginBottomMm = 10,
+  minScale = 1.2,
+  maxScale = 1,
+  overflowTolerance = 1
+} = {}) {
+  if (!selector) {
+    return;
+  }
+
+  const element = printWindow.document.querySelector(selector);
+
+  if (!element) {
+    return;
+  }
+
+  const mmToPx = 96 / 25.4;
+  const a4HeightMm = 297;
+  const availableHeightPx = (a4HeightMm - pageMarginTopMm - pageMarginBottomMm) * mmToPx;
+  const currentHeightPx = element.scrollHeight;
+
+  if (!currentHeightPx) {
+    return;
+  }
+
+  // Keep natural size unless content effectively overflows one page.
+  if (currentHeightPx <= availableHeightPx * overflowTolerance) {
+    element.style.transform = "none";
+    element.style.width = "100%";
+    element.style.margin = "0 auto";
+    return;
+  }
+
+  let scaleFactor = availableHeightPx / currentHeightPx;
+  scaleFactor = Math.max(minScale, Math.min(maxScale, scaleFactor));
+
+  element.style.transformOrigin = "top center";
+  element.style.transform = `scale(${scaleFactor})`;
+  element.style.width = `${100 / scaleFactor}%`;
+  element.style.margin = "0 auto";
+}
+
+function openScreenPrintWindow({ title, contentHtml, extraStyles = "", fitToA4 = null }) {
   const printWindow = window.open("", "_blank");
 
   if (!printWindow) {
@@ -1174,7 +1280,19 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
   `);
   printWindow.document.close();
 
-  printWindow.onload = () => {
+  printWindow.onload = async () => {
+    if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+      try {
+        await printWindow.document.fonts.ready;
+      } catch (error) {
+        console.warn("No se pudo esperar carga de fuentes de impresión:", error);
+      }
+    }
+
+    if (fitToA4) {
+      fitPrintElementToA4(printWindow, fitToA4);
+    }
+
     printWindow.focus();
     printWindow.print();
   };
@@ -1204,13 +1322,19 @@ function printContractScreen() {
 
   openScreenPrintWindow({
     title: "Contrato de Trabajo de Temporada",
-    contentHtml: container.outerHTML
+    contentHtml: container.outerHTML,
+    fitToA4: {
+      selector: "#contractPrint",
+      pageMarginTopMm: 8,
+      pageMarginBottomMm: 10,
+      minScale: 0.97,
+      maxScale: 1,
+      overflowTolerance: 1
+    }
   });
 }
 
-
 async function generateContract() {
-
   const workerIndex = document.getElementById("workerContract").value;
 
   if (workerIndex === "") {
@@ -1263,6 +1387,15 @@ async function generateContract() {
 
   const formattedSalary = formatCLPCurrency(salaryInput);
 
+  contracts.push({
+  rut: worker.rut,
+  name: worker.name,
+  startDate: startDate,
+  salary: salaryInput
+});
+
+localStorage.setItem("contracts", JSON.stringify(contracts));
+
   document.getElementById("c_salary").textContent =
   formattedSalary || "____________";
 
@@ -1271,28 +1404,36 @@ async function generateContract() {
   alert("Contrato completado correctamente.");
 
   const contractContainer = document.getElementById("contractPrint");
+  // Ajustar tamaño automático si el contrato es muy largo
+if (contractContainer.scrollHeight > 1100) {
+  contractContainer.style.fontSize = "12px";
+}
+
+if (contractContainer.scrollHeight > 1200) {
+  contractContainer.style.fontSize = "11px";
+}
   const pdfBlob = await createPdfBlobFromHtml(contractContainer.outerHTML, {
     extraStyles: `
-      #contractPrint {
-        padding: 0;
-        margin: 0 auto;
-        max-width: 740px;
-        font-family: "Times New Roman", serif;
-        font-size: 13px;
-        line-height: 1.2;
-      }
+    #contractPrint {
+    padding: 8px 34px 20px 34px;
+    margin: 0 auto;
+    max-width: 740px;
+    font-family: "Times New Roman", serif;
+    font-size: 14.5px;
+    line-height: 1.18;
+  }
 
-      #contractPrint .titulo-contrato {
-        text-align: center;
-        font-size: 23px;
-        margin: 0 0 14px 0;
-      }
+  #contractPrint .titulo-contrato {
+    text-align: center;
+    font-size: 23px;
+    margin: 0 0 7px 0;
+  }
 
       #contractPrint p,
       #contractPrint .clausula {
         margin: 4px 0;
         text-align: justify;
-        line-height: 1.2;
+        line-height: 1.18;
       }
 
       #contractPrint h3 {
@@ -2441,14 +2582,17 @@ function updateWeeklyTotal() {
 }
 
 function printWeeklySummary() {
+
   const container = document.getElementById("weeklyResult");
+  const printArea = document.getElementById("weeklyPrintArea");
+  const workerName = document.getElementById("searchWorkerWeekly").value || "";
 
   if (!container) return;
 
   const rows = container.querySelectorAll("table tr");
 
   rows.forEach((row, index) => {
-    if (index === 0) return; // encabezado
+    if (index === 0) return;
 
     const checkbox = row.querySelector("input[type='checkbox']");
 
@@ -2457,9 +2601,73 @@ function printWeeklySummary() {
     }
   });
 
-  window.print();
+  // abrir ventana limpia para imprimir
+  const printWindow = window.open("", "", "width=900,height=700");
 
-  // restaurar vista después de imprimir
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Resumen Semanal</title>
+        <style>
+  body{
+    font-family: Arial;
+    padding:20px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+  }
+
+  th,td{
+    border:1px solid #000;
+    padding:6px;
+    text-align:center;
+  }
+
+  th{
+    background:#eee;
+  }
+
+  /* OCULTAR BOTONES */
+  button{
+    display:none;
+  }
+
+  /* OCULTAR COLUMNA ACCIONES */
+  th:last-child,
+  td:last-child{
+    display:none;
+  }
+</style>
+      </head>
+      <body>
+
+  <div style="text-align:center;margin-bottom:20px;">
+    <h2 style="margin:0;">SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA</h2>
+    <h3 style="margin:5px 0;">RESUMEN SEMANAL DE PRODUCCIÓN</h3>
+    <p style="margin:0;"><strong>Trabajador:</strong> ${workerName}</p>
+  </div>
+
+  ${printArea.innerHTML}
+
+<br><br><br>
+
+<div style="text-align:center;margin-top:40px;">
+  <div style="border-top:1px solid black;width:250px;margin:0 auto 5px auto;"></div>
+  <p style="margin:0;font-weight:bold;">${workerName}</p>
+  <p style="margin:0;">TRABAJADOR</p>
+</div>
+
+</body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.print();
+  printWindow.close();
+
+  // restaurar filas ocultas
   rows.forEach((row) => {
     row.style.display = "";
   });
@@ -2488,6 +2696,7 @@ function generatePagosResumen() {
 
   const selectedRut =
     document.getElementById("filterPagosWorker")?.value ||
+    document.getElementById("filterPaymentsWorker")?.value ||
     document.getElementById("workerResumenSelect")?.value ||
     "";
 

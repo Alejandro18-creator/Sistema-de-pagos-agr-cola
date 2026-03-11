@@ -48,6 +48,11 @@
     <script src="app.js"></script>
 
     <script>
+      // Evita que esta pantalla quede como inicio accidental al abrir localmente.
+      if (!window.location.search.includes("standalone=1")) {
+        window.location.replace("index.html");
+      }
+
       // =============================
       // 🚀 CARGA INICIAL
       // =============================
