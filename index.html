@@ -86,7 +86,7 @@
       </button>
       <button onclick="showView('viewPaymentsHistory'); loadPaymentsHistory();">
         📂 Historial de Pagos
-         </button>
+      </button>
       <button type="button" onclick="showView('viewBackup')">
         💾 Respaldo
       </button>
@@ -112,13 +112,13 @@
             <p class="company-slogan">Gestión agrícola con confianza y precisión</p>
           </div>
           <div class="system-version">
-  <p><strong>Sistema de Gestión Agrícola</strong></p>
-  <p>Versión 1.0</p>
-  <p>Desarrollado para Servicios Agrícolas San Gerónimo SPA</p>
-</div>
+            <p><strong>Sistema de Gestión Agrícola</strong></p>
+            <p>Versión 1.0</p>
+            <p>Desarrollado para Servicios Agrícolas San Gerónimo SPA</p>
+          </div>
 
         </div>
-        
+
 
         <div class="homeScreen">
           <h2>Bienvenido al Sistema Agrícola</h2>
@@ -168,6 +168,9 @@
         </select>
         <input type="text" id="workerHealth" placeholder="Salud (Fonasa / Isapre)" />
         <input type="text" id="workerNationality" placeholder="Nacionalidad">
+        <input type="text" id="workerAccount" placeholder="Número de cuenta bancaria">
+        <label>Sueldo Base</label>
+        <input type="text" id="workerBaseSalary" placeholder="Sueldo Base" oninput="formatCurrency(this)">
         <label for="workerIdPhoto">Foto Carnet</label>
         <input type="file" id="workerIdPhoto" accept="image/*" capture="environment">
         <input type="text" id="workerPosition" placeholder="Cargo" value="Trabajador Agricola" readonly />
@@ -216,8 +219,18 @@
         </select>
 
         <input type="month" id="monthLiquidation" />
-        <input type="text" id="advanceAmount" placeholder="Anticipos del mes" />
+        <input type="text" id="advanceAmount" placeholder="Anticipos del mes" style="position:relative; z-index:9999;">
         <button type="button" onclick="generateLiquidation()"> Generar Liquidación</button>
+        <hr style="margin-top:30px">
+
+        <h3>Configuración de Liquidación</h3>
+
+        <label>Sueldo mínimo vigente</label>
+
+        <input type="text" id="minimumWage" placeholder="$0" style="position:relative; z-index:9999;">
+
+        <button onclick="saveMinimumWage()">Guardar Sueldo Mínimo </button>
+
         <button type="button" onclick="printLiquidationScreen()" class="no-print">🖨️ Imprimir Liquidación</button>
       </section>
 
@@ -235,16 +248,18 @@
             <span id="c_name">_______________________________</span>,Cédula de Identidad n°
             <span id="c_rut">______________________</span>,Estado
             Estado Civil <span id="c_maritalStatus">______________________</span>,
-            fecha de Nacimiento <span id="c_birthDate">____ / ____ / ____</span>, de oficio trabajador Agrícola, con domicilio en <span id="c_address">_________________________</span>, Nacionalidad <span id="c_nationality">______________________</span>,
+            fecha de Nacimiento <span id="c_birthDate">____ / ____ / ____</span>, de oficio trabajador Agrícola, con
+            domicilio en <span id="c_address">_________________________</span>, Nacionalidad <span
+              id="c_nationality">______________________</span>,
             que adelante se denominará
             <b>"el trabajador"</b>, se ha convenido en el siguiente contrato
             de trabajo de temporada o de faena transitoria.
           </p>
           <p class="clausula">
-          <b>PRIMERO:</b>
-El trabajador prestará sus servicios como Trabajador en
-<span id="c_faena">________________________</span>.
-</p>
+            <b>PRIMERO:</b>
+            El trabajador prestará sus servicios como Trabajador en
+            <span id="c_faena">________________________</span>.
+          </p>
           <p class="clausula">
             <b>SEGUNDO:</b>
             El presente contrato se entenderá terminado automáticamente, en la
@@ -338,11 +353,11 @@ El trabajador prestará sus servicios como Trabajador en
 
             <!-- TRABAJADOR -->
             <div class="sign">
-  <div class="line"></div>
+              <div class="line"></div>
 
-  <p class="sign-name" id="c_workerSign">________________</p>
-  <p class="sign-role">TRABAJADOR</p>
-</div>
+              <p class="sign-name" id="c_workerSign">________________</p>
+              <p class="sign-role">TRABAJADOR</p>
+            </div>
           </div>
         </div>
         <button class="no-print" onclick="printContractScreen()">🖨️ Imprimir Contrato</button>
@@ -360,7 +375,7 @@ El trabajador prestará sus servicios como Trabajador en
         <input type="text" id="salary" placeholder="Sueldo / Trato" />
 
         <button type="button" onclick="generateContract()"> Generar Contrato </button>
-        
+
 
       </section>
 
@@ -410,29 +425,30 @@ El trabajador prestará sus servicios como Trabajador en
         <div id="weeklyPrintArea">
           <div id="weeklyResult"></div>
         </div>
+
         <button onclick="printWeeklySummary()" class="no-print"> 🖨️ Imprimir Resumen Semanal </button>
       </section>
 
       <section class="card view hidden" id="viewPagos">
 
         <h2>Resumen Pagado / Pendiente</h2>
-        
 
-  <!-- 🔷 FILTROS -->
-  <div class="card">
-    <label>Filtrar por mes:</label>
-    <input type="month" id="filterPaymentsMonth" onchange="loadPaymentsHistory()" />
 
-    <label style="margin-top:10px;">Filtrar por trabajador:</label>
-    <select id="filterPaymentsWorker" onchange="loadPaymentsHistory()">
-      <option value="">-- Todos --</option>
-    </select>
-  </div>
+        <!-- 🔷 FILTROS -->
+        <div class="card">
+          <label>Filtrar por mes:</label>
+          <input type="month" id="filterPaymentsMonth" onchange="loadPaymentsHistory()" />
 
-  <!-- 🔷 TABLA -->
-  <div class="card">
-    <div id="paymentsHistoryTablePanel"></div>
-  </div>
+          <label style="margin-top:10px;">Filtrar por trabajador:</label>
+          <select id="filterPaymentsWorker" onchange="loadPaymentsHistory()">
+            <option value="">-- Todos --</option>
+          </select>
+        </div>
+
+        <!-- 🔷 TABLA -->
+        <div class="card">
+          <div id="paymentsHistoryTablePanel"></div>
+        </div>
 
         <button onclick="generatePagosResumen()">
           Calcular Resumen
@@ -444,13 +460,13 @@ El trabajador prestará sus servicios como Trabajador en
 
       <section class="card view hidden" id="viewPaymentsHistory">
 
-  <h2>📂 Historial de Pagos</h2>
+        <h2>📂 Historial de Pagos</h2>
 
-  <div id="paymentsSummary"></div>
+        <div id="paymentsSummary"></div>
 
-  <div id="paymentsHistoryTable"></div>
+        <div id="paymentsHistoryTable"></div>
 
-</section>
+      </section>
 
       <!-- HISTORIAL -->
       <section class="card view hidden" id="viewHistory">
@@ -463,34 +479,37 @@ El trabajador prestará sus servicios como Trabajador en
         <h3>Respaldo del Sistema</h3>
 
         <button type="button" onclick="exportData()"> Exportar Respaldo </button>
+        <button onclick="syncToCloud()"> ☁️ Subir datos a la nube </button>
+        <button onclick="syncFromCloud()"> ⬇ Descargar datos desde la nube </button>
         <input type="file" id="importFile" style="display: none" onchange="importData(event)" />
         <button type="button" onclick="document.getElementById('importFile').click()">Importar Respaldo</button>
       </section>
+
       <section class="card view hidden" id="viewWorkerFolder">
 
-      <h2>📂 Carpeta del Trabajador</h2>
-      <p><strong>Nombre:</strong> <span id="folderWorkerName"></span></p>
-<p><strong>RUT:</strong> <span id="folderWorkerRut"></span></p>
+        <h2>📂 Carpeta del Trabajador</h2>
+        <p><strong>Nombre:</strong> <span id="folderWorkerName"></span></p>
+        <p><strong>RUT:</strong> <span id="folderWorkerRut"></span></p>
 
-  <p>Aquí aparecerán los documentos del trabajador.</p>
-  <h3>Documentos</h3>
+        <p>Aquí aparecerán los documentos del trabajador.</p>
+        <h3>Documentos</h3>
 
-<div id="workerDocuments">
-  <p>No hay documentos aún.</p>
-</div>
-<br>
+        <div id="workerDocuments">
+          <p>No hay documentos aún.</p>
+        </div>
+        <br>
 
-<input type="file" id="workerFileUpload">
+        <input type="file" id="workerFileUpload">
 
-<button onclick="uploadWorkerDocument()">
-  ⬆ Subir documento
-</button>
+        <button onclick="uploadWorkerDocument()">
+          ⬆ Subir documento
+        </button>
 
-  <button onclick="showView('viewWorkersDB')">
-    ← Volver a trabajadores
-  </button>
+        <button onclick="showView('viewWorkersDB')">
+          ← Volver a trabajadores
+        </button>
 
-</section>
+      </section>
       <section class="card view hidden" id="viewFiniquito">
 
         <div id="finiquitoPrint">
@@ -557,7 +576,7 @@ El trabajador prestará sus servicios como Trabajador en
         </button>
 
         <button type="button" onclick="generateFiniquito()">
-        Generar Finiquito
+          Generar Finiquito
         </button>
 
       </section>

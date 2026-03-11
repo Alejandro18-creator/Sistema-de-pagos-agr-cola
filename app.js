@@ -4,13 +4,13 @@
 
 console.log("APP VERSION 2");
 
+
 const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
 const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
-let contracts = JSON.parse(localStorage.getItem("contracts")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
 
@@ -40,15 +40,15 @@ async function saveWorkerToCloud(worker) {
 
   if (error) {
 
-  if (error.message.includes("duplicate key")) {
-    alert("Este RUT ya está registrado.");
-    return;
-  }
-  console.error("Error guardando en nube:", error.message);
-  alert("Error guardando trabajador.");
+    if (error.message.includes("duplicate key")) {
+      alert("Este RUT ya está registrado.");
+      return;
+    }
+    console.error("Error guardando en nube:", error.message);
+    alert("Error guardando trabajador.");
 
-}
-  
+  }
+
   else {
     console.log("Trabajador guardado en Supabase");
   }
@@ -230,7 +230,7 @@ function formatRutInput(input) {
 // 🔐 LOGIN
 // =============================
 
-function loginUser() {
+async function loginUser() {
   const pass = document.getElementById("password").value;
 
   if (pass === LOGIN_PASSWORD) {
@@ -239,10 +239,11 @@ function loginUser() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    initSystem();
+    await initSystem();
   } else {
     alert("Contraseña incorrecta");
   }
+  loadMinimumWage();
 }
 
 function logout() {
@@ -263,6 +264,8 @@ async function initSystem() {
   loadAFPOptions();
   loadPagosWorkerFilter();
   await pruneHistoryOrphaned();
+
+  loadMinimumWage();
 }
 
 // =============================
@@ -274,6 +277,7 @@ async function addWorker() {
 
   const name = document.getElementById("workerName").value.trim();
   const rut = document.getElementById("workerRut").value.trim();
+  const account = document.getElementById("workerAccount").value;
   const birthDate = document.getElementById("workerBirthDate").value.trim();
   const maritalStatus = document.getElementById("workerMaritalStatus").value.trim();
   const address = document.getElementById("workerAddress").value.trim();
@@ -281,6 +285,7 @@ async function addWorker() {
   const health = document.getElementById("workerHealth").value.trim();
   const position = document.getElementById("workerPosition").value.trim();
   const nationality = document.getElementById("workerNationality").value.trim();
+  const baseSalary = document.getElementById("workerBaseSalary").value.replace(/\$/g, "").replace(/\./g, "");
 
   let photoUrl = null;
 
@@ -289,12 +294,12 @@ async function addWorker() {
     return;
   }
   // 🔹 VALIDAR RUT DUPLICADO
-const rutExists = workers.some(w => w.rut === rut);
+  const rutExists = workers.some(w => w.rut === rut);
 
-if (rutExists && editIndexWorker === null) {
-  alert("Este RUT ya está registrado.");
-  return;
-}
+  if (rutExists && editIndexWorker === null) {
+    alert("Este RUT ya está registrado.");
+    return;
+  }
 
   // 🔹 Subir imagen si existe
   const fileInput = document.getElementById("workerIdPhoto");
@@ -337,11 +342,13 @@ if (rutExists && editIndexWorker === null) {
       health,
       position,
       nationality,
+      account_number: account,
       id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
     };
     console.log("VALOR FINAL photoUrl:", photoUrl);
     const { data, error } = await supabaseClient
       .from("workers")
+
       .update({
         name,
         rut,
@@ -352,6 +359,7 @@ if (rutExists && editIndexWorker === null) {
         health,
         position,
         nationality,
+        account_number: account,
         id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
       })
       .eq("id", workers[editIndexWorker].id);
@@ -375,6 +383,8 @@ if (rutExists && editIndexWorker === null) {
       health,
       position,
       nationality,
+      baseSalary,
+      account_number: account,
       id_card_photo: photoUrl,
     };
 
@@ -424,8 +434,8 @@ function loadWorkerToEdit() {
 
   document.getElementById("workerNationality").value = worker.nationality || "";
   document.getElementById("workerBirthDate").value = worker.birthDate || "";
-  document.getElementById("workerMaritalStatus").value =
-    worker.maritalStatus || "";
+  document.getElementById("workerMaritalStatus").value = worker.maritalStatus || "";
+  document.getElementById("workerAccount").value = worker.account_number || "";
 }
 
 function clearWorkerForm() {
@@ -439,6 +449,7 @@ function clearWorkerForm() {
   document.getElementById("workerHealth").value = "";
   document.getElementById("workerPosition").value = "";
   document.getElementById("workerNationality").value = "";
+  document.getElementById("workerAccount").value = "";
 }
 
 function clearWorkerInputs() {
@@ -490,20 +501,17 @@ function loadWorkers() {
 }
 
 function loadPagosWorkerFilter() {
-  const selectIds = ["filterPagosWorker", "filterPaymentsWorker"];
 
-  selectIds.forEach((id) => {
-    const select = document.getElementById(id);
-    if (!select) return;
+  const select = document.getElementById("filterPagosWorker");
+  if (!select) return;
 
-    select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
+  select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
 
-    workers.forEach((w) => {
-      const opt = document.createElement("option");
-      opt.value = w.rut;
-      opt.textContent = w.name + " (" + w.rut + ")";
-      select.appendChild(opt);
-    });
+  workers.forEach((w, i) => {
+    const opt = document.createElement("option");
+    opt.value = w.rut;
+    opt.textContent = w.name + " (" + w.rut + ")";
+    select.appendChild(opt);
   });
 }
 
@@ -523,31 +531,31 @@ function renderWorkersTable() {
   let html = "<div class='table-container'><table>";
   html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
 
- workers.forEach((w) => {
+  workers.forEach((w) => {
 
-  html += "<tr>";
+    html += "<tr>";
 
-  html += "<td>" + w.name + "</td>";
-  html += "<td>" + w.rut + "</td>";
-  html += "<td>" + (w.address || "-") + "</td>";
+    html += "<td>" + w.name + "</td>";
+    html += "<td>" + w.rut + "</td>";
+    html += "<td>" + (w.address || "-") + "</td>";
 
-  html += "<td>";
-  if (w.id_card_photo) {
-    html += "<img src='" + w.id_card_photo + "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
-  } 
-  else {
-    html += "—";
-  }
-  html += "</td>";
+    html += "<td>";
+    if (w.id_card_photo) {
+      html += "<img src='" + w.id_card_photo + "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
+    }
+    else {
+      html += "—";
+    }
+    html += "</td>";
 
-  // 📁 BOTÓN CARPETA
-  html += "<td>";
-  html += "<button onclick=\"openWorkerFolder('" + w.rut + "')\">📁</button>";
-  html += "</td>";
+    // 📁 BOTÓN CARPETA
+    html += "<td>";
+    html += "<button onclick=\"openWorkerFolder('" + w.rut + "')\">📁</button>";
+    html += "</td>";
 
-  html += "</tr>";
+    html += "</tr>";
 
-});
+  });
 
   html += "</table></div>";
 
@@ -803,37 +811,6 @@ async function generateLiquidation() {
 
   const worker = workers[workerIndex];
 
- const workerContracts = contracts.filter(c => {
-
-  if (c.rut !== worker.rut) return false;
-
-  const parts = c.startDate.split("/");
-  const day = parts[0];
-  const monthC = parts[1];
-  const year = parts[2];
-
-  const contractDate = new Date(year, monthC - 1, day);
-  const liquidationDate = new Date(month + "-01");
-
-  return contractDate <= liquidationDate;
-
-});
-
-// ordenar por fecha más reciente
-workerContracts.sort((a, b) => {
-  const [d1,m1,y1] = a.startDate.split("/");
-  const [d2,m2,y2] = b.startDate.split("/");
-
-  const dateA = new Date(y1, m1-1, d1);
-  const dateB = new Date(y2, m2-1, d2);
-
-  return dateB - dateA;
-});
-
-const contract = workerContracts[0];
-
-const sueldoBase = contract ? Number(contract.salary) : 0;
-
   // ===== PRODUCCIÓN DEL MES =====
 
   const records = history.filter(
@@ -841,21 +818,36 @@ const sueldoBase = contract ? Number(contract.salary) : 0;
   );
 
   records.sort((a, b) => new Date(a.date) - new Date(b.date));
+  const uniqueDates = [...new Set(records.map(r => r.date))];
+  const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
+    generateLiquidation()
     alert("No hay producción ese mes.");
     return;
   }
 
   const sueldoImponible = records.reduce((sum, r) => sum + r.total, 0);
 
-  const semanaCorrida = Math.round(sueldoImponible * 0.1);
+  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
 
+  let sueldoBase = 0;
+  let bonoProduccion = 0;
 
-  const gratificacion = Math.round((sueldoBase + sueldoImponible) * 0.25);
+  if (sueldoImponible <= sueldoMinimo) {
 
-  const totalHaberes =
-    sueldoBase + sueldoImponible + semanaCorrida + gratificacion;
+    sueldoBase = sueldoImponible;
+    bonoProduccion = 0;
+
+  } else {
+
+    sueldoBase = sueldoMinimo;
+    bonoProduccion = sueldoImponible - sueldoMinimo;
+
+  }
+
+  const totalHaberes = sueldoBase + bonoProduccion;
+  const baseImponible = Math.min(totalHaberes, sueldoMinimo);
 
   // ===== DESCUENTOS =====
 
@@ -867,8 +859,8 @@ const sueldoBase = contract ? Number(contract.salary) : 0;
   const comisionAFP = afpRates[afpName] || 0;
   const porcentajeAFP = AFP_BASE + comisionAFP;
 
-  const afp = Math.round(totalHaberes * porcentajeAFP);
-  const salud = Math.round(totalHaberes * 0.07);
+  const afp = Math.round(baseImponible * porcentajeAFP);
+  const salud = Math.round(baseImponible * 0.07);
 
   const totalDescuentos = afp + salud + anticipos;
 
@@ -887,30 +879,22 @@ const sueldoBase = contract ? Number(contract.salary) : 0;
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
+<p><strong>Días trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
 <h3>HABERES IMPONIBLES</h3>
 
 <table>
+
 <tr>
 <td>Sueldo Base</td>
 <td>$${sueldoBase.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<td>Producción del Mes</td>
-<td>$${sueldoImponible.toLocaleString("es-CL")}</td>
-</tr>
-
-<tr>
-<td>Semana Corrida</td>
-<td>${formatMoney(semanaCorrida)}</td>
-</tr>
-
-<tr>
-<td>Gratificación Legal 25%</td>
-<td>${formatMoney(gratificacion)}</td>
+<td>Bono Producción</td>
+<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
@@ -1054,19 +1038,12 @@ function getDocumentBaseStyles() {
 
     #contractPrint {
       background: white;
-      padding: 10px 35px 24px 35px;
-      margin-top: 0px;
+      padding: 40px;
+      margin-top: 10px;
       color: black;
       line-height: 1;
       font-family: "Times New Roman", serif;
       font-size: 16px;
-    }
-
-    #contractPrint .titulo-contrato {
-      text-align: center;
-      margin: 0 0 8px 0;
-      font-size: 24px;
-      line-height: 1.15;
     }
 
     #contractPrint p {
@@ -1109,35 +1086,8 @@ function getDocumentBaseStyles() {
     }
 
     @media print {
-      @page {
-        size: A4 portrait;
-        margin: 8mm 10mm 10mm 10mm;
-      }
-
       body {
         margin: 0;
-      }
-
-      #contractPrint {
-        margin: 0 auto;
-        padding: 10px 34px 20px 34px;
-        font-size: 17px;
-        line-height: 1.18;
-      }
-
-      #contractPrint .titulo-contrato {
-        font-size: 23px;
-        margin: 0 0 7px 0;
-      }
-
-      #contractPrint p,
-      #contractPrint .clausula {
-        margin: 4px 0;
-        line-height: 1.18;
-      }
-
-      #contractPrint .signatures {
-        margin-top: 46px;
       }
     }
   `;
@@ -1173,6 +1123,7 @@ async function createPdfBlobFromHtml(contentHtml, { extraStyles = "", scale = 2 
 }
 
 async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
+
   const { jsPDF } = window.jspdf;
 
   const canvas = await html2canvas(element, {
@@ -1198,6 +1149,7 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
   heightLeft -= pageHeight;
 
   while (heightLeft > 0) {
+
     position = heightLeft - imgHeight;
 
     pdf.addPage();
@@ -1205,56 +1157,14 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
     pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
 
     heightLeft -= pageHeight;
+
   }
 
   return pdf.output("blob");
+
 }
 
-function fitPrintElementToA4(printWindow, {
-  selector,
-  pageMarginTopMm = 8,
-  pageMarginBottomMm = 10,
-  minScale = 1.2,
-  maxScale = 1,
-  overflowTolerance = 1
-} = {}) {
-  if (!selector) {
-    return;
-  }
-
-  const element = printWindow.document.querySelector(selector);
-
-  if (!element) {
-    return;
-  }
-
-  const mmToPx = 96 / 25.4;
-  const a4HeightMm = 297;
-  const availableHeightPx = (a4HeightMm - pageMarginTopMm - pageMarginBottomMm) * mmToPx;
-  const currentHeightPx = element.scrollHeight;
-
-  if (!currentHeightPx) {
-    return;
-  }
-
-  // Keep natural size unless content effectively overflows one page.
-  if (currentHeightPx <= availableHeightPx * overflowTolerance) {
-    element.style.transform = "none";
-    element.style.width = "100%";
-    element.style.margin = "0 auto";
-    return;
-  }
-
-  let scaleFactor = availableHeightPx / currentHeightPx;
-  scaleFactor = Math.max(minScale, Math.min(maxScale, scaleFactor));
-
-  element.style.transformOrigin = "top center";
-  element.style.transform = `scale(${scaleFactor})`;
-  element.style.width = `${100 / scaleFactor}%`;
-  element.style.margin = "0 auto";
-}
-
-function openScreenPrintWindow({ title, contentHtml, extraStyles = "", fitToA4 = null }) {
+function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
   const printWindow = window.open("", "_blank");
 
   if (!printWindow) {
@@ -1280,19 +1190,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "", fitToA4 =
   `);
   printWindow.document.close();
 
-  printWindow.onload = async () => {
-    if (printWindow.document.fonts && printWindow.document.fonts.ready) {
-      try {
-        await printWindow.document.fonts.ready;
-      } catch (error) {
-        console.warn("No se pudo esperar carga de fuentes de impresión:", error);
-      }
-    }
-
-    if (fitToA4) {
-      fitPrintElementToA4(printWindow, fitToA4);
-    }
-
+  printWindow.onload = () => {
     printWindow.focus();
     printWindow.print();
   };
@@ -1322,19 +1220,13 @@ function printContractScreen() {
 
   openScreenPrintWindow({
     title: "Contrato de Trabajo de Temporada",
-    contentHtml: container.outerHTML,
-    fitToA4: {
-      selector: "#contractPrint",
-      pageMarginTopMm: 8,
-      pageMarginBottomMm: 10,
-      minScale: 0.97,
-      maxScale: 1,
-      overflowTolerance: 1
-    }
+    contentHtml: container.outerHTML
   });
 }
 
+
 async function generateContract() {
+
   const workerIndex = document.getElementById("workerContract").value;
 
   if (workerIndex === "") {
@@ -1342,7 +1234,7 @@ async function generateContract() {
     return;
   }
 
-  
+
 
   const worker = workers[workerIndex];
 
@@ -1350,7 +1242,7 @@ async function generateContract() {
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
-  document.getElementById("faena").value;
+    document.getElementById("faena").value;
   document.getElementById("c_workerSign").textContent = worker.name;
 
 
@@ -1387,53 +1279,36 @@ async function generateContract() {
 
   const formattedSalary = formatCLPCurrency(salaryInput);
 
-  contracts.push({
-  rut: worker.rut,
-  name: worker.name,
-  startDate: startDate,
-  salary: salaryInput
-});
-
-localStorage.setItem("contracts", JSON.stringify(contracts));
-
   document.getElementById("c_salary").textContent =
-  formattedSalary || "____________";
+    formattedSalary || "____________";
 
-  document.getElementById("c_birthDate").textContent =worker.birthDate || "____ / ____ / ____";
+  document.getElementById("c_birthDate").textContent = worker.birthDate || "____ / ____ / ____";
 
   alert("Contrato completado correctamente.");
 
   const contractContainer = document.getElementById("contractPrint");
-  // Ajustar tamaño automático si el contrato es muy largo
-if (contractContainer.scrollHeight > 1100) {
-  contractContainer.style.fontSize = "12px";
-}
-
-if (contractContainer.scrollHeight > 1200) {
-  contractContainer.style.fontSize = "11px";
-}
   const pdfBlob = await createPdfBlobFromHtml(contractContainer.outerHTML, {
     extraStyles: `
-    #contractPrint {
-    padding: 8px 34px 20px 34px;
-    margin: 0 auto;
-    max-width: 740px;
-    font-family: "Times New Roman", serif;
-    font-size: 14.5px;
-    line-height: 1.18;
-  }
+      #contractPrint {
+        padding: 0;
+        margin: 0 auto;
+        max-width: 740px;
+        font-family: "Times New Roman", serif;
+        font-size: 13px;
+        line-height: 1.2;
+      }
 
-  #contractPrint .titulo-contrato {
-    text-align: center;
-    font-size: 23px;
-    margin: 0 0 7px 0;
-  }
+      #contractPrint .titulo-contrato {
+        text-align: center;
+        font-size: 23px;
+        margin: 0 0 14px 0;
+      }
 
       #contractPrint p,
       #contractPrint .clausula {
         margin: 4px 0;
         text-align: justify;
-        line-height: 1.18;
+        line-height: 1.2;
       }
 
       #contractPrint h3 {
@@ -1471,7 +1346,7 @@ if (contractContainer.scrollHeight > 1200) {
     console.log("Contrato guardado en Supabase");
   }
 
- }
+}
 async function generateFiniquito() {
 
   const workerIndex = document.getElementById("workerContract").value;
@@ -1714,13 +1589,17 @@ function generateMonthlyGeneral() {
 // 🔐 SESIÓN
 // =============================
 
-window.onload = function () {
+window.onload = async function () {
+
   if (localStorage.getItem("sessionActive") === "true") {
+
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    initSystem();
+    await initSystem();
+
   }
+
 };
 
 function showView(id) {
@@ -1752,7 +1631,51 @@ function toggleSubmenu(id) {
 // =============================
 // 💾 EXPORTAR RESPALDO
 // =============================
+function importData(event) {
 
+  const file = event.target.files[0];
+
+  if (!file) {
+    alert("Seleccione un archivo de respaldo.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+
+    try {
+
+      const data = JSON.parse(e.target.result);
+
+      workers = data.workers || [];
+      history = data.history || [];
+      labors = data.labors || [];
+
+      localStorage.setItem("workers", JSON.stringify(workers));
+      localStorage.setItem("history", JSON.stringify(history));
+      localStorage.setItem("labors", JSON.stringify(labors));
+
+      loadWorkers();
+      renderWorkersTable();
+      renderHistory();
+      loadLabors();
+
+      alert("Respaldo importado correctamente.");
+
+    } catch (error) {
+
+      alert("Error al importar el respaldo.");
+
+      console.error(error);
+
+    }
+
+  };
+
+  reader.readAsText(file);
+
+}
 // =============================
 // 🗑️ ELIMINAR TRABAJADOR
 // =============================
@@ -1826,10 +1749,99 @@ function exportData() {
   const a = document.createElement("a");
 
   a.href = url;
-  a.download = "respaldo_sistema.json";
+  const fecha = new Date().toISOString().split("T")[0];
+
+  a.download = "respaldo_sistema_" + fecha + ".json";
   a.click();
 
   URL.revokeObjectURL(url);
+}
+
+async function syncToCloud() {
+
+  if (!confirm("¿Subir todos los datos locales a la nube?")) return;
+
+  try {
+
+    // ===== TRABAJADORES =====
+    for (const worker of workers) {
+
+      const { error } = await supabaseClient
+        .from("workers")
+        .upsert(worker, { onConflict: "rut" });
+
+      if (error) {
+        console.error("Error subiendo trabajador:", error);
+      }
+    }
+
+    // ===== HISTORIAL =====
+    for (const record of history) {
+
+      const { error } = await supabaseClient
+        .from("history")
+        .insert(record);
+
+      if (error) {
+        console.error("Error subiendo producción:", error);
+      }
+    }
+
+    alert("Datos subidos correctamente a la nube.");
+
+  } catch (err) {
+
+    console.error(err);
+    alert("Error al sincronizar.");
+
+  }
+
+}
+
+async function syncFromCloud() {
+
+  if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
+
+  try {
+
+    // ===== TRABAJADORES =====
+    const { data: workersData, error: workersError } =
+      await supabaseClient.from("workers").select("*");
+
+    if (workersError) {
+      console.error("Error descargando trabajadores:", workersError);
+    }
+    else {
+      workers = workersData || [];
+      localStorage.setItem("workers", JSON.stringify(workers));
+    }
+
+    // ===== HISTORIAL =====
+    const { data: historyData, error: historyError } =
+      await supabaseClient.from("history").select("*");
+
+    if (historyError) {
+      console.error("Error descargando producción:", historyError);
+    }
+    else {
+      history = historyData || [];
+      localStorage.setItem("history", JSON.stringify(history));
+    }
+
+    // ===== REFRESCAR SISTEMA =====
+    loadWorkers();
+    renderWorkersTable();
+    renderHistory();
+
+    alert("Datos descargados correctamente desde la nube.");
+
+  } catch (err) {
+
+    console.error(err);
+    alert("Error descargando datos.");
+
+  }
+
 }
 
 function printMonthlyGeneral() {
@@ -2013,36 +2025,36 @@ function showCalendar(year = null, month = null) {
     const isSelected = selectedDays.has(dateStr);
     // 🔹 Detectar si ese día ya fue pagado
     const isPaid = history.some(r => r.rut === workers[document.getElementById("workerWeekly").value]?.rut && r.date === dateStr &&
-    r.paid === true
-);
+      r.paid === true
+    );
     let bgColor = 'transparent';
-let textColor = '#000';
-let fontWeight = 'normal';
-let cursorStyle = 'pointer';
-let clickAction = 'toggleDay("' + dateStr + '")';
+    let textColor = '#000';
+    let fontWeight = 'normal';
+    let cursorStyle = 'pointer';
+    let clickAction = 'toggleDay("' + dateStr + '")';
 
-if (isPaid) {
-  bgColor = '#d5f5e3';      // verde claro
-  textColor = '#1e8449';
-  fontWeight = 'bold';
-  cursorStyle = 'not-allowed';
-  clickAction = '';         // no permite clic
-} else if (isSelected) {
-  bgColor = '#1a73e8';
-  textColor = 'white';
-  fontWeight = 'bold';
-}
+    if (isPaid) {
+      bgColor = '#d5f5e3';      // verde claro
+      textColor = '#1e8449';
+      fontWeight = 'bold';
+      cursorStyle = 'not-allowed';
+      clickAction = '';         // no permite clic
+    } else if (isSelected) {
+      bgColor = '#1a73e8';
+      textColor = 'white';
+      fontWeight = 'bold';
+    }
 
     html += "<div " +
-  (clickAction ? "onclick='" + clickAction + "'" : "") +
-  " style='text-align:center; padding:8px; border-radius:50%; background:" + bgColor +
-  "; color:" + textColor +
-  "; font-weight:" + fontWeight +
-  "; cursor:" + cursorStyle +
-  "; transition:all 0.2s;'>";
+      (clickAction ? "onclick='" + clickAction + "'" : "") +
+      " style='text-align:center; padding:8px; border-radius:50%; background:" + bgColor +
+      "; color:" + textColor +
+      "; font-weight:" + fontWeight +
+      "; cursor:" + cursorStyle +
+      "; transition:all 0.2s;'>";
 
-html += isPaid ? "✔" : day;
-html += "</div>";
+    html += isPaid ? "✔" : day;
+    html += "</div>";
   }
 
   html += "</div>";
@@ -2149,6 +2161,7 @@ function generateWeeklySummary() {
   }
 
   const worker = workers[workerIndex];
+  const account = worker.account_number || "-";
 
   // Obtener días seleccionados del Set
   const selectedDates = Array.from(selectedDays);
@@ -2179,6 +2192,10 @@ function generateWeeklySummary() {
   let total = 0;
 
   let html = "<h3>Detalle de Días Seleccionados</h3>";
+  html += "<p><strong>Trabajador:</strong> " + worker.name + "</p>";
+  html += "<p><strong>RUT:</strong> " + worker.rut + "</p>";
+  html += "<p><strong>Número de Cuenta:</strong> " + account + "</p>";
+  html += "<hr>";
 
   html += "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
 
@@ -2212,7 +2229,7 @@ function generateWeeklySummary() {
 
   html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2 id='weeklyTotal'>Total: $" + total.toLocaleString("es-CL") + "</h2>";
- html += `
+  html += `
   <div class="action-right">
     <button type="button" class="btn-pay" onclick="payWeekly()">
       💰 Pagar
@@ -2279,21 +2296,21 @@ async function payWeekly() {
   }
   // 🔹 GUARDAR REGISTRO EN TABLA payments
 
-const paymentRecord = {
-  rut: worker.rut,
-  name: worker.name,
-  total_paid: totalToPay,
-  payment_date: new Date().toISOString().split("T")[0],
-  dates_paid: selectedDates
-};
+  const paymentRecord = {
+    rut: worker.rut,
+    name: worker.name,
+    total_paid: totalToPay,
+    payment_date: new Date().toISOString().split("T")[0],
+    dates_paid: selectedDates
+  };
 
-const { error: paymentError } = await supabaseClient
-  .from("payments")
-  .insert([paymentRecord]);
+  const { error: paymentError } = await supabaseClient
+    .from("payments")
+    .insert([paymentRecord]);
 
-if (paymentError) {
-  console.error("Error guardando pago:", paymentError);
-}
+  if (paymentError) {
+    console.error("Error guardando pago:", paymentError);
+  }
 
   localStorage.setItem("history", JSON.stringify(history));
 
@@ -2347,47 +2364,47 @@ if (paymentError) {
   doc.save("Comprobante_Pago_" + worker.rut + ".pdf");
 
   // 🔹 GENERAR EXCEL
-const workbook = XLSX.utils.book_new();
+  const workbook = XLSX.utils.book_new();
 
-const todayExcel = new Date().toLocaleDateString("es-CL");
+  const todayExcel = new Date().toLocaleDateString("es-CL");
 
-// Construir datos
-let excelData = [];
+  // Construir datos
+  let excelData = [];
 
-// Encabezado empresa
-excelData.push(["COMPROBANTE DE PAGO SEMANAL"]);
-excelData.push([]);
-excelData.push(["Trabajador:", worker.name]);
-excelData.push(["RUT:", worker.rut]);
-excelData.push(["Fecha de pago:", todayExcel]);
-excelData.push([]);
+  // Encabezado empresa
+  excelData.push(["COMPROBANTE DE PAGO SEMANAL"]);
+  excelData.push([]);
+  excelData.push(["Trabajador:", worker.name]);
+  excelData.push(["RUT:", worker.rut]);
+  excelData.push(["Fecha de pago:", todayExcel]);
+  excelData.push([]);
 
-// Encabezado tabla
-excelData.push(["Fecha", "Fundo", "Labor", "Cantidad", "Total"]);
+  // Encabezado tabla
+  excelData.push(["Fecha", "Fundo", "Labor", "Cantidad", "Total"]);
 
-// Filas detalle
-recordsToPay.forEach(r => {
-  excelData.push([
-    r.date,
-    r.fundo || "-",
-    r.labor,
-    r.quantity,
-    r.total
-  ]);
-});
+  // Filas detalle
+  recordsToPay.forEach(r => {
+    excelData.push([
+      r.date,
+      r.fundo || "-",
+      r.labor,
+      r.quantity,
+      r.total
+    ]);
+  });
 
-// Línea total
-excelData.push([]);
-excelData.push(["TOTAL PAGADO", "", "", "", totalToPay]);
+  // Línea total
+  excelData.push([]);
+  excelData.push(["TOTAL PAGADO", "", "", "", totalToPay]);
 
-// Crear hoja
-const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+  // Crear hoja
+  const worksheet = XLSX.utils.aoa_to_sheet(excelData);
 
-// Agregar hoja al libro
-XLSX.utils.book_append_sheet(workbook, worksheet, "Pago Semanal");
+  // Agregar hoja al libro
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Pago Semanal");
 
-// Descargar archivo
-XLSX.writeFile(workbook, "Pago_Semanal_" + worker.rut + ".xlsx");
+  // Descargar archivo
+  XLSX.writeFile(workbook, "Pago_Semanal_" + worker.rut + ".xlsx");
 
   // Limpiar selección
   selectedDays.clear();
@@ -2582,17 +2599,14 @@ function updateWeeklyTotal() {
 }
 
 function printWeeklySummary() {
-
   const container = document.getElementById("weeklyResult");
-  const printArea = document.getElementById("weeklyPrintArea");
-  const workerName = document.getElementById("searchWorkerWeekly").value || "";
 
   if (!container) return;
 
   const rows = container.querySelectorAll("table tr");
 
   rows.forEach((row, index) => {
-    if (index === 0) return;
+    if (index === 0) return; // encabezado
 
     const checkbox = row.querySelector("input[type='checkbox']");
 
@@ -2601,73 +2615,9 @@ function printWeeklySummary() {
     }
   });
 
-  // abrir ventana limpia para imprimir
-  const printWindow = window.open("", "", "width=900,height=700");
+  window.print();
 
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Resumen Semanal</title>
-        <style>
-  body{
-    font-family: Arial;
-    padding:20px;
-  }
-
-  table{
-    width:100%;
-    border-collapse:collapse;
-  }
-
-  th,td{
-    border:1px solid #000;
-    padding:6px;
-    text-align:center;
-  }
-
-  th{
-    background:#eee;
-  }
-
-  /* OCULTAR BOTONES */
-  button{
-    display:none;
-  }
-
-  /* OCULTAR COLUMNA ACCIONES */
-  th:last-child,
-  td:last-child{
-    display:none;
-  }
-</style>
-      </head>
-      <body>
-
-  <div style="text-align:center;margin-bottom:20px;">
-    <h2 style="margin:0;">SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA</h2>
-    <h3 style="margin:5px 0;">RESUMEN SEMANAL DE PRODUCCIÓN</h3>
-    <p style="margin:0;"><strong>Trabajador:</strong> ${workerName}</p>
-  </div>
-
-  ${printArea.innerHTML}
-
-<br><br><br>
-
-<div style="text-align:center;margin-top:40px;">
-  <div style="border-top:1px solid black;width:250px;margin:0 auto 5px auto;"></div>
-  <p style="margin:0;font-weight:bold;">${workerName}</p>
-  <p style="margin:0;">TRABAJADOR</p>
-</div>
-
-</body>
-    </html>
-  `);
-
-  printWindow.document.close();
-  printWindow.print();
-  printWindow.close();
-
-  // restaurar filas ocultas
+  // restaurar vista después de imprimir
   rows.forEach((row) => {
     row.style.display = "";
   });
@@ -2696,7 +2646,6 @@ function generatePagosResumen() {
 
   const selectedRut =
     document.getElementById("filterPagosWorker")?.value ||
-    document.getElementById("filterPaymentsWorker")?.value ||
     document.getElementById("workerResumenSelect")?.value ||
     "";
 
@@ -2923,18 +2872,18 @@ async function loadPaymentsHistory() {
 
   html += "</table>";
 
-// 🔷 RESUMEN SUPERIOR
-const summaryContainer = document.getElementById("paymentsSummary");
+  // 🔷 RESUMEN SUPERIOR
+  const summaryContainer = document.getElementById("paymentsSummary");
 
-let totalGeneral = 0;
-let workersSet = new Set();
+  let totalGeneral = 0;
+  let workersSet = new Set();
 
-data.forEach(p => {
-  totalGeneral += Number(p.total_paid);
-  workersSet.add(p.rut);
-});
+  data.forEach(p => {
+    totalGeneral += Number(p.total_paid);
+    workersSet.add(p.rut);
+  });
 
-summaryContainer.innerHTML = `
+  summaryContainer.innerHTML = `
   <div>
     <strong>Total Pagado:</strong> $${totalGeneral.toLocaleString("es-CL")}
   </div>
@@ -2992,7 +2941,7 @@ async function uploadWorkerDocument() {
   alert("Documento subido correctamente.");
 
 
-loadWorkerDocuments(rut);
+  loadWorkerDocuments(rut);
 
 }
 async function loadWorkerDocuments(rut) {
@@ -3029,9 +2978,9 @@ async function loadWorkerDocuments(rut) {
     const freshUrl = publicUrl + "?v=" + version;
 
     html += "<li>";
-html += "<a href='" + freshUrl + "' target='_blank'>" + file.name + "</a> ";
-html += "<button onclick=\"deleteWorkerDocument('" + rut + "','" + file.name + "')\">🗑</button>";
-html += "</li>";
+    html += "<a href='" + freshUrl + "' target='_blank'>" + file.name + "</a> ";
+    html += "<button onclick=\"deleteWorkerDocument('" + rut + "','" + file.name + "')\">🗑</button>";
+    html += "</li>";
 
   });
 
@@ -3049,11 +2998,44 @@ async function deleteWorkerDocument(rut, fileName) {
     .from("worker-files")
     .remove([rut + "/" + fileName]);
 
-  if (error) { console.error(error); alert("Error eliminando documento."); return;
+  if (error) {
+    console.error(error); alert("Error eliminando documento."); return;
   }
 
   alert("Documento eliminado.");
 
   loadWorkerDocuments(rut);
+
+}
+function saveMinimumWage() {
+
+  const wageInput = document.getElementById("minimumWage").value;
+
+
+  const wage = Number(
+    wageInput.replace(/\$/g, "").replace(/\./g, "")
+  );
+
+  if (!wage || wage <= 0) {
+    alert("Ingrese un sueldo válido.");
+    return;
+  }
+
+  localStorage.setItem("minimumWage", wage);
+
+  alert("Sueldo mínimo guardado correctamente.");
+
+}
+function loadMinimumWage() {
+
+  const wage = localStorage.getItem("minimumWage");
+
+  if (!wage) return;
+
+  const input = document.getElementById("minimumWage");
+
+  if (input) {
+    input.value = "$" + Number(wage).toLocaleString("es-CL");
+  }
 
 }
