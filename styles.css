@@ -761,3 +761,23 @@ tr:hover {
   color: #000;
   text-align: center;
 }
+/* ============================= */
+/* 💰 COBROS MANDANTES */
+/* ============================= */
+
+.mandante-search {
+  position: relative;
+  max-width: 400px;
+}
+
+.mandante-worker-list {
+  position: absolute;
+  width: 100%;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1000;
+}

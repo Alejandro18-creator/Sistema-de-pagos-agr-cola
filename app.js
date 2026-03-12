@@ -4,7 +4,6 @@
 
 console.log("APP VERSION 2");
 
-
 const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
 const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 
@@ -39,23 +38,18 @@ async function saveWorkerToCloud(worker) {
   const { error } = await supabaseClient.from("workers").insert([worker]);
 
   if (error) {
-
     if (error.message.includes("duplicate key")) {
       alert("Este RUT ya está registrado.");
       return;
     }
     console.error("Error guardando en nube:", error.message);
     alert("Error guardando trabajador.");
-
-  }
-
-  else {
+  } else {
     console.log("Trabajador guardado en Supabase");
   }
 }
 
 async function saveProductionToCloud(record) {
-
   const { data, error } = await supabaseClient
     .from("history")
     .insert([record])
@@ -71,7 +65,6 @@ async function saveProductionToCloud(record) {
 
   // guardar el ID que genera Supabase
   record.id = data.id;
-
 }
 
 async function loadWorkersFromCloud() {
@@ -134,7 +127,10 @@ async function pruneHistoryOrphaned() {
     .in("rut", orphanedRuts);
 
   if (error) {
-    console.error("Error eliminando historial huérfano en Supabase:", error.message);
+    console.error(
+      "Error eliminando historial huérfano en Supabase:",
+      error.message,
+    );
   }
 
   history = history.filter((r) => workerRuts.has(r.rut));
@@ -165,7 +161,7 @@ function formatCLPCurrency(value) {
   if (!value) return "";
 
   const numericValue = Number(
-    value.replace(/\$/g, "").replace(/\./g, "").replace(/,/g, "")
+    value.replace(/\$/g, "").replace(/\./g, "").replace(/,/g, ""),
   );
 
   if (isNaN(numericValue)) return value;
@@ -258,7 +254,6 @@ async function initSystem() {
   await loadWorkersFromCloud();
   await loadHistoryFromCloud();
 
-
   loadLabors();
   renderWorkersTable();
   loadAFPOptions();
@@ -279,13 +274,18 @@ async function addWorker() {
   const rut = document.getElementById("workerRut").value.trim();
   const account = document.getElementById("workerAccount").value;
   const birthDate = document.getElementById("workerBirthDate").value.trim();
-  const maritalStatus = document.getElementById("workerMaritalStatus").value.trim();
+  const maritalStatus = document
+    .getElementById("workerMaritalStatus")
+    .value.trim();
   const address = document.getElementById("workerAddress").value.trim();
   const afp = document.getElementById("workerAFP").value.trim();
   const health = document.getElementById("workerHealth").value.trim();
   const position = document.getElementById("workerPosition").value.trim();
   const nationality = document.getElementById("workerNationality").value.trim();
-  const baseSalary = document.getElementById("workerBaseSalary").value.replace(/\$/g, "").replace(/\./g, "");
+  const baseSalary = document
+    .getElementById("workerBaseSalary")
+    .value.replace(/\$/g, "")
+    .replace(/\./g, "");
 
   let photoUrl = null;
 
@@ -294,7 +294,7 @@ async function addWorker() {
     return;
   }
   // 🔹 VALIDAR RUT DUPLICADO
-  const rutExists = workers.some(w => w.rut === rut);
+  const rutExists = workers.some((w) => w.rut === rut);
 
   if (rutExists && editIndexWorker === null) {
     alert("Este RUT ya está registrado.");
@@ -308,16 +308,14 @@ async function addWorker() {
     const fileName = Date.now() + "_" + file.name;
     const filePath = rut + "/" + fileName;
 
-    const { error: uploadError } = await supabaseClient
-      .storage
+    const { error: uploadError } = await supabaseClient.storage
       .from("worker-files")
       .upload(filePath, file);
 
     console.log("UPLOAD ERROR:", uploadError);
 
     if (!uploadError) {
-      const publicUrlData = supabaseClient
-        .storage
+      const publicUrlData = supabaseClient.storage
         .from("worker-files")
         .getPublicUrl(filePath);
 
@@ -330,7 +328,6 @@ async function addWorker() {
 
   // 🔹 EDICIÓN
   if (editIndexWorker !== null) {
-
     workers[editIndexWorker] = {
       ...workers[editIndexWorker],
       name,
@@ -372,7 +369,6 @@ async function addWorker() {
 
   // 🔹 NUEVO TRABAJADOR
   else {
-
     const newWorker = {
       name,
       rut,
@@ -390,9 +386,7 @@ async function addWorker() {
 
     workers.push(newWorker);
 
-    const { error } = await supabaseClient
-      .from("workers")
-      .insert([newWorker]);
+    const { error } = await supabaseClient.from("workers").insert([newWorker]);
 
     if (error) {
       console.error("Error guardando en nube:", error.message);
@@ -434,7 +428,8 @@ function loadWorkerToEdit() {
 
   document.getElementById("workerNationality").value = worker.nationality || "";
   document.getElementById("workerBirthDate").value = worker.birthDate || "";
-  document.getElementById("workerMaritalStatus").value = worker.maritalStatus || "";
+  document.getElementById("workerMaritalStatus").value =
+    worker.maritalStatus || "";
   document.getElementById("workerAccount").value = worker.account_number || "";
 }
 
@@ -501,7 +496,6 @@ function loadWorkers() {
 }
 
 function loadPagosWorkerFilter() {
-
   const select = document.getElementById("filterPagosWorker");
   if (!select) return;
 
@@ -529,10 +523,10 @@ function renderWorkersTable() {
   }
 
   let html = "<div class='table-container'><table>";
-  html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
+  html +=
+    "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
 
   workers.forEach((w) => {
-
     html += "<tr>";
 
     html += "<td>" + w.name + "</td>";
@@ -541,9 +535,11 @@ function renderWorkersTable() {
 
     html += "<td>";
     if (w.id_card_photo) {
-      html += "<img src='" + w.id_card_photo + "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
-    }
-    else {
+      html +=
+        "<img src='" +
+        w.id_card_photo +
+        "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
+    } else {
       html += "—";
     }
     html += "</td>";
@@ -554,7 +550,6 @@ function renderWorkersTable() {
     html += "</td>";
 
     html += "</tr>";
-
   });
 
   html += "</table></div>";
@@ -648,7 +643,7 @@ function registerWork() {
     quantity,
     total,
     fundo: fundo || "",
-     mandante_paid: false,
+    mandante_paid: false,
   };
 
   if (editProductionIndex !== null) {
@@ -669,6 +664,7 @@ function registerWork() {
     quantity,
     total,
     fundo: fundo || "",
+    mandante_paid: false,
   });
 
   localStorage.setItem("history", JSON.stringify(history));
@@ -766,7 +762,8 @@ function filterWorkersWeekly() {
 
   // Mostrar resultados
   if (filtered.length === 0) {
-    resultsList.innerHTML = "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    resultsList.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
     resultsList.style.display = "block";
     return;
   }
@@ -774,7 +771,12 @@ function filterWorkersWeekly() {
   let html = "";
   filtered.forEach((worker, i) => {
     const originalIndex = workers.indexOf(worker);
-    html += "<div onclick='selectWorkerWeekly(" + originalIndex + ", \"" + worker.name.replace(/"/g, '&quot;') + "\")' style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;' onmouseover='this.style.background=\"#f0f0f0\"' onmouseout='this.style.background=\"white\"'>";
+    html +=
+      "<div onclick='selectWorkerWeekly(" +
+      originalIndex +
+      ', "' +
+      worker.name.replace(/"/g, "&quot;") +
+      "\")' style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;' onmouseover='this.style.background=\"#f0f0f0\"' onmouseout='this.style.background=\"white\"'>";
     html += "<strong>" + worker.name + "</strong><br>";
     html += "<small style='color: #666;'>" + worker.rut + "</small>";
     html += "</div>";
@@ -801,7 +803,6 @@ function selectWorkerWeekly(index, name) {
 }
 
 async function generateLiquidation() {
-
   const workerIndex = document.getElementById("workerLiquidation").value;
   const month = document.getElementById("monthLiquidation").value;
 
@@ -815,15 +816,15 @@ async function generateLiquidation() {
   // ===== PRODUCCIÓN DEL MES =====
 
   const records = history.filter(
-    (r) => r.rut === worker.rut && r.date.startsWith(month)
+    (r) => r.rut === worker.rut && r.date.startsWith(month),
   );
 
   records.sort((a, b) => new Date(a.date) - new Date(b.date));
-  const uniqueDates = [...new Set(records.map(r => r.date))];
+  const uniqueDates = [...new Set(records.map((r) => r.date))];
   const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
-    generateLiquidation()
+    generateLiquidation();
     alert("No hay producción ese mes.");
     return;
   }
@@ -836,15 +837,11 @@ async function generateLiquidation() {
   let bonoProduccion = 0;
 
   if (sueldoImponible <= sueldoMinimo) {
-
     sueldoBase = sueldoImponible;
     bonoProduccion = 0;
-
   } else {
-
     sueldoBase = sueldoMinimo;
     bonoProduccion = sueldoImponible - sueldoMinimo;
-
   }
 
   const totalHaberes = sueldoBase + bonoProduccion;
@@ -853,7 +850,7 @@ async function generateLiquidation() {
   // ===== DESCUENTOS =====
 
   const anticipos = Number(
-    document.getElementById("advanceAmount").value.replace(/\./g, "") || 0
+    document.getElementById("advanceAmount").value.replace(/\./g, "") || 0,
   );
 
   const afpName = worker.afp || "";
@@ -946,7 +943,7 @@ async function generateLiquidation() {
         margin: 0 auto;
       }
     `,
-    scale: 2
+    scale: 2,
   });
 
   if (!pdfBlob) {
@@ -959,12 +956,11 @@ async function generateLiquidation() {
 
   // ===== SUBIR A SUPABASE =====
 
-  const { error } = await supabaseClient
-    .storage
+  const { error } = await supabaseClient.storage
     .from("worker-files")
     .upload(filePath, pdfBlob, {
       contentType: "application/pdf",
-      upsert: true
+      upsert: true,
     });
 
   if (error) {
@@ -972,7 +968,6 @@ async function generateLiquidation() {
   } else {
     console.log("Liquidación guardada en Supabase");
   }
-
 }
 
 function getDocumentBaseStyles() {
@@ -1094,7 +1089,10 @@ function getDocumentBaseStyles() {
   `;
 }
 
-async function createPdfBlobFromHtml(contentHtml, { extraStyles = "", scale = 2 } = {}) {
+async function createPdfBlobFromHtml(
+  contentHtml,
+  { extraStyles = "", scale = 2 } = {},
+) {
   const exportRoot = document.createElement("div");
 
   exportRoot.style.position = "fixed";
@@ -1124,12 +1122,11 @@ async function createPdfBlobFromHtml(contentHtml, { extraStyles = "", scale = 2 
 }
 
 async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
-
   const { jsPDF } = window.jspdf;
 
   const canvas = await html2canvas(element, {
     scale,
-    backgroundColor: "#ffffff"
+    backgroundColor: "#ffffff",
   });
 
   const imgData = canvas.toDataURL("image/png");
@@ -1139,7 +1136,7 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
   const imgWidth = 210;
   const pageHeight = 297;
 
-  const imgHeight = canvas.height * imgWidth / canvas.width;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
   let heightLeft = imgHeight;
 
@@ -1150,7 +1147,6 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
   heightLeft -= pageHeight;
 
   while (heightLeft > 0) {
-
     position = heightLeft - imgHeight;
 
     pdf.addPage();
@@ -1158,18 +1154,18 @@ async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
     pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
 
     heightLeft -= pageHeight;
-
   }
 
   return pdf.output("blob");
-
 }
 
 function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
   const printWindow = window.open("", "_blank");
 
   if (!printWindow) {
-    alert("No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.");
+    alert(
+      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
+    );
     return;
   }
 
@@ -1207,7 +1203,7 @@ function printLiquidationScreen() {
 
   openScreenPrintWindow({
     title: "Liquidación de Sueldo",
-    contentHtml: container.outerHTML
+    contentHtml: container.outerHTML,
   });
 }
 
@@ -1221,21 +1217,17 @@ function printContractScreen() {
 
   openScreenPrintWindow({
     title: "Contrato de Trabajo de Temporada",
-    contentHtml: container.outerHTML
+    contentHtml: container.outerHTML,
   });
 }
 
-
 async function generateContract() {
-
   const workerIndex = document.getElementById("workerContract").value;
 
   if (workerIndex === "") {
     alert("Seleccione un trabajador.");
     return;
   }
-
-
 
   const worker = workers[workerIndex];
 
@@ -1245,8 +1237,6 @@ async function generateContract() {
   document.getElementById("c_faena").textContent =
     document.getElementById("faena").value;
   document.getElementById("c_workerSign").textContent = worker.name;
-
-
 
   // 🔹 AQUÍ VA EL PASO 2 👇
 
@@ -1260,8 +1250,18 @@ async function generateContract() {
   const [day, monthNumber, year] = startDate.split("/");
 
   const months = [
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
   ];
 
   const month = months[parseInt(monthNumber) - 1];
@@ -1269,12 +1269,17 @@ async function generateContract() {
   document.getElementById("c_day").textContent = day || "__";
   document.getElementById("c_month").textContent = month || "__________";
   document.getElementById("c_year").textContent = year || "____";
-  document.getElementById("c_startDate").textContent = startDate || "___/___/20__";
-  document.getElementById("c_nationality").textContent = worker.nationality || "Chilena";
-  document.getElementById("c_maritalStatus").textContent = worker.maritalStatus || "______________________";
-  document.getElementById("c_address").textContent = worker.address || "_________________________";
+  document.getElementById("c_startDate").textContent =
+    startDate || "___/___/20__";
+  document.getElementById("c_nationality").textContent =
+    worker.nationality || "Chilena";
+  document.getElementById("c_maritalStatus").textContent =
+    worker.maritalStatus || "______________________";
+  document.getElementById("c_address").textContent =
+    worker.address || "_________________________";
   document.getElementById("c_afp").textContent = worker.afp || "______________";
-  document.getElementById("c_health").textContent = worker.health || "____________";
+  document.getElementById("c_health").textContent =
+    worker.health || "____________";
 
   const salaryInput = document.getElementById("salary").value.trim();
 
@@ -1283,7 +1288,8 @@ async function generateContract() {
   document.getElementById("c_salary").textContent =
     formattedSalary || "____________";
 
-  document.getElementById("c_birthDate").textContent = worker.birthDate || "____ / ____ / ____";
+  document.getElementById("c_birthDate").textContent =
+    worker.birthDate || "____ / ____ / ____";
 
   alert("Contrato completado correctamente.");
 
@@ -1321,7 +1327,7 @@ async function generateContract() {
         margin-top: 55px;
       }
     `,
-    scale: 2
+    scale: 2,
   });
 
   if (!pdfBlob) {
@@ -1333,12 +1339,11 @@ async function generateContract() {
 
   const filePath = worker.rut + "/" + fileName;
 
-  const { error } = await supabaseClient
-    .storage
+  const { error } = await supabaseClient.storage
     .from("worker-files")
     .upload(filePath, pdfBlob, {
       contentType: "application/pdf",
-      upsert: true
+      upsert: true,
     });
 
   if (error) {
@@ -1346,10 +1351,8 @@ async function generateContract() {
   } else {
     console.log("Contrato guardado en Supabase");
   }
-
 }
 async function generateFiniquito() {
-
   const workerIndex = document.getElementById("workerContract").value;
 
   if (workerIndex === "") {
@@ -1406,7 +1409,7 @@ async function generateFiniquito() {
   `;
 
   const pdfBlob = await createPdfBlobFromHtml(html, {
-    scale: 2
+    scale: 2,
   });
 
   if (!pdfBlob) return;
@@ -1417,12 +1420,11 @@ async function generateFiniquito() {
 
   const filePath = worker.rut + "/" + fileName;
 
-  const { error } = await supabaseClient
-    .storage
+  const { error } = await supabaseClient.storage
     .from("worker-files")
     .upload(filePath, pdfBlob, {
       contentType: "application/pdf",
-      upsert: true
+      upsert: true,
     });
 
   if (error) {
@@ -1431,7 +1433,6 @@ async function generateFiniquito() {
     console.log("Finiquito guardado en Supabase");
     alert("Finiquito generado y guardado.");
   }
-
 }
 
 function generateMonthlySummary() {
@@ -1591,19 +1592,16 @@ function generateMonthlyGeneral() {
 // =============================
 
 window.onload = async function () {
-
   if (localStorage.getItem("sessionActive") === "true") {
-
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
     await initSystem();
-
   }
-
 };
 
 function showView(id) {
+
   document.querySelectorAll(".view").forEach(function (v) {
     v.classList.add("hidden");
   });
@@ -1613,6 +1611,11 @@ function showView(id) {
   if (id === "viewContract") {
     loadWorkers();
   }
+
+  if (id === "viewCobrosMandante") {
+  showCalendar();
+}
+
 }
 
 // =============================
@@ -1633,7 +1636,6 @@ function toggleSubmenu(id) {
 // 💾 EXPORTAR RESPALDO
 // =============================
 function importData(event) {
-
   const file = event.target.files[0];
 
   if (!file) {
@@ -1644,9 +1646,7 @@ function importData(event) {
   const reader = new FileReader();
 
   reader.onload = function (e) {
-
     try {
-
       const data = JSON.parse(e.target.result);
 
       workers = data.workers || [];
@@ -1663,19 +1663,14 @@ function importData(event) {
       loadLabors();
 
       alert("Respaldo importado correctamente.");
-
     } catch (error) {
-
       alert("Error al importar el respaldo.");
 
       console.error(error);
-
     }
-
   };
 
   reader.readAsText(file);
-
 }
 // =============================
 // 🗑️ ELIMINAR TRABAJADOR
@@ -1716,7 +1711,10 @@ async function deleteWorker() {
     .eq("rut", worker.rut);
 
   if (historyError) {
-    console.error("Error eliminando historial en Supabase:", historyError.message);
+    console.error(
+      "Error eliminando historial en Supabase:",
+      historyError.message,
+    );
   }
 
   history = history.filter((r) => r.rut !== worker.rut);
@@ -1730,7 +1728,6 @@ async function deleteWorker() {
 
   alert("Trabajador eliminado correctamente.");
 }
-
 
 function exportData() {
   const data = {
@@ -1759,14 +1756,11 @@ function exportData() {
 }
 
 async function syncToCloud() {
-
   if (!confirm("¿Subir todos los datos locales a la nube?")) return;
 
   try {
-
     // ===== TRABAJADORES =====
     for (const worker of workers) {
-
       const { error } = await supabaseClient
         .from("workers")
         .upsert(worker, { onConflict: "rut" });
@@ -1778,10 +1772,7 @@ async function syncToCloud() {
 
     // ===== HISTORIAL =====
     for (const record of history) {
-
-      const { error } = await supabaseClient
-        .from("history")
-        .insert(record);
+      const { error } = await supabaseClient.from("history").insert(record);
 
       if (error) {
         console.error("Error subiendo producción:", error);
@@ -1789,42 +1780,36 @@ async function syncToCloud() {
     }
 
     alert("Datos subidos correctamente a la nube.");
-
   } catch (err) {
-
     console.error(err);
     alert("Error al sincronizar.");
-
   }
-
 }
 
 async function syncFromCloud() {
-
   if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
 
   try {
-
     // ===== TRABAJADORES =====
-    const { data: workersData, error: workersError } =
-      await supabaseClient.from("workers").select("*");
+    const { data: workersData, error: workersError } = await supabaseClient
+      .from("workers")
+      .select("*");
 
     if (workersError) {
       console.error("Error descargando trabajadores:", workersError);
-    }
-    else {
+    } else {
       workers = workersData || [];
       localStorage.setItem("workers", JSON.stringify(workers));
     }
 
     // ===== HISTORIAL =====
-    const { data: historyData, error: historyError } =
-      await supabaseClient.from("history").select("*");
+    const { data: historyData, error: historyError } = await supabaseClient
+      .from("history")
+      .select("*");
 
     if (historyError) {
       console.error("Error descargando producción:", historyError);
-    }
-    else {
+    } else {
       history = historyData || [];
       localStorage.setItem("history", JSON.stringify(history));
     }
@@ -1835,14 +1820,10 @@ async function syncFromCloud() {
     renderHistory();
 
     alert("Datos descargados correctamente desde la nube.");
-
   } catch (err) {
-
     console.error(err);
     alert("Error descargando datos.");
-
   }
-
 }
 
 function printMonthlyGeneral() {
@@ -1993,25 +1974,50 @@ function showCalendar(year = null, month = null) {
   const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
   const firstDay = new Date(year, monthNum, 1).getDay();
 
-  const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-  const dayNames = ['do', 'lu', 'ma', 'mi', 'ju', 'vi', 'sá'];
+  const monthNames = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
+  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sá"];
 
-  let html = "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
+  let html =
+    "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
 
   // Header con navegación
-  html += "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
-  html += "<button type='button' onclick='changeMonth(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
-  html += "<span style='font-weight: bold; text-transform: capitalize;'>" + monthNames[monthNum] + " de " + year + "</span>";
-  html += "<button type='button' onclick='changeMonth(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+  html +=
+    "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
+  html +=
+    "<button type='button' onclick='changeMonth(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+  html +=
+    "<span style='font-weight: bold; text-transform: capitalize;'>" +
+    monthNames[monthNum] +
+    " de " +
+    year +
+    "</span>";
+  html +=
+    "<button type='button' onclick='changeMonth(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
   html += "</div>";
 
   // Calendario
-  html += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
+  html +=
+    "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
 
   // Encabezados de días
-  dayNames.forEach(day => {
-    html += "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" + day + "</div>";
+  dayNames.forEach((day) => {
+    html +=
+      "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" +
+      day +
+      "</div>";
   });
 
   // Espacios vacíos antes del primer día
@@ -2021,37 +2027,45 @@ function showCalendar(year = null, month = null) {
 
   // Días del mes
   for (let day = 1; day <= daysInMonth; day++) {
-    const monthStr = String(monthNum + 1).padStart(2, '0');
-    const dateStr = year + "-" + monthStr + "-" + String(day).padStart(2, '0');
+    const monthStr = String(monthNum + 1).padStart(2, "0");
+    const dateStr = year + "-" + monthStr + "-" + String(day).padStart(2, "0");
     const isSelected = selectedDays.has(dateStr);
     // 🔹 Detectar si ese día ya fue pagado
-    const isPaid = history.some(r => r.rut === workers[document.getElementById("workerWeekly").value]?.rut && r.date === dateStr &&
-      r.paid === true
+    const isPaid = history.some(
+      (r) =>
+        r.rut === workers[document.getElementById("workerWeekly").value]?.rut &&
+        r.date === dateStr &&
+        r.paid === true,
     );
-    let bgColor = 'transparent';
-    let textColor = '#000';
-    let fontWeight = 'normal';
-    let cursorStyle = 'pointer';
+    let bgColor = "transparent";
+    let textColor = "#000";
+    let fontWeight = "normal";
+    let cursorStyle = "pointer";
     let clickAction = 'toggleDay("' + dateStr + '")';
 
     if (isPaid) {
-      bgColor = '#d5f5e3';      // verde claro
-      textColor = '#1e8449';
-      fontWeight = 'bold';
-      cursorStyle = 'not-allowed';
-      clickAction = '';         // no permite clic
+      bgColor = "#d5f5e3"; // verde claro
+      textColor = "#1e8449";
+      fontWeight = "bold";
+      cursorStyle = "not-allowed";
+      clickAction = ""; // no permite clic
     } else if (isSelected) {
-      bgColor = '#1a73e8';
-      textColor = 'white';
-      fontWeight = 'bold';
+      bgColor = "#1a73e8";
+      textColor = "white";
+      fontWeight = "bold";
     }
 
-    html += "<div " +
+    html +=
+      "<div " +
       (clickAction ? "onclick='" + clickAction + "'" : "") +
-      " style='text-align:center; padding:8px; border-radius:50%; background:" + bgColor +
-      "; color:" + textColor +
-      "; font-weight:" + fontWeight +
-      "; cursor:" + cursorStyle +
+      " style='text-align:center; padding:8px; border-radius:50%; background:" +
+      bgColor +
+      "; color:" +
+      textColor +
+      "; font-weight:" +
+      fontWeight +
+      "; cursor:" +
+      cursorStyle +
       "; transition:all 0.2s;'>";
 
     html += isPaid ? "✔" : day;
@@ -2061,13 +2075,17 @@ function showCalendar(year = null, month = null) {
   html += "</div>";
 
   // Botones inferiores
-  html += "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
+  html +=
+    "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
   if (pendingCalendarMode) {
-    html += "<button type='button' onclick='exitPendingCalendar()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 600;'>Volver</button>";
+    html +=
+      "<button type='button' onclick='exitPendingCalendar()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 600;'>Volver</button>";
   } else {
-    html += "<button type='button' onclick='clearSelectedDays()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+    html +=
+      "<button type='button' onclick='clearSelectedDays()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
   }
-  html += "<button type='button' onclick='todayDate()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
+  html +=
+    "<button type='button' onclick='todayDate()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
   html += "</div>";
 
   html += "</div>";
@@ -2081,12 +2099,24 @@ function toggleDay(dateStr) {
   } else {
     selectedDays.add(dateStr);
   }
-  showCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+
+  localStorage.setItem(
+    "mandanteDays",
+    JSON.stringify(Array.from(selectedDays)),
+  );
+
+  showCalendar(
+    currentCalendarDate.getFullYear(),
+    currentCalendarDate.getMonth(),
+  );
 }
 
 function clearSelectedDays() {
   selectedDays.clear();
-  showCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+  showCalendar(
+    currentCalendarDate.getFullYear(),
+    currentCalendarDate.getMonth(),
+  );
 }
 
 function todayDate() {
@@ -2138,7 +2168,10 @@ function showPendingDaysCalendar(rut, dates) {
 
   showView("viewWeekly");
   document.getElementById("weeklyResult").innerHTML = "";
-  showCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+  showCalendar(
+    currentCalendarDate.getFullYear(),
+    currentCalendarDate.getMonth(),
+  );
 }
 
 // Función para cambiar de mes
@@ -2153,7 +2186,6 @@ function changeMonth(direction) {
 // 📊 RESUMEN SEMANAL - GENERAR CON DÍAS SELECCIONADOS
 // =============================
 function generateWeeklySummary() {
-
   const workerIndex = document.getElementById("workerWeekly").value;
 
   if (workerIndex === "") {
@@ -2166,6 +2198,10 @@ function generateWeeklySummary() {
 
   // Obtener días seleccionados del Set
   const selectedDates = Array.from(selectedDays);
+  selectedDates.sort();
+
+  const startDate = selectedDates[0].split("-")[2];
+const endDate = selectedDates[selectedDates.length - 1].split("-")[2];
 
   if (selectedDates.length === 0) {
     alert("Seleccione al menos un día del calendario.");
@@ -2190,18 +2226,45 @@ function generateWeeklySummary() {
   const daysWorked = uniqueDates.length;
 
   // ===== CALCULAR TOTAL =====
-  let total = 0;
 
+  const resumen = {};
+
+  records.forEach((r) => {
+    const key = (r.fundo || "Sin fundo") + "|" + r.labor;
+
+    if (!resumen[key]) {
+      resumen[key] = {
+        fundo: r.fundo || "Sin fundo",
+        labor: r.labor,
+        cantidad: 0,
+        total: 0,
+      };
+    }
+
+    resumen[key].cantidad += r.quantity;
+    resumen[key].total += r.total;
+  });
+
+  let total = 0;
   let html = "<h3>Detalle de Días Seleccionados</h3>";
+
+  html +=
+    "<p><strong>Periodo pagado:</strong> " +
+    startDate +
+    " → " +
+    endDate +
+    "</p>";
   html += "<p><strong>Trabajador:</strong> " + worker.name + "</p>";
   html += "<p><strong>RUT:</strong> " + worker.rut + "</p>";
   html += "<p><strong>Número de Cuenta:</strong> " + account + "</p>";
   html += "<hr>";
 
-  html += "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
+  html +=
+    "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
 
   html += "<table>";
-  html += "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
+  html +=
+    "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
 
   records.forEach((r) => {
     total += r.total;
@@ -2213,7 +2276,7 @@ function generateWeeklySummary() {
         h.labor === r.labor &&
         h.quantity === r.quantity &&
         h.total === r.total &&
-        (h.fundo || "") === (r.fundo || "")
+        (h.fundo || "") === (r.fundo || ""),
     );
 
     html += "<tr class='weeklyRow'>";
@@ -2222,14 +2285,51 @@ function generateWeeklySummary() {
     html += "<td>" + r.labor + "</td>";
     html += "<td>" + r.quantity + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-    html += "<td><button style='background:#c0392b' onclick='deleteFromWeeklySummary(" + index + ")'>🗑️</button></td>";
+    html +=
+      "<td><button style='background:#c0392b' onclick='deleteFromWeeklySummary(" +
+      index +
+      ")'>🗑️</button></td>";
     html += "</tr>";
   });
 
   html += "</table>";
 
+  html += "<h3>Resumen para Mandante</h3>";
+
+  html += "<table>";
+  html +=
+    "<tr><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+
+  Object.values(resumen).forEach((r) => {
+    html += "<tr>";
+    html += "<td>" + r.fundo + "</td>";
+    html += "<td>" + r.labor + "</td>";
+    html += "<td>" + r.cantidad + "</td>";
+    html += "<td>$" + r.total.toLocaleString("es-CL") + "</td>";
+    html += "</tr>";
+  });
+
+  html += "</table>";
+  let totalMandante = 0;
+
+Object.values(resumen).forEach(r => {
+  totalMandante += r.total;
+});
+
+html += "<h2 style='margin-top:15px'>TOTAL PAGADO: $" + 
+        totalMandante.toLocaleString("es-CL") + 
+        "</h2>";
+        html += `
+<div class="action-right">
+  <button onclick="printMandanteCobro()" class="btn-pay">
+    🖨️ Imprimir Cobro Mandante
+  </button>
+</div>
+`;
+
   html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
-  html += "<h2 id='weeklyTotal'>Total: $" + total.toLocaleString("es-CL") + "</h2>";
+  html +=
+    "<h2 id='weeklyTotal'>Total: $" + total.toLocaleString("es-CL") + "</h2>";
   html += `
   <div class="action-right">
     <button type="button" class="btn-pay" onclick="payWeekly()">
@@ -2242,7 +2342,6 @@ function generateWeeklySummary() {
 }
 
 async function payWeekly() {
-
   const workerIndex = document.getElementById("workerWeekly").value;
 
   if (workerIndex === "") {
@@ -2261,7 +2360,7 @@ async function payWeekly() {
 
   // Filtrar registros a pagar
   const recordsToPay = history.filter(
-    (r) => r.rut === worker.rut && selectedDates.includes(r.date)
+    (r) => r.rut === worker.rut && selectedDates.includes(r.date),
   );
 
   if (recordsToPay.length === 0) {
@@ -2271,18 +2370,20 @@ async function payWeekly() {
 
   // 🔹 Calcular total UNA SOLA VEZ
   let totalToPay = 0;
-  recordsToPay.forEach(r => totalToPay += r.total);
+  recordsToPay.forEach((r) => (totalToPay += r.total));
 
   const confirmPayment = confirm(
-    "Se pagarán " + recordsToPay.length +
-    " registros.\nTotal: $" + totalToPay.toLocaleString("es-CL") +
-    "\n\n¿Confirmar pago?"
+    "Se pagarán " +
+      recordsToPay.length +
+      " registros.\nTotal: $" +
+      totalToPay.toLocaleString("es-CL") +
+      "\n\n¿Confirmar pago?",
   );
 
   if (!confirmPayment) return;
 
   // Marcar como pagado en memoria
-  recordsToPay.forEach(r => {
+  recordsToPay.forEach((r) => {
     r.paid = true;
   });
 
@@ -2302,7 +2403,7 @@ async function payWeekly() {
     name: worker.name,
     total_paid: totalToPay,
     payment_date: new Date().toISOString().split("T")[0],
-    dates_paid: selectedDates
+    dates_paid: selectedDates,
   };
 
   const { error: paymentError } = await supabaseClient
@@ -2336,12 +2437,15 @@ async function payWeekly() {
   let y = 75;
 
   recordsToPay.forEach((r) => {
-
     const line =
-      r.date + " | " +
-      (r.fundo || "-") + " | " +
-      r.labor + " | " +
-      r.quantity + " | $" +
+      r.date +
+      " | " +
+      (r.fundo || "-") +
+      " | " +
+      r.labor +
+      " | " +
+      r.quantity +
+      " | $" +
       Number(r.total).toLocaleString("es-CL");
 
     doc.text(line, 20, y);
@@ -2356,11 +2460,7 @@ async function payWeekly() {
   y += 10;
 
   doc.setFontSize(14);
-  doc.text(
-    "TOTAL PAGADO: $" + totalToPay.toLocaleString("es-CL"),
-    20,
-    y
-  );
+  doc.text("TOTAL PAGADO: $" + totalToPay.toLocaleString("es-CL"), 20, y);
 
   doc.save("Comprobante_Pago_" + worker.rut + ".pdf");
 
@@ -2384,14 +2484,8 @@ async function payWeekly() {
   excelData.push(["Fecha", "Fundo", "Labor", "Cantidad", "Total"]);
 
   // Filas detalle
-  recordsToPay.forEach(r => {
-    excelData.push([
-      r.date,
-      r.fundo || "-",
-      r.labor,
-      r.quantity,
-      r.total
-    ]);
+  recordsToPay.forEach((r) => {
+    excelData.push([r.date, r.fundo || "-", r.labor, r.quantity, r.total]);
   });
 
   // Línea total
@@ -2644,7 +2738,6 @@ async function markAllWeeklyPaid(state) {
 }
 
 function generatePagosResumen() {
-
   const selectedRut =
     document.getElementById("filterPagosWorker")?.value ||
     document.getElementById("workerResumenSelect")?.value ||
@@ -2659,11 +2752,11 @@ function generatePagosResumen() {
   const resumenFundo = {};
 
   history
-    .filter(r => !selectedRut || r.rut === selectedRut)
-    .forEach(r => {
+    .filter((r) => !selectedRut || r.rut === selectedRut)
+    .forEach((r) => {
       const totalValue = Number.isFinite(Number(r.total)) ? Number(r.total) : 0;
       const pagado = Boolean(r.paid);
-      const fundo = (r.fundo && r.fundo.trim()) ? r.fundo.trim() : "Sin fundo";
+      const fundo = r.fundo && r.fundo.trim() ? r.fundo.trim() : "Sin fundo";
 
       // ===== POR TRABAJADOR =====
       if (!resumenTrabajador[r.rut]) {
@@ -2674,7 +2767,7 @@ function generatePagosResumen() {
           pagado: 0,
           pendiente: 0,
           diasPendientes: new Set(),
-          laboresPendientes: {}
+          laboresPendientes: {},
         };
       }
 
@@ -2697,7 +2790,7 @@ function generatePagosResumen() {
         resumenFundo[fundo] = {
           trabajado: 0,
           pagado: 0,
-          pendiente: 0
+          pendiente: 0,
         };
       }
 
@@ -2708,7 +2801,6 @@ function generatePagosResumen() {
       } else {
         resumenFundo[fundo].pendiente += totalValue;
       }
-
     });
 
   let html = "<h3>Por Trabajador</h3>";
@@ -2720,7 +2812,7 @@ function generatePagosResumen() {
   html += "<select id='workerResumenSelect' onchange='generatePagosResumen()'>";
   html += "<option value=''>-- Todos --</option>";
 
-  workers.forEach(w => {
+  workers.forEach((w) => {
     html += "<option value='" + w.rut + "'>" + w.name + "</option>";
   });
 
@@ -2735,8 +2827,7 @@ function generatePagosResumen() {
 
   html += "</tr>";
 
-  Object.values(resumenTrabajador).forEach(w => {
-
+  Object.values(resumenTrabajador).forEach((w) => {
     let laboresTexto = "";
 
     Object.entries(w.laboresPendientes).forEach(([labor, total]) => {
@@ -2746,15 +2837,17 @@ function generatePagosResumen() {
     html += "<tr>";
     html += "<td>" + w.name + "</td>";
     html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
-    html += "<td style='color:green'>$" + w.pagado.toLocaleString("es-CL") + "</td>";
-    html += "<td style='color:red'>$" + w.pendiente.toLocaleString("es-CL") + "</td>";
+    html +=
+      "<td style='color:green'>$" + w.pagado.toLocaleString("es-CL") + "</td>";
+    html +=
+      "<td style='color:red'>$" + w.pendiente.toLocaleString("es-CL") + "</td>";
     if (w.diasPendientes.size > 0) {
       const pendingDatesJson = JSON.stringify(Array.from(w.diasPendientes));
       html +=
         "<td>" +
         "<button type='button' onclick='showPendingDaysCalendar(\"" +
         w.rut +
-        "\", " +
+        '", ' +
         pendingDatesJson +
         ")' style='background: none; border: none; color: #1a73e8; cursor: pointer; font-weight: 600; text-decoration: underline;'>" +
         w.diasPendientes.size +
@@ -2770,14 +2863,21 @@ function generatePagosResumen() {
   html += "</table>";
 
   html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
-  html += "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
+  html +=
+    "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
 
   Object.entries(resumenFundo).forEach(([fundo, data]) => {
     html += "<tr>";
     html += "<td>" + fundo + "</td>";
     html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
-    html += "<td style='color:green'>$" + data.pagado.toLocaleString("es-CL") + "</td>";
-    html += "<td style='color:red'>$" + data.pendiente.toLocaleString("es-CL") + "</td>";
+    html +=
+      "<td style='color:green'>$" +
+      data.pagado.toLocaleString("es-CL") +
+      "</td>";
+    html +=
+      "<td style='color:red'>$" +
+      data.pendiente.toLocaleString("es-CL") +
+      "</td>";
     html += "</tr>";
   });
 
@@ -2829,7 +2929,6 @@ function clearWeeklySearch() {
 // =============================
 
 async function loadPaymentsHistory() {
-
   console.log("ENTRÓ A loadPaymentsHistory");
 
   const container = document.getElementById("paymentsHistoryTable");
@@ -2861,7 +2960,7 @@ async function loadPaymentsHistory() {
       </tr>
   `;
 
-  data.forEach(p => {
+  data.forEach((p) => {
     html += `
       <tr>
         <td>${p.payment_date}</td>
@@ -2879,7 +2978,7 @@ async function loadPaymentsHistory() {
   let totalGeneral = 0;
   let workersSet = new Set();
 
-  data.forEach(p => {
+  data.forEach((p) => {
     totalGeneral += Number(p.total_paid);
     workersSet.add(p.rut);
   });
@@ -2900,8 +2999,7 @@ async function loadPaymentsHistory() {
 }
 
 function openWorkerFolder(rut) {
-
-  const worker = workers.find(w => w.rut === rut);
+  const worker = workers.find((w) => w.rut === rut);
 
   if (!worker) return;
 
@@ -2911,10 +3009,8 @@ function openWorkerFolder(rut) {
   loadWorkerDocuments(rut);
 
   showView("viewWorkerFolder");
-
 }
 async function uploadWorkerDocument() {
-
   const fileInput = document.getElementById("workerFileUpload");
 
   if (!fileInput.files.length) {
@@ -2928,8 +3024,7 @@ async function uploadWorkerDocument() {
 
   const filePath = rut + "/" + Date.now() + "_" + file.name;
 
-  const { error } = await supabaseClient
-    .storage
+  const { error } = await supabaseClient.storage
     .from("worker-files")
     .upload(filePath, file);
 
@@ -2941,14 +3036,10 @@ async function uploadWorkerDocument() {
 
   alert("Documento subido correctamente.");
 
-
   loadWorkerDocuments(rut);
-
 }
 async function loadWorkerDocuments(rut) {
-
-  const { data, error } = await supabaseClient
-    .storage
+  const { data, error } = await supabaseClient.storage
     .from("worker-files")
     .list(rut);
 
@@ -2967,55 +3058,53 @@ async function loadWorkerDocuments(rut) {
 
   let html = "<ul>";
 
-  data.forEach(file => {
-
-    const publicUrl = supabaseClient
-      .storage
+  data.forEach((file) => {
+    const publicUrl = supabaseClient.storage
       .from("worker-files")
       .getPublicUrl(rut + "/" + file.name).data.publicUrl;
 
     // Evita mostrar PDF en caché cuando se sobrescribe el mismo nombre.
-    const version = encodeURIComponent(file.updated_at || file.created_at || Date.now());
+    const version = encodeURIComponent(
+      file.updated_at || file.created_at || Date.now(),
+    );
     const freshUrl = publicUrl + "?v=" + version;
 
     html += "<li>";
     html += "<a href='" + freshUrl + "' target='_blank'>" + file.name + "</a> ";
-    html += "<button onclick=\"deleteWorkerDocument('" + rut + "','" + file.name + "')\">🗑</button>";
+    html +=
+      "<button onclick=\"deleteWorkerDocument('" +
+      rut +
+      "','" +
+      file.name +
+      "')\">🗑</button>";
     html += "</li>";
-
   });
 
   html += "</ul>";
 
   container.innerHTML = html;
-
 }
 async function deleteWorkerDocument(rut, fileName) {
-
   if (!confirm("¿Eliminar este documento?")) return;
 
-  const { error } = await supabaseClient
-    .storage
+  const { error } = await supabaseClient.storage
     .from("worker-files")
     .remove([rut + "/" + fileName]);
 
   if (error) {
-    console.error(error); alert("Error eliminando documento."); return;
+    console.error(error);
+    alert("Error eliminando documento.");
+    return;
   }
 
   alert("Documento eliminado.");
 
   loadWorkerDocuments(rut);
-
 }
 function saveMinimumWage() {
-
   const wageInput = document.getElementById("minimumWage").value;
 
-
-  const wage = Number(
-    wageInput.replace(/\$/g, "").replace(/\./g, "")
-  );
+  const wage = Number(wageInput.replace(/\$/g, "").replace(/\./g, ""));
 
   if (!wage || wage <= 0) {
     alert("Ingrese un sueldo válido.");
@@ -3025,10 +3114,8 @@ function saveMinimumWage() {
   localStorage.setItem("minimumWage", wage);
 
   alert("Sueldo mínimo guardado correctamente.");
-
 }
 function loadMinimumWage() {
-
   const wage = localStorage.getItem("minimumWage");
 
   if (!wage) return;
@@ -3038,5 +3125,30 @@ function loadMinimumWage() {
   if (input) {
     input.value = "$" + Number(wage).toLocaleString("es-CL");
   }
+}
+function printMandanteCobro() {
 
+  const container = document.getElementById("weeklyResult");
+
+  if (!container || container.innerHTML.trim() === "") {
+    alert("Primero genere el resumen.");
+    return;
+  }
+
+  const printWindow = window.open("", "_blank");
+
+  printWindow.document.write(`
+    <html>
+    <head>
+      <title>Cobro Mandante</title>
+      <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+      ${container.innerHTML}
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.print();
 }
