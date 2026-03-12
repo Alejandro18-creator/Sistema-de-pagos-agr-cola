@@ -27,6 +27,7 @@
 
   <!-- APP -->
   <div id="app" class="hidden layout">
+
     <!-- MENÚ LATERAL -->
     <aside class="sidebar">
       <h2>🌱 Sistema</h2>
@@ -59,27 +60,29 @@
         <button type="button" onclick="showView('viewHistory')">
           • Ver Historial Completo
         </button>
-
-
-
-
-
-
-
-
-
-
       </div>
       <button type="button" onclick="showView('viewLiquidation')">
         📄 Liquidación
       </button>
-      <button type="button" onclick="showView('viewMonthly')">
-        📅 Mensual Trabajador
-      </button>
-      <button type="button" onclick="showView('viewMonthlyGeneral')">
-        🧾 Mensual General
+      <button type="button" onclick="toggleSubmenu('monthlySubmenu')">
+        📅 Resumen Mensual ▼
       </button>
 
+      <div id="monthlySubmenu" class="sidebar-submenu">
+
+        <button type="button" onclick="showView('viewMonthly')">
+          • Mensual Trabajador
+        </button>
+
+        <button type="button" onclick="showView('viewMonthlyGeneral')">
+          • Mensual General
+        </button>
+
+        <button type="button" onclick="showView('viewCobrosMandante')">
+          • Cobros Mandantes
+        </button>
+
+      </div>
 
       <button type="button" onclick="showView('viewHistory')">
         📜 Historial
@@ -404,6 +407,11 @@
         <button type="button" onclick="printMonthlyGeneral()" class="no-print"> 🖨️ Imprimir Resumen </button>
         <button type="button" onclick="exportMonthlyGeneralExcel()" class="no-print"> 📊 Exportar a Excel </button>
         <div id="monthlyGeneralResult"></div>
+      </section>
+
+      <section class="card view hidden" id="viewCobrosMandante">
+        <h2>Cobros Mandantes</h2>
+        <p>Aquí aparecerá el calendario para registrar pagos del mandante.</p>
       </section>
 
       <!-- SEMANAL -->

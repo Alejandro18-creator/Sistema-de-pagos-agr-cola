@@ -648,6 +648,7 @@ function registerWork() {
     quantity,
     total,
     fundo: fundo || "",
+     mandante_paid: false,
   };
 
   if (editProductionIndex !== null) {
