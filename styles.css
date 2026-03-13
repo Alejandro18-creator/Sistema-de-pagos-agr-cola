@@ -304,7 +304,6 @@ tr:hover {
 ============================ */
 
 @media print {
-
   /* ===== QUITAR MENÚ ===== */
   .layout {
     display: block !important;
@@ -399,11 +398,11 @@ tr:hover {
     align-items: center;
   }*/
 
-.sign {
-  width: 45%;
-  text-align: center;
-}
-  
+  .sign {
+    width: 45%;
+    text-align: center;
+  }
+
   /* Línea de firma */
   .line {
     border-top: 1px solid black;
@@ -444,7 +443,6 @@ tr:hover {
 /* ===== PRINT ===== */
 
 @media print {
-
   /* Fondo blanco */
   body {
     background: white;
@@ -532,7 +530,7 @@ tr:hover {
   color: black;
   max-width: 800px;
   margin: auto;
-  font-size:11px;
+  font-size: 11px;
 }
 
 .liq-doc h1,
@@ -578,7 +576,6 @@ tr:hover {
 }
 
 @media print {
-
   /* ocultar filas no pagadas */
   .weeklyRow {
     display: none;
@@ -702,7 +699,6 @@ tr:hover {
 }
 
 @media print {
-
   body * {
     visibility: hidden;
   }
@@ -720,7 +716,6 @@ tr:hover {
     background: white;
     padding: 40px;
   }
-
 }
 
 .sub-menu {
@@ -780,4 +775,28 @@ tr:hover {
   overflow-y: auto;
   display: none;
   z-index: 1000;
+}
+.worker-search {
+  position: relative;
+  max-width: 400px;
+}
+
+.worker-search-list {
+  position: absolute;
+  width: 100%;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1000;
+}
+.worker-search-list div {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.worker-search-list div:hover {
+  background: #f4f7ff;
 }

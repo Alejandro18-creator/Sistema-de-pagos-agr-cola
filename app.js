@@ -7,7 +7,12 @@ console.log("APP VERSION 2");
 const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
 const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabaseClient = null;
+
+if (window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
 let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
@@ -50,6 +55,7 @@ async function saveWorkerToCloud(worker) {
 }
 
 async function saveProductionToCloud(record) {
+  if (!supabaseClient) return;
   const { data, error } = await supabaseClient
     .from("history")
     .insert([record])
@@ -68,6 +74,7 @@ async function saveProductionToCloud(record) {
 }
 
 async function loadWorkersFromCloud() {
+  if (!supabaseClient) return;
   const { data, error } = await supabaseClient.from("workers").select("*");
   console.log("DATA:", data);
 
@@ -87,6 +94,7 @@ async function loadWorkersFromCloud() {
 }
 
 async function loadHistoryFromCloud() {
+  if (!supabaseClient) return;
   const { data, error } = await supabaseClient
     .from("history")
     .select("*")
@@ -251,14 +259,16 @@ function logout() {
 // 🚀 INIT
 // =============================
 async function initSystem() {
-  await loadWorkersFromCloud();
-  await loadHistoryFromCloud();
+  if (navigator.onLine && supabaseClient) {
+    await loadWorkersFromCloud();
+    await loadHistoryFromCloud();
+    await pruneHistoryOrphaned();
+  }
 
   loadLabors();
   renderWorkersTable();
   loadAFPOptions();
   loadPagosWorkerFilter();
-  await pruneHistoryOrphaned();
 
   loadMinimumWage();
 }
@@ -676,7 +686,9 @@ function registerWork() {
 
   let labor = normalizeLaborText(document.getElementById("laborSelect").value);
 
-  const newLabor = normalizeLaborText(document.getElementById("newLabor").value);
+  const newLabor = normalizeLaborText(
+    document.getElementById("newLabor").value,
+  );
   const fundo = normalizeFundoForSave(
     document.getElementById("fundoProduction").value,
   );
@@ -710,6 +722,7 @@ function registerWork() {
   const total = quantity * unitValue;
 
   const newRecord = {
+    id: crypto.randomUUID(),
     name: worker.name,
     rut: worker.rut,
     date,
@@ -858,6 +871,41 @@ function filterWorkersWeekly() {
 
   resultsList.innerHTML = html;
   resultsList.style.display = "block";
+}
+
+function filterWorkersProduction() {
+  const input = document
+    .getElementById("searchWorkerProduction")
+    .value.toLowerCase();
+
+  const list = document.getElementById("workerProductionList");
+  list.innerHTML = "";
+
+  if (!input) {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter(
+    (w) =>
+      w.name.toLowerCase().includes(input) ||
+      w.rut.toLowerCase().includes(input),
+  );
+
+  filtered.forEach((w) => {
+    const div = document.createElement("div");
+    div.textContent = `${w.name} - ${w.rut}`;
+
+    div.onclick = () => {
+      document.getElementById("searchWorkerProduction").value = w.name;
+      document.getElementById("workerSelect").value = w.rut;
+      list.style.display = "none";
+    };
+
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
 }
 
 function selectWorkerWeekly(index, name) {
@@ -1691,7 +1739,7 @@ function focusFirstFieldInView(viewId) {
         'input:not([type="hidden"]):not([disabled])',
         "select:not([disabled])",
         "textarea:not([disabled])",
-        'button:not([disabled])',
+        "button:not([disabled])",
         '[tabindex]:not([tabindex="-1"])',
       ];
 
@@ -1718,7 +1766,6 @@ function focusFirstFieldInView(viewId) {
 }
 
 function showView(id) {
-
   document.querySelectorAll(".view").forEach(function (v) {
     v.classList.add("hidden");
   });
@@ -1726,8 +1773,8 @@ function showView(id) {
   document.getElementById(id).classList.remove("hidden");
 
   if (id === "viewContract" || id === "viewWeekly") {
-  loadWorkers();
-}
+    loadWorkers();
+  }
 
   if (id === "viewCobrosMandante") {
     loadMandanteFundoFilter();
@@ -1735,9 +1782,6 @@ function showView(id) {
   }
 
   focusFirstFieldInView(id);
-
-  
-
 }
 
 // =============================
@@ -2089,21 +2133,47 @@ function showCalendarMandante(year = null, month = null) {
   const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
   const firstDay = new Date(year, monthNum, 1).getDay();
 
-  const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const monthNames = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
   const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sá"];
 
-  let html = "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
+  let html =
+    "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
 
-  html += "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
-  html += "<button type='button' onclick='changeMonthMandante(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
-  html += "<span style='font-weight: bold; text-transform: capitalize;'>" + monthNames[monthNum] + " de " + year + "</span>";
-  html += "<button type='button' onclick='changeMonthMandante(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+  html +=
+    "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
+  html +=
+    "<button type='button' onclick='changeMonthMandante(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+  html +=
+    "<span style='font-weight: bold; text-transform: capitalize;'>" +
+    monthNames[monthNum] +
+    " de " +
+    year +
+    "</span>";
+  html +=
+    "<button type='button' onclick='changeMonthMandante(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
   html += "</div>";
 
-  html += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
+  html +=
+    "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
 
   dayNames.forEach((day) => {
-    html += "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" + day + "</div>";
+    html +=
+      "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" +
+      day +
+      "</div>";
   });
 
   for (let i = 0; i < firstDay; i++) {
@@ -2129,16 +2199,28 @@ function showCalendarMandante(year = null, month = null) {
       textColor = "#1a73e8";
     }
 
-    html += "<div onclick='toggleDayMandante(\"" + dateStr + "\")' style='text-align:center; padding:8px; border-radius:50%; background:" + bgColor + "; color:" + textColor + "; font-weight:" + fontWeight + "; cursor:pointer; transition:all 0.2s;'>";
+    html +=
+      "<div onclick='toggleDayMandante(\"" +
+      dateStr +
+      "\")' style='text-align:center; padding:8px; border-radius:50%; background:" +
+      bgColor +
+      "; color:" +
+      textColor +
+      "; font-weight:" +
+      fontWeight +
+      "; cursor:pointer; transition:all 0.2s;'>";
     html += day;
     html += "</div>";
   }
 
   html += "</div>";
 
-  html += "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
-  html += "<button type='button' onclick='clearSelectedDaysMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
-  html += "<button type='button' onclick='todayDateMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
+  html +=
+    "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
+  html +=
+    "<button type='button' onclick='clearSelectedDaysMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+  html +=
+    "<button type='button' onclick='todayDateMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
   html += "</div>";
 
   html += "</div>";
@@ -2154,7 +2236,7 @@ function toggleDayMandante(dateStr) {
   }
   showCalendarMandante(
     currentCalendarDateMandante.getFullYear(),
-    currentCalendarDateMandante.getMonth()
+    currentCalendarDateMandante.getMonth(),
   );
 }
 
@@ -2170,7 +2252,7 @@ function clearSelectedDaysMandante() {
   document.getElementById("mandanteResult").innerHTML = "";
   showCalendarMandante(
     currentCalendarDateMandante.getFullYear(),
-    currentCalendarDateMandante.getMonth()
+    currentCalendarDateMandante.getMonth(),
   );
 }
 
@@ -2237,14 +2319,20 @@ function generateMandanteCobro() {
   Object.values(resumen).forEach((r) => (totalGeneral += r.total));
 
   let html = "<h3>Cobro Mandante</h3>";
-  html += "<p><strong>Período:</strong> " + selectedDates[0] + " al " + selectedDates[selectedDates.length - 1] + "</p>";
+  html +=
+    "<p><strong>Período:</strong> " +
+    selectedDates[0] +
+    " al " +
+    selectedDates[selectedDates.length - 1] +
+    "</p>";
   if (selectedFundo && fundoFilter) {
     const selectedOption = fundoFilter.options[fundoFilter.selectedIndex];
     html += "<p><strong>Fundo:</strong> " + selectedOption.text + "</p>";
   }
 
   html += "<table>";
-  html += "<tr><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+  html +=
+    "<tr><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
   Object.values(resumen).forEach((r) => {
     html += "<tr>";
     html += "<td>" + r.fundo + "</td>";
@@ -2255,7 +2343,10 @@ function generateMandanteCobro() {
   });
   html += "</table>";
 
-  html += "<h2 style='margin-top:15px'>TOTAL: $" + totalGeneral.toLocaleString("es-CL") + "</h2>";
+  html +=
+    "<h2 style='margin-top:15px'>TOTAL: $" +
+    totalGeneral.toLocaleString("es-CL") +
+    "</h2>";
 
   if (resultContainer) {
     resultContainer.innerHTML = html;
@@ -2518,7 +2609,7 @@ function generateWeeklySummary() {
   selectedDates.sort();
 
   const startDate = selectedDates[0].split("-")[2];
-const endDate = selectedDates[selectedDates.length - 1].split("-")[2];
+  const endDate = selectedDates[selectedDates.length - 1].split("-")[2];
 
   if (selectedDates.length === 0) {
     alert("Seleccione al menos un día del calendario.");
@@ -2630,14 +2721,15 @@ const endDate = selectedDates[selectedDates.length - 1].split("-")[2];
   html += "</table>";
   let totalMandante = 0;
 
-Object.values(resumen).forEach(r => {
-  totalMandante += r.total;
-});
+  Object.values(resumen).forEach((r) => {
+    totalMandante += r.total;
+  });
 
-html += "<h2 style='margin-top:15px'>TOTAL PAGADO: $" + 
-        totalMandante.toLocaleString("es-CL") + 
-        "</h2>";
-        html += `
+  html +=
+    "<h2 style='margin-top:15px'>TOTAL PAGADO: $" +
+    totalMandante.toLocaleString("es-CL") +
+    "</h2>";
+  html += `
 <div class="action-right">
   <button onclick="printMandanteCobro()" class="btn-pay">
     🖨️ Imprimir Cobro Mandante
@@ -3445,7 +3537,6 @@ function loadMinimumWage() {
   }
 }
 function printMandanteCobro() {
-
   const container = document.getElementById("weeklyResult");
 
   if (!container || container.innerHTML.trim() === "") {
@@ -3470,3 +3561,11 @@ function printMandanteCobro() {
   printWindow.document.close();
   printWindow.print();
 }
+
+window.addEventListener("online", () => {
+  console.log("Internet restaurado. Sincronizando datos...");
+
+  if (typeof syncToCloud === "function") {
+    syncToCloud();
+  }
+});

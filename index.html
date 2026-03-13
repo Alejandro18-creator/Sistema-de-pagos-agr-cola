@@ -258,9 +258,19 @@
         <!-- PRODUCCIÓN -->
         <section class="card view hidden" id="viewProduction">
           <h2>Registrar Producción</h2>
-          <select id="workerSelect">
-            <option value="">-- Seleccionar trabajador --</option>
-          </select>
+          <div class="worker-search">
+            <input
+              type="text"
+              id="searchWorkerProduction"
+              placeholder="Buscar trabajador por nombre o RUT"
+              oninput="filterWorkersProduction()"
+              autocomplete="off"
+            />
+
+            <div id="workerProductionList" class="worker-search-list"></div>
+          </div>
+
+          <input type="hidden" id="workerSelect" />
 
           <input
             type="text"
