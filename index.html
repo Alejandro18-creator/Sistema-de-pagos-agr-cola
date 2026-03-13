@@ -552,7 +552,20 @@
 
           <div id="calendarMandante"></div>
 
-          <div id="mandanteResult"></div>
+          <div style="margin-top: 15px; max-width: 320px">
+            <label for="mandanteFundoFilter">Filtrar por fundo:</label>
+            <select id="mandanteFundoFilter">
+              <option value="">-- Todos los fundos --</option>
+            </select>
+          </div>
+
+          <div style="margin-top: 15px">
+            <button type="button" onclick="generateMandanteCobro()">
+              📋 Generar Cobro Mandante
+            </button>
+          </div>
+
+          <div id="mandanteResult" style="margin-top: 15px"></div>
         </section>
 
         <!-- SEMANAL -->
@@ -562,7 +575,7 @@
           <div style="position: relative; max-width: 400px">
             <input
               type="text"
-              id="searchWorkerMandante"
+              id="searchWorkerWeekly"
               placeholder="Buscar trabajador por nombre o RUT"
               oninput="filterWorkersWeekly()"
               autocomplete="off"

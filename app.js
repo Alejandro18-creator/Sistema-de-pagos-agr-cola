@@ -595,6 +595,76 @@ function loadAFPOptions() {
   });
 }
 
+function normalizeLaborText(value) {
+  return (value || "").trim().replace(/\s+/g, " ");
+}
+
+function getLaborKey(value) {
+  return normalizeLaborText(value).toLowerCase();
+}
+
+function normalizeFundoText(value) {
+  const normalized = (value || "").trim().replace(/\s+/g, " ");
+  return normalized.replace(/^fundo\s*/i, "").trim();
+}
+
+function getFundoKey(value) {
+  return normalizeFundoText(value).toLowerCase();
+}
+
+function getFundoDisplay(value, fallback = "-") {
+  const normalized = normalizeFundoText(value);
+  if (!normalized) return fallback;
+  return "Fundo " + normalized.toUpperCase();
+}
+
+function normalizeFundoForSave(value) {
+  const normalized = normalizeFundoText(value);
+  if (!normalized) return "";
+  return "Fundo " + normalized.toUpperCase();
+}
+
+function loadMandanteFundoFilter() {
+  const select = document.getElementById("mandanteFundoFilter");
+  if (!select) return;
+
+  const currentValue = select.value;
+  const fundoMap = new Map();
+
+  history.forEach((record) => {
+    const fundoKey = getFundoKey(record.fundo) || "sin-fundo";
+    const fundoLabel = getFundoDisplay(record.fundo, "Sin fundo");
+
+    if (!fundoMap.has(fundoKey)) {
+      fundoMap.set(fundoKey, fundoLabel);
+    }
+  });
+
+  select.innerHTML = "<option value=''>-- Todos los fundos --</option>";
+
+  Array.from(fundoMap.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], "es"))
+    .forEach(([key, label]) => {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = label;
+      select.appendChild(option);
+    });
+
+  if (currentValue && fundoMap.has(currentValue)) {
+    select.value = currentValue;
+  }
+}
+
+function getCanonicalLaborName(value) {
+  const normalized = normalizeLaborText(value);
+  if (!normalized) return "";
+
+  const key = getLaborKey(normalized);
+  const existing = labors.find((l) => getLaborKey(l) === key);
+  return existing || normalized;
+}
+
 // =============================
 // 🧾 PRODUCCIÓN
 // =============================
@@ -604,10 +674,12 @@ function registerWork() {
 
   const date = document.getElementById("workDate").value;
 
-  let labor = document.getElementById("laborSelect").value;
+  let labor = normalizeLaborText(document.getElementById("laborSelect").value);
 
-  const newLabor = document.getElementById("newLabor").value.trim();
-  const fundo = document.getElementById("fundoProduction").value.trim();
+  const newLabor = normalizeLaborText(document.getElementById("newLabor").value);
+  const fundo = normalizeFundoForSave(
+    document.getElementById("fundoProduction").value,
+  );
 
   const quantity = Number(document.getElementById("quantity").value);
 
@@ -619,13 +691,15 @@ function registerWork() {
   );
 
   if (newLabor) {
-    labor = newLabor;
+    labor = getCanonicalLaborName(newLabor);
 
-    if (!labors.includes(newLabor)) {
-      labors.push(newLabor);
+    if (!labors.some((l) => getLaborKey(l) === getLaborKey(newLabor))) {
+      labors.push(labor);
       localStorage.setItem("labors", JSON.stringify(labors));
       loadLabors();
     }
+  } else {
+    labor = getCanonicalLaborName(labor);
   }
 
   if (!worker || !date || !labor || quantity <= 0) {
@@ -1512,6 +1586,9 @@ function generateMonthlyGeneral() {
   const laborSummary = {};
 
   records.forEach((r) => {
+    const laborName = getCanonicalLaborName(r.labor);
+    const laborKey = getLaborKey(laborName);
+
     if (!summary[r.rut]) {
       summary[r.rut] = {
         name: r.name,
@@ -1520,21 +1597,25 @@ function generateMonthlyGeneral() {
         labors: {},
       };
     }
-    if (!laborSummary[r.labor]) {
-      laborSummary[r.labor] = {
+    if (!laborSummary[laborKey]) {
+      laborSummary[laborKey] = {
+        labor: laborName,
         cantidad: 0,
         total: 0,
       };
     }
-    laborSummary[r.labor].cantidad += r.quantity;
-    laborSummary[r.labor].total += r.total;
+    laborSummary[laborKey].cantidad += r.quantity;
+    laborSummary[laborKey].total += r.total;
 
     summary[r.rut].total += r.total;
     summary[r.rut].dates.add(r.date);
-    if (!summary[r.rut].labors[r.labor]) {
-      summary[r.rut].labors[r.labor] = 0;
+    if (!summary[r.rut].labors[laborKey]) {
+      summary[r.rut].labors[laborKey] = {
+        labor: laborName,
+        cantidad: 0,
+      };
     }
-    summary[r.rut].labors[r.labor] += r.quantity;
+    summary[r.rut].labors[laborKey].cantidad += r.quantity;
   });
 
   let html = "<h3>Resumen General del Mes</h3>";
@@ -1544,9 +1625,9 @@ function generateMonthlyGeneral() {
   html += "<div class='table-container'><table>";
   html += "<tr><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
-  Object.entries(laborSummary).forEach(([labor, data]) => {
+  Object.values(laborSummary).forEach((data) => {
     html += "<tr>";
-    html += "<td>" + labor + "</td>";
+    html += "<td>" + data.labor + "</td>";
     html += "<td>" + data.cantidad + "</td>";
     html += "<td>$" + data.total.toLocaleString("es-CL") + "</td>";
     html += "</tr>";
@@ -1566,8 +1647,8 @@ function generateMonthlyGeneral() {
 
     let laborDetalle = "";
 
-    Object.entries(worker.labors).forEach(([labor, cantidad]) => {
-      laborDetalle += labor + ": " + cantidad + "<br>";
+    Object.values(worker.labors).forEach((laborData) => {
+      laborDetalle += laborData.labor + ": " + laborData.cantidad + "<br>";
     });
 
     html += "<tr>";
@@ -1600,6 +1681,42 @@ window.onload = async function () {
   }
 };
 
+function focusFirstFieldInView(viewId) {
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const view = document.getElementById(viewId);
+      if (!view) return;
+
+      const selectors = [
+        'input:not([type="hidden"]):not([disabled])',
+        "select:not([disabled])",
+        "textarea:not([disabled])",
+        'button:not([disabled])',
+        '[tabindex]:not([tabindex="-1"])',
+      ];
+
+      const focusableElements = Array.from(
+        view.querySelectorAll(selectors.join(",")),
+      ).filter((element) => {
+        const style = window.getComputedStyle(element);
+        return (
+          style.display !== "none" &&
+          style.visibility !== "hidden" &&
+          !element.closest(".hidden")
+        );
+      });
+
+      const target = focusableElements[0];
+      if (!target) return;
+
+      target.focus();
+      if (typeof target.select === "function") {
+        target.select();
+      }
+    }, 0);
+  });
+}
+
 function showView(id) {
 
   document.querySelectorAll(".view").forEach(function (v) {
@@ -1608,13 +1725,18 @@ function showView(id) {
 
   document.getElementById(id).classList.remove("hidden");
 
-  if (id === "viewContract") {
-    loadWorkers();
-  }
+  if (id === "viewContract" || id === "viewWeekly") {
+  loadWorkers();
+}
 
   if (id === "viewCobrosMandante") {
-  showCalendar();
-}
+    loadMandanteFundoFilter();
+    showCalendarMandante();
+  }
+
+  focusFirstFieldInView(id);
+
+  
 
 }
 
@@ -1855,15 +1977,19 @@ function exportMonthlyGeneralExcel() {
   const laborSummary = {};
 
   records.forEach((r) => {
-    if (!laborSummary[r.labor]) {
-      laborSummary[r.labor] = {
+    const laborName = getCanonicalLaborName(r.labor);
+    const laborKey = getLaborKey(laborName);
+
+    if (!laborSummary[laborKey]) {
+      laborSummary[laborKey] = {
+        labor: laborName,
         cantidad: 0,
         total: 0,
       };
     }
 
-    laborSummary[r.labor].cantidad += r.quantity;
-    laborSummary[r.labor].total += r.total;
+    laborSummary[laborKey].cantidad += r.quantity;
+    laborSummary[laborKey].total += r.total;
   });
 
   if (records.length === 0) {
@@ -1926,8 +2052,8 @@ function exportMonthlyGeneralExcel() {
   csv += "=== RESUMEN POR TIPO DE LABOR ===\n";
   csv += "Labor;Cantidad Total;Total $\n";
 
-  Object.entries(laborSummary).forEach(([labor, data]) => {
-    csv += labor + ";" + data.cantidad + ";" + data.total + "\n";
+  Object.values(laborSummary).forEach((data) => {
+    csv += data.labor + ";" + data.cantidad + ";" + data.total + "\n";
   });
 
   // Línea total general
@@ -1946,7 +2072,198 @@ function exportMonthlyGeneralExcel() {
 }
 
 // =============================
-// 📊 RESUMEN SEMANAL - MOSTRAR CALENDARIO DEL MES
+// � COBROS MANDANTES - CALENDARIO
+// =============================
+let currentCalendarDateMandante = new Date();
+let selectedDaysMandante = new Set();
+
+function showCalendarMandante(year = null, month = null) {
+  if (year === null || month === null) {
+    year = currentCalendarDateMandante.getFullYear();
+    month = currentCalendarDateMandante.getMonth();
+  } else {
+    currentCalendarDateMandante = new Date(year, month);
+  }
+
+  const monthNum = month;
+  const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
+  const firstDay = new Date(year, monthNum, 1).getDay();
+
+  const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sá"];
+
+  let html = "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
+
+  html += "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
+  html += "<button type='button' onclick='changeMonthMandante(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+  html += "<span style='font-weight: bold; text-transform: capitalize;'>" + monthNames[monthNum] + " de " + year + "</span>";
+  html += "<button type='button' onclick='changeMonthMandante(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+  html += "</div>";
+
+  html += "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
+
+  dayNames.forEach((day) => {
+    html += "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" + day + "</div>";
+  });
+
+  for (let i = 0; i < firstDay; i++) {
+    html += "<div style='padding: 8px;'></div>";
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const monthStr = String(monthNum + 1).padStart(2, "0");
+    const dateStr = year + "-" + monthStr + "-" + String(day).padStart(2, "0");
+    const isSelected = selectedDaysMandante.has(dateStr);
+    const hasRecords = history.some((r) => r.date === dateStr);
+
+    let bgColor = "transparent";
+    let textColor = "#000";
+    let fontWeight = "normal";
+
+    if (isSelected) {
+      bgColor = "#1a73e8";
+      textColor = "white";
+      fontWeight = "bold";
+    } else if (hasRecords) {
+      bgColor = "#e8f4fd";
+      textColor = "#1a73e8";
+    }
+
+    html += "<div onclick='toggleDayMandante(\"" + dateStr + "\")' style='text-align:center; padding:8px; border-radius:50%; background:" + bgColor + "; color:" + textColor + "; font-weight:" + fontWeight + "; cursor:pointer; transition:all 0.2s;'>";
+    html += day;
+    html += "</div>";
+  }
+
+  html += "</div>";
+
+  html += "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
+  html += "<button type='button' onclick='clearSelectedDaysMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+  html += "<button type='button' onclick='todayDateMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
+  html += "</div>";
+
+  html += "</div>";
+
+  document.getElementById("calendarMandante").innerHTML = html;
+}
+
+function toggleDayMandante(dateStr) {
+  if (selectedDaysMandante.has(dateStr)) {
+    selectedDaysMandante.delete(dateStr);
+  } else {
+    selectedDaysMandante.add(dateStr);
+  }
+  showCalendarMandante(
+    currentCalendarDateMandante.getFullYear(),
+    currentCalendarDateMandante.getMonth()
+  );
+}
+
+function changeMonthMandante(direction) {
+  const year = currentCalendarDateMandante.getFullYear();
+  const month = currentCalendarDateMandante.getMonth();
+  const newDate = new Date(year, month + direction);
+  showCalendarMandante(newDate.getFullYear(), newDate.getMonth());
+}
+
+function clearSelectedDaysMandante() {
+  selectedDaysMandante.clear();
+  document.getElementById("mandanteResult").innerHTML = "";
+  showCalendarMandante(
+    currentCalendarDateMandante.getFullYear(),
+    currentCalendarDateMandante.getMonth()
+  );
+}
+
+function todayDateMandante() {
+  currentCalendarDateMandante = new Date();
+  showCalendarMandante();
+}
+
+function generateMandanteCobro() {
+  const resultContainer = document.getElementById("mandanteResult");
+  const fundoFilter = document.getElementById("mandanteFundoFilter");
+  if (resultContainer) {
+    resultContainer.innerHTML = "";
+  }
+
+  const selectedDates = Array.from(selectedDaysMandante);
+  selectedDates.sort();
+
+  if (selectedDates.length === 0) {
+    alert("Seleccione al menos un día del calendario.");
+    return;
+  }
+
+  const selectedFundo = fundoFilter ? fundoFilter.value : "";
+
+  const records = history.filter((r) => {
+    if (!selectedDates.includes(r.date)) {
+      return false;
+    }
+
+    if (!selectedFundo) {
+      return true;
+    }
+
+    return (getFundoKey(r.fundo) || "sin-fundo") === selectedFundo;
+  });
+
+  if (records.length === 0) {
+    if (resultContainer) {
+      resultContainer.innerHTML =
+        "<p style='color:#666;'>No hay registros para las fechas seleccionadas.</p>";
+    }
+    alert("No hay registros en los días seleccionados.");
+    return;
+  }
+
+  const resumen = {};
+  records.forEach((r) => {
+    const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
+    const key = fundoKey + "|" + getLaborKey(r.labor);
+    if (!resumen[key]) {
+      resumen[key] = {
+        fundo: getFundoDisplay(r.fundo, "-"),
+        labor: r.labor,
+        cantidad: 0,
+        total: 0,
+      };
+    }
+    resumen[key].cantidad += Number(r.quantity);
+    resumen[key].total += Number(r.total);
+  });
+
+  let totalGeneral = 0;
+  Object.values(resumen).forEach((r) => (totalGeneral += r.total));
+
+  let html = "<h3>Cobro Mandante</h3>";
+  html += "<p><strong>Período:</strong> " + selectedDates[0] + " al " + selectedDates[selectedDates.length - 1] + "</p>";
+  if (selectedFundo && fundoFilter) {
+    const selectedOption = fundoFilter.options[fundoFilter.selectedIndex];
+    html += "<p><strong>Fundo:</strong> " + selectedOption.text + "</p>";
+  }
+
+  html += "<table>";
+  html += "<tr><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
+  Object.values(resumen).forEach((r) => {
+    html += "<tr>";
+    html += "<td>" + r.fundo + "</td>";
+    html += "<td>" + r.labor + "</td>";
+    html += "<td>" + r.cantidad + "</td>";
+    html += "<td>$" + r.total.toLocaleString("es-CL") + "</td>";
+    html += "</tr>";
+  });
+  html += "</table>";
+
+  html += "<h2 style='margin-top:15px'>TOTAL: $" + totalGeneral.toLocaleString("es-CL") + "</h2>";
+
+  if (resultContainer) {
+    resultContainer.innerHTML = html;
+  }
+}
+
+// =============================
+// �📊 RESUMEN SEMANAL - MOSTRAR CALENDARIO DEL MES
 // =============================
 let currentCalendarDate = new Date();
 let selectedDays = new Set();
@@ -2230,11 +2547,12 @@ const endDate = selectedDates[selectedDates.length - 1].split("-")[2];
   const resumen = {};
 
   records.forEach((r) => {
-    const key = (r.fundo || "Sin fundo") + "|" + r.labor;
+    const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
+    const key = fundoKey + "|" + getLaborKey(r.labor);
 
     if (!resumen[key]) {
       resumen[key] = {
-        fundo: r.fundo || "Sin fundo",
+        fundo: getFundoDisplay(r.fundo, "Sin fundo"),
         labor: r.labor,
         cantidad: 0,
         total: 0,
