@@ -420,6 +420,8 @@ function loadWorkerToEdit() {
   if (index === "") return;
 
   const worker = workers[index];
+  const editSearch = document.getElementById("searchWorkerEdit");
+  if (editSearch) editSearch.value = worker.name || "";
 
   // 🧠 ACTIVAR MODO EDICIÓN
   editIndexWorker = index;
@@ -444,7 +446,15 @@ function loadWorkerToEdit() {
 }
 
 function clearWorkerForm() {
+  editIndexWorker = null;
   document.getElementById("workerEditSelect").value = "";
+  const editSearch = document.getElementById("searchWorkerEdit");
+  const editList = document.getElementById("workerEditList");
+  if (editSearch) editSearch.value = "";
+  if (editList) {
+    editList.style.display = "none";
+    editList.innerHTML = "";
+  }
   document.getElementById("workerName").value = "";
   document.getElementById("workerRut").value = "";
   document.getElementById("workerBirthDate").value = "";
@@ -486,8 +496,88 @@ function loadWorkers() {
     "workerMonthly",
     "workerWeekly",
     "workerContract",
+    "workerFiniquito",
     "workerEditSelect",
   ];
+
+  const liquidationSearch = document.getElementById("searchWorkerLiquidation");
+  if (liquidationSearch) {
+    liquidationSearch.value = "";
+  }
+
+  const liquidationList = document.getElementById("workerLiquidationList");
+  if (liquidationList) {
+    liquidationList.innerHTML = "";
+    liquidationList.style.display = "none";
+  }
+
+  const workerEditSearch = document.getElementById("searchWorkerEdit");
+  if (workerEditSearch) {
+    workerEditSearch.value = "";
+  }
+
+  const workerEditList = document.getElementById("workerEditList");
+  if (workerEditList) {
+    workerEditList.innerHTML = "";
+    workerEditList.style.display = "none";
+  }
+
+  const workerContractSearch = document.getElementById("searchWorkerContract");
+  if (workerContractSearch) {
+    workerContractSearch.value = "";
+  }
+
+  const workerContractList = document.getElementById("workerContractList");
+  if (workerContractList) {
+    workerContractList.innerHTML = "";
+    workerContractList.style.display = "none";
+  }
+
+  const workerMonthlySearch = document.getElementById("searchWorkerMonthly");
+  if (workerMonthlySearch) {
+    workerMonthlySearch.value = "";
+  }
+
+  const workerMonthlyList = document.getElementById("workerMonthlyList");
+  if (workerMonthlyList) {
+    workerMonthlyList.innerHTML = "";
+    workerMonthlyList.style.display = "none";
+  }
+
+  const workerFiniquitoSearch = document.getElementById(
+    "searchWorkerFiniquito",
+  );
+  if (workerFiniquitoSearch) {
+    workerFiniquitoSearch.value = "";
+  }
+
+  const workerFiniquitoList = document.getElementById("workerFiniquitoList");
+  if (workerFiniquitoList) {
+    workerFiniquitoList.innerHTML = "";
+    workerFiniquitoList.style.display = "none";
+  }
+
+  const workerProductionSearch = document.getElementById("searchWorkerProduction");
+  if (workerProductionSearch) {
+    workerProductionSearch.value = "";
+  }
+
+  const workerProductionList = document.getElementById("workerProductionList");
+  if (workerProductionList) {
+    workerProductionList.innerHTML = "";
+    workerProductionList.style.display = "none";
+  }
+
+  const workerWeeklySearch = document.getElementById("searchWorkerWeekly");
+  if (workerWeeklySearch) {
+    workerWeeklySearch.value = "";
+  }
+
+  const workerWeeklyList = document.getElementById("workerWeeklyList");
+  if (workerWeeklyList) {
+    workerWeeklyList.innerHTML = "";
+    workerWeeklyList.style.display = "none";
+  }
 
   ids.forEach((id) => {
     const select = document.getElementById(id);
@@ -679,6 +769,41 @@ function getCanonicalLaborName(value) {
 // 🧾 PRODUCCIÓN
 // =============================
 
+function showProductionConfirmModal({ workerName, date, labor, quantity, total }, onConfirm) {
+  const existing = document.getElementById("productionConfirmModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "productionConfirmModal";
+  modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;";
+
+  modal.innerHTML = `
+    <div style="background:white;padding:30px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.25);">
+      <h3 style="margin:0 0 16px 0;font-size:16px;">Confirme registro de producción</h3>
+      <p style="margin:6px 0;"><strong>Trabajador:</strong> ${workerName}</p>
+      <p style="margin:6px 0;"><strong>Fecha:</strong> ${date}</p>
+      <p style="margin:6px 0;"><strong>Labor:</strong> ${labor}</p>
+      <p style="margin:6px 0;"><strong>Cantidad:</strong> ${quantity}</p>
+      <p style="margin:6px 0;"><strong>Total:</strong> $${total.toLocaleString("es-CL")}</p>
+      <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end;">
+        <button id="prodCancelBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #ccc;background:#f5f5f5;color:#222;cursor:pointer;font-size:14px;">Cancelar</button>
+        <button id="prodConfirmBtn" style="padding:10px 20px;border-radius:8px;border:none;background:#2d7a4f;color:white;cursor:pointer;font-size:14px;">Registrar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("prodConfirmBtn").onclick = () => {
+    modal.remove();
+    onConfirm();
+  };
+
+  document.getElementById("prodCancelBtn").onclick = () => {
+    modal.remove();
+  };
+}
+
 function registerWork() {
   const worker = workers[document.getElementById("workerSelect").value];
 
@@ -721,46 +846,48 @@ function registerWork() {
 
   const total = quantity * unitValue;
 
-  const newRecord = {
-    id: crypto.randomUUID(),
-    name: worker.name,
-    rut: worker.rut,
-    date,
-    labor,
-    quantity,
-    total,
-    fundo: fundo || "",
-    mandante_paid: false,
-  };
+  showProductionConfirmModal({ workerName: worker.name, date, labor, quantity, total }, () => {
+    const newRecord = {
+      id: crypto.randomUUID(),
+      name: worker.name,
+      rut: worker.rut,
+      date,
+      labor,
+      quantity,
+      total,
+      fundo: fundo || "",
+      mandante_paid: false,
+    };
 
-  if (editProductionIndex !== null) {
-    history[editProductionIndex] = newRecord;
-    editProductionIndex = null;
-    document.querySelector(
-      "#viewProduction button[onclick='registerWork()']",
-    ).textContent = "Registrar";
-  } else {
-    history.push(newRecord);
-  }
+    if (editProductionIndex !== null) {
+      history[editProductionIndex] = newRecord;
+      editProductionIndex = null;
+      document.querySelector(
+        "#viewProduction button[onclick='registerWork()']",
+      ).textContent = "Registrar";
+    } else {
+      history.push(newRecord);
+    }
 
-  saveProductionToCloud({
-    name: worker.name,
-    rut: worker.rut,
-    date,
-    labor,
-    quantity,
-    total,
-    fundo: fundo || "",
-    mandante_paid: false,
+    saveProductionToCloud({
+      name: worker.name,
+      rut: worker.rut,
+      date,
+      labor,
+      quantity,
+      total,
+      fundo: fundo || "",
+      mandante_paid: false,
+    });
+
+    localStorage.setItem("history", JSON.stringify(history));
+
+    renderHistory();
+    // ===== LIMPIAR CAMPOS =====
+
+    document.getElementById("workDate").value = "";
+    document.getElementById("quantity").value = "";
   });
-
-  localStorage.setItem("history", JSON.stringify(history));
-
-  renderHistory();
-  // ===== LIMPIAR CAMPOS =====
-
-  document.getElementById("workDate").value = "";
-  document.getElementById("quantity").value = "";
 }
 
 // =============================
@@ -815,13 +942,15 @@ function filterWorkersWeekly() {
   const resultsList = document.getElementById("workerWeeklyList");
   const hiddenSelect = document.getElementById("workerWeekly");
 
-  if (!searchInput || !resultsList) return;
+  if (!searchInput || !resultsList || !hiddenSelect) return;
 
   const search = searchInput.value
     .toLowerCase()
     .replace(/\./g, "")
     .replace(/-/g, "")
     .trim();
+
+  hiddenSelect.value = "";
 
   // Si está vacío, ocultar lista y limpiar selección
   if (search === "") {
@@ -898,7 +1027,7 @@ function filterWorkersProduction() {
 
     div.onclick = () => {
       document.getElementById("searchWorkerProduction").value = w.name;
-      document.getElementById("workerSelect").value = w.rut;
+      document.getElementById("workerSelect").value = workers.indexOf(w);
       list.style.display = "none";
     };
 
@@ -907,6 +1036,467 @@ function filterWorkersProduction() {
 
   list.style.display = "block";
 }
+
+function clearWorkerProductionSearch() {
+  const searchInput = document.getElementById("searchWorkerProduction");
+  const list = document.getElementById("workerProductionList");
+  const hiddenSelect = document.getElementById("workerSelect");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (list) {
+    list.style.display = "none";
+    list.innerHTML = "";
+  }
+}
+
+function filterWorkersEdit() {
+  const searchInput = document.getElementById("searchWorkerEdit");
+  const list = document.getElementById("workerEditList");
+  const hiddenSelect = document.getElementById("workerEditSelect");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  hiddenSelect.value = "";
+  list.innerHTML = "";
+
+  if (search === "") {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter((worker) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+
+    return name.includes(search) || cleanRut.includes(search);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
+
+    div.onclick = () => {
+      const index = workers.indexOf(worker);
+      hiddenSelect.value = index;
+      searchInput.value = worker.name || "";
+      list.style.display = "none";
+      list.innerHTML = "";
+      loadWorkerToEdit();
+    };
+
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
+
+function clearWorkerEditSearch() {
+  const searchInput = document.getElementById("searchWorkerEdit");
+  const list = document.getElementById("workerEditList");
+  const hiddenSelect = document.getElementById("workerEditSelect");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (list) {
+    list.style.display = "none";
+    list.innerHTML = "";
+  }
+}
+
+function filterWorkersContract() {
+  const searchInput = document.getElementById("searchWorkerContract");
+  const list = document.getElementById("workerContractList");
+  const hiddenSelect = document.getElementById("workerContract");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  hiddenSelect.value = "";
+  list.innerHTML = "";
+
+  if (search === "") {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter((worker) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+
+    return name.includes(search) || cleanRut.includes(search);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
+
+    div.onclick = () => {
+      const index = workers.indexOf(worker);
+      hiddenSelect.value = index;
+      searchInput.value = worker.name || "";
+      list.style.display = "none";
+      list.innerHTML = "";
+    };
+
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
+
+function clearWorkerContractSearch() {
+  const searchInput = document.getElementById("searchWorkerContract");
+  const list = document.getElementById("workerContractList");
+  const hiddenSelect = document.getElementById("workerContract");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (list) {
+    list.style.display = "none";
+    list.innerHTML = "";
+  }
+}
+
+function filterWorkersMonthly() {
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const list = document.getElementById("workerMonthlyList");
+  const hiddenSelect = document.getElementById("workerMonthly");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  hiddenSelect.value = "";
+  list.innerHTML = "";
+
+  if (search === "") {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter((worker) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+
+    return name.includes(search) || cleanRut.includes(search);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
+
+    div.onclick = () => {
+      const index = workers.indexOf(worker);
+      hiddenSelect.value = index;
+      searchInput.value = worker.name || "";
+      list.style.display = "none";
+      list.innerHTML = "";
+    };
+
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
+
+function clearWorkerMonthlySearch() {
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const list = document.getElementById("workerMonthlyList");
+  const hiddenSelect = document.getElementById("workerMonthly");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (list) {
+    list.style.display = "none";
+    list.innerHTML = "";
+  }
+}
+
+function filterWorkersFiniquito() {
+  const searchInput = document.getElementById("searchWorkerFiniquito");
+  const list = document.getElementById("workerFiniquitoList");
+  const hiddenSelect = document.getElementById("workerFiniquito");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  hiddenSelect.value = "";
+  list.innerHTML = "";
+
+  if (search === "") {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter((worker) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+
+    return name.includes(search) || cleanRut.includes(search);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
+
+    div.onclick = () => {
+      const index = workers.indexOf(worker);
+      hiddenSelect.value = index;
+      searchInput.value = worker.name || "";
+      list.style.display = "none";
+      list.innerHTML = "";
+    };
+
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
+
+function clearWorkerFiniquitoSearch() {
+  const searchInput = document.getElementById("searchWorkerFiniquito");
+  const list = document.getElementById("workerFiniquitoList");
+  const hiddenSelect = document.getElementById("workerFiniquito");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (list) {
+    list.style.display = "none";
+    list.innerHTML = "";
+  }
+}
+
+function filterWorkersLiquidation() {
+  const input = document
+    .getElementById("searchWorkerLiquidation")
+    .value.toLowerCase();
+
+  const hiddenSelect = document.getElementById("workerLiquidation");
+
+  const list = document.getElementById("workerLiquidationList");
+  list.innerHTML = "";
+
+  if (hiddenSelect) {
+    hiddenSelect.value = "";
+  }
+
+  if (!input) {
+    hiddenSelect.value = "";
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter(
+    (w) =>
+      (w.name || "").toLowerCase().includes(input) ||
+      (w.rut || "").toLowerCase().includes(input),
+  );
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((w) => {
+    const div = document.createElement("div");
+    div.textContent = `${w.name} - ${w.rut}`;
+
+    div.onclick = () => {
+      const index = workers.indexOf(w);
+      hiddenSelect.value = index;
+      document.getElementById("searchWorkerLiquidation").value = w.name;
+      list.style.display = "none";
+      list.innerHTML = "";
+    };
+
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
+
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerLiquidation");
+  const list = document.getElementById("workerLiquidationList");
+  const hiddenSelect = document.getElementById("workerLiquidation");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const clickedInsideInput = searchInput.contains(event.target);
+  const clickedInsideList = list.contains(event.target);
+
+  if (clickedInsideInput || clickedInsideList) return;
+
+  list.style.display = "none";
+  list.innerHTML = "";
+
+  if (!hiddenSelect.value) {
+    searchInput.value = "";
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerWeekly");
+  const list = document.getElementById("workerWeeklyList");
+  const hiddenSelect = document.getElementById("workerWeekly");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const clickedInsideInput = searchInput.contains(event.target);
+  const clickedInsideList = list.contains(event.target);
+
+  if (clickedInsideInput || clickedInsideList) return;
+
+  list.style.display = "none";
+  list.innerHTML = "";
+
+  if (!hiddenSelect.value) {
+    searchInput.value = "";
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerEdit");
+  const list = document.getElementById("workerEditList");
+  const hiddenSelect = document.getElementById("workerEditSelect");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const clickedInsideInput = searchInput.contains(event.target);
+  const clickedInsideList = list.contains(event.target);
+
+  if (clickedInsideInput || clickedInsideList) return;
+
+  list.style.display = "none";
+  list.innerHTML = "";
+
+  if (!hiddenSelect.value) {
+    searchInput.value = "";
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerContract");
+  const list = document.getElementById("workerContractList");
+  const hiddenSelect = document.getElementById("workerContract");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const clickedInsideInput = searchInput.contains(event.target);
+  const clickedInsideList = list.contains(event.target);
+
+  if (clickedInsideInput || clickedInsideList) return;
+
+  list.style.display = "none";
+  list.innerHTML = "";
+
+  if (!hiddenSelect.value) {
+    searchInput.value = "";
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const list = document.getElementById("workerMonthlyList");
+  const hiddenSelect = document.getElementById("workerMonthly");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const clickedInsideInput = searchInput.contains(event.target);
+  const clickedInsideList = list.contains(event.target);
+
+  if (clickedInsideInput || clickedInsideList) return;
+
+  list.style.display = "none";
+  list.innerHTML = "";
+
+  if (!hiddenSelect.value) {
+    searchInput.value = "";
+  }
+});
+
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerFiniquito");
+  const list = document.getElementById("workerFiniquitoList");
+  const hiddenSelect = document.getElementById("workerFiniquito");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const clickedInsideInput = searchInput.contains(event.target);
+  const clickedInsideList = list.contains(event.target);
+
+  if (clickedInsideInput || clickedInsideList) return;
+
+  list.style.display = "none";
+  list.innerHTML = "";
+
+  if (!hiddenSelect.value) {
+    searchInput.value = "";
+  }
+});
 
 function selectWorkerWeekly(index, name) {
   document.getElementById("workerWeekly").value = index;
@@ -1475,7 +2065,7 @@ async function generateContract() {
   }
 }
 async function generateFiniquito() {
-  const workerIndex = document.getElementById("workerContract").value;
+  const workerIndex = document.getElementById("workerFiniquito").value;
 
   if (workerIndex === "") {
     alert("Seleccione un trabajador.");
@@ -3333,6 +3923,19 @@ function clearWeeklySearch() {
   if (calendar) calendar.innerHTML = "";
   if (weeklyResult) weeklyResult.innerHTML = "";
   selectedDays.clear();
+}
+
+function clearLiquidationSearch() {
+  const searchInput = document.getElementById("searchWorkerLiquidation");
+  const resultsList = document.getElementById("workerLiquidationList");
+  const hiddenSelect = document.getElementById("workerLiquidation");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (resultsList) {
+    resultsList.style.display = "none";
+    resultsList.innerHTML = "";
+  }
 }
 // =============================
 // 📂 HISTORIAL DE PAGOS

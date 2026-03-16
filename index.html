@@ -167,7 +167,28 @@
         <section class="card view hidden" id="viewWorkers">
           <h2>Registrar Trabajador</h2>
 
-          <select id="workerEditSelect" onchange="loadWorkerToEdit()">
+          <div class="worker-search">
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerEdit"
+                placeholder="Buscar trabajador para editar"
+                oninput="filterWorkersEdit()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearWorkerEditSearch()"
+                title="Cambiar trabajador"
+              >
+                ✕
+              </button>
+            </div>
+            <div id="workerEditList" class="worker-search-list"></div>
+          </div>
+
+          <select id="workerEditSelect" onchange="loadWorkerToEdit()" style="display: none">
             <option value="">-- Seleccionar para editar --</option>
           </select>
 
@@ -259,13 +280,23 @@
         <section class="card view hidden" id="viewProduction">
           <h2>Registrar Producción</h2>
           <div class="worker-search">
-            <input
-              type="text"
-              id="searchWorkerProduction"
-              placeholder="Buscar trabajador por nombre o RUT"
-              oninput="filterWorkersProduction()"
-              autocomplete="off"
-            />
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerProduction"
+                placeholder="Buscar trabajador por nombre o RUT"
+                oninput="filterWorkersProduction()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearWorkerProductionSearch()"
+                title="Cambiar trabajador"
+              >
+                ✕
+              </button>
+            </div>
 
             <div id="workerProductionList" class="worker-search-list"></div>
           </div>
@@ -315,7 +346,32 @@
           <div id="liquidationPrint" class="liquidacion-doc hidden"></div>
           <h2>Liquidación Mensual</h2>
 
-          <select id="workerLiquidation">
+          <div class="worker-search">
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerLiquidation"
+                placeholder="Buscar trabajador por nombre o RUT"
+                oninput="filterWorkersLiquidation()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearLiquidationSearch()"
+                title="Cambiar trabajador"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              id="workerLiquidationList"
+              class="worker-search-list"
+            ></div>
+          </div>
+
+          <select id="workerLiquidation" style="display: none">
             <option value="">-- Seleccionar trabajador --</option>
           </select>
 
@@ -489,7 +545,28 @@
             🖨️ Imprimir Contrato
           </button>
 
-          <select id="workerContract">
+          <div class="worker-search">
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerContract"
+                placeholder="Buscar trabajador por nombre o RUT"
+                oninput="filterWorkersContract()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearWorkerContractSearch()"
+                title="Cambiar trabajador"
+              >
+                ✕
+              </button>
+            </div>
+            <div id="workerContractList" class="worker-search-list"></div>
+          </div>
+
+          <select id="workerContract" style="display: none">
             <option value="">-- Seleccionar trabajador --</option>
           </select>
 
@@ -516,7 +593,28 @@
         <section class="card view hidden" id="viewMonthly">
           <h2>Resumen Mensual por Trabajador</h2>
 
-          <select id="workerMonthly">
+          <div class="worker-search">
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerMonthly"
+                placeholder="Buscar trabajador por nombre o RUT"
+                oninput="filterWorkersMonthly()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearWorkerMonthlySearch()"
+                title="Cambiar trabajador"
+              >
+                ✕
+              </button>
+            </div>
+            <div id="workerMonthlyList" class="worker-search-list"></div>
+          </div>
+
+          <select id="workerMonthly" style="display: none">
             <option value="">-- Seleccionar trabajador --</option>
           </select>
 
@@ -583,13 +681,23 @@
           <h2>Resumen Semanal</h2>
 
           <div style="position: relative; max-width: 400px">
-            <input
-              type="text"
-              id="searchWorkerWeekly"
-              placeholder="Buscar trabajador por nombre o RUT"
-              oninput="filterWorkersWeekly()"
-              autocomplete="off"
-            />
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerWeekly"
+                placeholder="Buscar trabajador por nombre o RUT"
+                oninput="filterWorkersWeekly()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearWeeklySearch()"
+                title="Cambiar trabajador"
+              >
+                ✕
+              </button>
+            </div>
             <div
               id="workerWeeklyList"
               style="
@@ -712,7 +820,28 @@
           <div id="finiquitoPrint">
             <h2 style="text-align: center">FINIQUITO TRABAJADOR</h2>
 
-            <select id="workerFiniquito">
+            <div class="worker-search">
+              <div class="search-with-clear">
+                <input
+                  type="text"
+                  id="searchWorkerFiniquito"
+                  placeholder="Buscar trabajador por nombre o RUT"
+                  oninput="filterWorkersFiniquito()"
+                  autocomplete="off"
+                />
+                <button
+                  type="button"
+                  class="search-clear-btn"
+                  onclick="clearWorkerFiniquitoSearch()"
+                  title="Cambiar trabajador"
+                >
+                  ✕
+                </button>
+              </div>
+              <div id="workerFiniquitoList" class="worker-search-list"></div>
+            </div>
+
+            <select id="workerFiniquito" style="display: none">
               <option value="">-- Seleccionar trabajador --</option>
             </select>
 
