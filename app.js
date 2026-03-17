@@ -1313,6 +1313,16 @@ function filterWorkersFiniquito() {
       const index = workers.indexOf(worker);
       hiddenSelect.value = index;
       searchInput.value = worker.name || "";
+      document.getElementById("f_workerName").textContent = worker.name;
+      const workerRecords = history
+        .filter((r) => r.rut === worker.rut)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (workerRecords.length > 0) {
+        const parts = workerRecords[0].date.split("-");
+        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        document.getElementById("f_startDate").textContent = formatted;
+      }
       list.style.display = "none";
       list.innerHTML = "";
     };
@@ -2082,6 +2092,9 @@ async function generateFiniquito() {
   }
 
   const worker = workers[workerIndex];
+  const endDate = (document.getElementById("f_endDate")?.value || "").trim();
+
+  syncFiniquitoEndDate(endDate);
 
   const today = new Date().toLocaleDateString("es-CL");
 
@@ -2095,6 +2108,7 @@ async function generateFiniquito() {
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
+  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
 
   <br>
 
@@ -2154,6 +2168,14 @@ async function generateFiniquito() {
     console.log("Finiquito guardado en Supabase");
     alert("Finiquito generado y guardado.");
   }
+}
+
+function syncFiniquitoEndDate(value) {
+  const endDatePrint = document.getElementById("f_endDatePrint");
+  if (!endDatePrint) return;
+
+  const normalizedValue = (value || "").trim();
+  endDatePrint.textContent = normalizedValue || "__________";
 }
 
 function generateMonthlySummary() {

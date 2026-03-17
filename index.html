@@ -188,7 +188,11 @@
             <div id="workerEditList" class="worker-search-list"></div>
           </div>
 
-          <select id="workerEditSelect" onchange="loadWorkerToEdit()" style="display: none">
+          <select
+            id="workerEditSelect"
+            onchange="loadWorkerToEdit()"
+            style="display: none"
+          >
             <option value="">-- Seleccionar para editar --</option>
           </select>
 
@@ -365,10 +369,7 @@
               </button>
             </div>
 
-            <div
-              id="workerLiquidationList"
-              class="worker-search-list"
-            ></div>
+            <div id="workerLiquidationList" class="worker-search-list"></div>
           </div>
 
           <select id="workerLiquidation" style="display: none">
@@ -853,11 +854,21 @@
             </p>
             <p>
               <strong>PRIMERO:</strong>
-              Don(a) ___________________________________________, declara haber
-              prestado servicios desde el ____ / ____ / ______ hasta el ____ /
-              ____ / ______, fecha de terminación por lo dispuesto en el Art.
-              159 N°5 (Conclusión del trabajo que dio origen al contrato).
+              Don(a) <span id="f_workerName">________________</span>, declara
+              haber prestado servicios desde
+              <span id="f_startDate">____ / ____ / ______</span>
+              hasta el <span id="f_endDatePrint">__________</span>, fecha de
+              terminación por lo dispuesto en el Art. 159 N°5 (Conclusión del
+              trabajo que dio origen al contrato).
             </p>
+
+            <input
+              type="text"
+              id="f_endDate"
+              placeholder="Ingrese fecha de terminación"
+              oninput="syncFiniquitoEndDate(this.value)"
+              class="no-print"
+            />
 
             <p>
               <strong>SEGUNDO:</strong>

@@ -823,3 +823,11 @@ tr:hover {
   align-items: center;
   justify-content: center;
 }
+@media print {
+  #searchWorkerFiniquito,
+  #workerFiniquitoList,
+  .search-with-clear,
+  .worker-search {
+    display: none !important;
+  }
+}

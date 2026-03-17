@@ -1,12 +1,12 @@
 {
   "name": "sistema-de-pagos-agr-cola",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sistema de Gestión Agrícola",
   "main": "main.js",
   "scripts": {
-  "start": "electron .",
-  "build": "electron-builder"
-},
+    "start": "electron .",
+    "build": "electron-builder"
+  },
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -14,12 +14,12 @@
     "electron": "^40.8.0",
     "electron-builder": "^26.8.1"
   },
-  "build":{
-  "appId": "com.sangeronimo.sistemaagricola",
-  "productName": "Sistema Agricola",
-  "win": {
-    "target": "nsis",
-    "icon": "icon.ico"
+  "build": {
+    "appId": "com.sangeronimo.sistemaagricola",
+    "productName": "Sistema Agricola",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    }
   }
-}
 }
