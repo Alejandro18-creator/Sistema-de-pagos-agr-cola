@@ -557,7 +557,9 @@ function loadWorkers() {
     workerFiniquitoList.style.display = "none";
   }
 
-  const workerProductionSearch = document.getElementById("searchWorkerProduction");
+  const workerProductionSearch = document.getElementById(
+    "searchWorkerProduction",
+  );
   if (workerProductionSearch) {
     workerProductionSearch.value = "";
   }
@@ -769,13 +771,17 @@ function getCanonicalLaborName(value) {
 // 🧾 PRODUCCIÓN
 // =============================
 
-function showProductionConfirmModal({ workerName, date, labor, quantity, total }, onConfirm) {
+function showProductionConfirmModal(
+  { workerName, date, labor, quantity, total },
+  onConfirm,
+) {
   const existing = document.getElementById("productionConfirmModal");
   if (existing) existing.remove();
 
   const modal = document.createElement("div");
   modal.id = "productionConfirmModal";
-  modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;";
+  modal.style.cssText =
+    "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;";
 
   modal.innerHTML = `
     <div style="background:white;padding:30px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.25);">
@@ -846,48 +852,51 @@ function registerWork() {
 
   const total = quantity * unitValue;
 
-  showProductionConfirmModal({ workerName: worker.name, date, labor, quantity, total }, () => {
-    const newRecord = {
-      id: crypto.randomUUID(),
-      name: worker.name,
-      rut: worker.rut,
-      date,
-      labor,
-      quantity,
-      total,
-      fundo: fundo || "",
-      mandante_paid: false,
-    };
+  showProductionConfirmModal(
+    { workerName: worker.name, date, labor, quantity, total },
+    () => {
+      const newRecord = {
+        id: crypto.randomUUID(),
+        name: worker.name,
+        rut: worker.rut,
+        date,
+        labor,
+        quantity,
+        total,
+        fundo: fundo || "",
+        mandante_paid: false,
+      };
 
-    if (editProductionIndex !== null) {
-      history[editProductionIndex] = newRecord;
-      editProductionIndex = null;
-      document.querySelector(
-        "#viewProduction button[onclick='registerWork()']",
-      ).textContent = "Registrar";
-    } else {
-      history.push(newRecord);
-    }
+      if (editProductionIndex !== null) {
+        history[editProductionIndex] = newRecord;
+        editProductionIndex = null;
+        document.querySelector(
+          "#viewProduction button[onclick='registerWork()']",
+        ).textContent = "Registrar";
+      } else {
+        history.push(newRecord);
+      }
 
-    saveProductionToCloud({
-      name: worker.name,
-      rut: worker.rut,
-      date,
-      labor,
-      quantity,
-      total,
-      fundo: fundo || "",
-      mandante_paid: false,
-    });
+      saveProductionToCloud({
+        name: worker.name,
+        rut: worker.rut,
+        date,
+        labor,
+        quantity,
+        total,
+        fundo: fundo || "",
+        mandante_paid: false,
+      });
 
-    localStorage.setItem("history", JSON.stringify(history));
+      localStorage.setItem("history", JSON.stringify(history));
 
-    renderHistory();
-    // ===== LIMPIAR CAMPOS =====
+      renderHistory();
+      // ===== LIMPIAR CAMPOS =====
 
-    document.getElementById("workDate").value = "";
-    document.getElementById("quantity").value = "";
-  });
+      document.getElementById("workDate").value = "";
+      document.getElementById("quantity").value = "";
+    },
+  );
 }
 
 // =============================
@@ -4172,3 +4181,9 @@ window.addEventListener("online", () => {
     syncToCloud();
   }
 });
+fetch("./package.json")
+  .then((r) => r.json())
+  .then((pkg) => {
+    const el = document.getElementById("appVersion");
+    if (el) el.textContent = pkg.version;
+  });
