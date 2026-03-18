@@ -598,14 +598,25 @@ function loadWorkers() {
 }
 
 function loadPagosWorkerFilter() {
-  const select = document.getElementById("filterPagosWorker");
+  const select =
+    document.getElementById("filterPagosWorker") ||
+    document.getElementById("filterPaymentsWorker");
   if (!select) return;
 
   select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
 
-  workers.forEach((w, i) => {
+  const seenWorkers = new Set();
+
+  workers.forEach((w) => {
+    const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
+    if (!workerKey || seenWorkers.has(workerKey)) {
+      return;
+    }
+
+    seenWorkers.add(workerKey);
+
     const opt = document.createElement("option");
-    opt.value = w.rut;
+    opt.value = workerKey;
     opt.textContent = w.name + " (" + w.rut + ")";
     select.appendChild(opt);
   });
@@ -699,6 +710,19 @@ function loadAFPOptions() {
 
 function normalizeLaborText(value) {
   return (value || "").trim().replace(/\s+/g, " ");
+}
+
+function getWorkerNameKey(value) {
+  return (value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getRutKey(value) {
+  return (value || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .replace(/\s/g, "")
+    .trim();
 }
 
 function getLaborKey(value) {
@@ -3769,29 +3793,91 @@ async function markAllWeeklyPaid(state) {
 }
 
 function generatePagosResumen() {
-  const selectedRut =
+  const selectedWorkerKey =
     document.getElementById("filterPagosWorker")?.value ||
+    document.getElementById("filterPaymentsWorker")?.value ||
     document.getElementById("workerResumenSelect")?.value ||
     "";
+
+  const selectedWorker = workers.find((w) => {
+    const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
+    return workerKey === selectedWorkerKey;
+  });
+  const selectedWorkerNameKey = selectedWorker
+    ? getWorkerNameKey(selectedWorker.name)
+    : "";
 
   if (history.length === 0) {
     alert("No hay registros.");
     return;
   }
 
+  // ===== FASE 1: PRE-ESCANEO de TODO el historial =====
+  // Se construyen los mapas de alias ANTES de agrupar, para que el orden
+  // de los registros no afecte el resultado. "refugio" y "REFUGIO" quedan
+  // con la misma clave canónica sin importar cuál llegue primero.
+  const canonicalByRut = {};
+  const canonicalByName = {};
+
+  history.forEach((r) => {
+    const rutKey = getRutKey(r.rut);
+    const nameKey = getWorkerNameKey(r.name);
+
+    const existing =
+      (rutKey && canonicalByRut[rutKey]) ||
+      (nameKey && canonicalByName[nameKey]);
+
+    const canonical =
+      existing || (rutKey ? "rut:" + rutKey : "name:" + nameKey);
+
+    if (rutKey) canonicalByRut[rutKey] = canonical;
+    if (nameKey) canonicalByName[nameKey] = canonical;
+  });
+
+  // ===== FASE 2: AGRUPACIÓN =====
   const resumenTrabajador = {};
   const resumenFundo = {};
 
   history
-    .filter((r) => !selectedRut || r.rut === selectedRut)
+    .filter((r) => {
+      if (!selectedWorkerKey) return true;
+
+      const rutKey = getRutKey(r.rut);
+      const nameKey = getWorkerNameKey(r.name);
+      const recordWorkerKey =
+        (rutKey && canonicalByRut[rutKey]) ||
+        (nameKey && canonicalByName[nameKey]) ||
+        "";
+
+      if (recordWorkerKey === selectedWorkerKey) return true;
+
+      // Fallback por nombre normalizado (cubre variantes de capitalización)
+      if (
+        selectedWorkerNameKey &&
+        getWorkerNameKey(r.name) === selectedWorkerNameKey
+      ) {
+        return true;
+      }
+
+      return false;
+    })
     .forEach((r) => {
       const totalValue = Number.isFinite(Number(r.total)) ? Number(r.total) : 0;
       const pagado = Boolean(r.paid);
-      const fundo = r.fundo && r.fundo.trim() ? r.fundo.trim() : "Sin fundo";
+      const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
+      const fundoLabel = getFundoDisplay(r.fundo, "Sin fundo");
+      const rutKey = getRutKey(r.rut);
+      const nameKey = getWorkerNameKey(r.name);
+
+      const workerKey =
+        (rutKey && canonicalByRut[rutKey]) ||
+        (nameKey && canonicalByName[nameKey]) ||
+        (rutKey ? "rut:" + rutKey : "name:" + nameKey);
 
       // ===== POR TRABAJADOR =====
-      if (!resumenTrabajador[r.rut]) {
-        resumenTrabajador[r.rut] = {
+      if (!resumenTrabajador[workerKey]) {
+        resumenTrabajador[workerKey] = {
+          key: workerKey,
           rut: r.rut,
           name: r.name,
           trabajado: 0,
@@ -3802,35 +3888,44 @@ function generatePagosResumen() {
         };
       }
 
-      resumenTrabajador[r.rut].trabajado += totalValue;
+      if (!resumenTrabajador[workerKey].rut && r.rut) {
+        resumenTrabajador[workerKey].rut = r.rut;
+      }
+
+      if (!resumenTrabajador[workerKey].name && r.name) {
+        resumenTrabajador[workerKey].name = r.name;
+      }
+
+      resumenTrabajador[workerKey].trabajado += totalValue;
 
       if (pagado) {
-        resumenTrabajador[r.rut].pagado += totalValue;
+        resumenTrabajador[workerKey].pagado += totalValue;
       } else {
-        resumenTrabajador[r.rut].pendiente += totalValue;
-        resumenTrabajador[r.rut].diasPendientes.add(r.date);
+        resumenTrabajador[workerKey].pendiente += totalValue;
+        resumenTrabajador[workerKey].diasPendientes.add(r.date);
 
-        if (!resumenTrabajador[r.rut].laboresPendientes[r.labor]) {
-          resumenTrabajador[r.rut].laboresPendientes[r.labor] = 0;
+        if (!resumenTrabajador[workerKey].laboresPendientes[r.labor]) {
+          resumenTrabajador[workerKey].laboresPendientes[r.labor] = 0;
         }
-        resumenTrabajador[r.rut].laboresPendientes[r.labor] += totalValue;
+        resumenTrabajador[workerKey].laboresPendientes[r.labor] += totalValue;
       }
 
       // ===== POR FUNDO =====
-      if (!resumenFundo[fundo]) {
-        resumenFundo[fundo] = {
+      if (!resumenFundo[fundoKey]) {
+        resumenFundo[fundoKey] = {
+          label: fundoLabel,
           trabajado: 0,
           pagado: 0,
           pendiente: 0,
         };
       }
 
-      resumenFundo[fundo].trabajado += totalValue;
+      resumenFundo[fundoKey].trabajado += totalValue;
 
       if (pagado) {
-        resumenFundo[fundo].pagado += totalValue;
+        resumenFundo[fundoKey].pagado += totalValue;
       } else {
-        resumenFundo[fundo].pendiente += totalValue;
+        resumenFundo[fundoKey].pendiente += totalValue;
       }
     });
 
@@ -3843,8 +3938,25 @@ function generatePagosResumen() {
   html += "<select id='workerResumenSelect' onchange='generatePagosResumen()'>";
   html += "<option value=''>-- Todos --</option>";
 
+  const seenWorkers = new Set();
   workers.forEach((w) => {
-    html += "<option value='" + w.rut + "'>" + w.name + "</option>";
+    const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
+    if (!workerKey || seenWorkers.has(workerKey)) {
+      return;
+    }
+
+    seenWorkers.add(workerKey);
+
+    const isSelected = workerKey === selectedWorkerKey ? " selected" : "";
+
+    html +=
+      "<option value='" +
+      workerKey +
+      "'" +
+      isSelected +
+      ">" +
+      w.name +
+      "</option>";
   });
 
   html += "</select>";
@@ -3897,9 +4009,9 @@ function generatePagosResumen() {
   html +=
     "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
 
-  Object.entries(resumenFundo).forEach(([fundo, data]) => {
+  Object.values(resumenFundo).forEach((data) => {
     html += "<tr>";
-    html += "<td>" + fundo + "</td>";
+    html += "<td>" + data.label + "</td>";
     html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
     html +=
       "<td style='color:green'>$" +
