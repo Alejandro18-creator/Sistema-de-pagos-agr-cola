@@ -277,6 +277,27 @@
         <!-- BASE DE DATOS -->
         <section class="card view hidden" id="viewWorkersDB">
           <h2>Base de Datos de Trabajadores</h2>
+
+          <div class="worker-search">
+            <div class="search-with-clear">
+              <input
+                type="text"
+                id="searchWorkerDB"
+                placeholder="Buscar trabajador por nombre o RUT"
+                oninput="filterWorkersDB()"
+                autocomplete="off"
+              />
+              <button
+                type="button"
+                class="search-clear-btn"
+                onclick="clearWorkerDBSearch()"
+                title="Limpiar búsqueda"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
           <div id="workersTable"></div>
         </section>
 
@@ -518,8 +539,6 @@
               un ejemplar de dicho instrumento, que es el fiel reflejo de la
               relación laboral convenida.
             </p>
-
-            <br /><br /><br />
 
             <div class="signatures">
               <!-- EMPLEADOR -->
@@ -865,8 +884,11 @@
             <input
               type="text"
               id="f_endDate"
-              placeholder="Ingrese fecha de terminación"
-              oninput="syncFiniquitoEndDate(this.value)"
+              placeholder="DD/MM/AAAA"
+              oninput="
+                formatFechaInput(this);
+                syncFiniquitoEndDate(this.value);
+              "
               class="no-print"
             />
 
@@ -882,7 +904,9 @@
               TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN
             </h3>
 
-            <h1 style="text-align: center">$ _______________________</h1>
+            <h1 style="text-align: center" id="f_totalLiquido">
+              $ _______________________
+            </h1>
 
             <br /><br /><br />
 

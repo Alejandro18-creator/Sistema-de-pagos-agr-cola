@@ -296,153 +296,16 @@ tr:hover {
   padding: 40px;
   margin-top: 10px;
   color: black;
-  line-height: 1;
-}
-
-/* ============================
-📄 IMPRESIÓN CONTRATO LIMPIO
-============================ */
-
-@media print {
-  /* ===== QUITAR MENÚ ===== */
-  .layout {
-    display: block !important;
-  }
-
-  .sidebar {
-    display: none !important;
-  }
-
-  .content {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .titulo-contrato {
-    margin-top: 0;
-    padding-top: 0;
-    text-align: center;
-    font-size: 25px;
-  }
-
-  .contract,
-  .card {
-    padding-top: 0;
-    margin-top: 0;
-  }
-
-  /* ===== OCULTAR TODO ===== */
-  body * {
-    visibility: hidden;
-  }
-
-  /* ===== MOSTRAR SOLO CONTRATO Y LIQIDACIONES ===== */
-  #contractPrint,
-  #contractPrint *,
-  #liquidationPrint,
-  #liquidationPrint *,
-  #monthlyGeneralResult,
-  #monthlyGeneralResult * {
-    visibility: visible;
-  }
-
-  /* ===== POSICIÓN HOJA ===== */
-  #contractPrint {
-    position: absolute;
-    top: -3.7cm;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: white;
-    color: black;
-    font-size: 16px;
-    line-height: 1.2;
-    font-family: "Times New Roman", serif;
-  }
-
-  /* ===== TEXTO JUNTO ===== */
-  #contractPrint p {
-    margin: 3px 0;
-    text-align: justify;
-  }
-
-  .clausula {
-    margin: 0.5px 0;
-    line-height: 1.1;
-  }
-
-  #contractPrint h3 {
-    margin: 6px 0 2px 0;
-    font-size: 13px;
-  }
-
-  .signatures {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 60px;
-  }
-
-  .signatures {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-  }
-
-  /* Cada firma */
-  /*.sign {
-    width: 45%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }*/
-
-  .sign {
-    width: 45%;
-    text-align: center;
-  }
-
-  /* Línea de firma */
-  .line {
-    border-top: 1px solid black;
-    width: 250px;
-    /* 👈 ancho fijo */
-    margin-bottom: 10px;
-  }
-
-  /* Textos */
-  .sign-name,
-  .sign-role,
-  .sign-rut {
-    width: 250px;
-    /* 👈 mismo ancho que la línea */
-    text-align: center;
-    margin: 2px 0;
-  }
-
-  .sign-name {
-    font-weight: bold;
-  }
-
-  .sign-rut {
-    font-size: 12px;
-  }
-
-  /* ===== OCULTAR BOTÓN ===== */
-  .no-print {
-    display: none !important;
-  }
-
-  /* ===== MÁRGENES HOJA ===== */
-  @page {
-    margin: 1cm;
-  }
+  line-height: 1.5;
 }
 
 /* ===== PRINT ===== */
 
 @media print {
+  /* ============================= */
+  /* BASE IMPRESION GLOBAL */
+  /* ============================= */
+
   /* Fondo blanco */
   body {
     background: white;
@@ -470,27 +333,128 @@ tr:hover {
     margin: 0;
   }
 
+  /* ============================= */
+  /* CONTRATO */
+  /* ============================= */
+
   /* CONTRATO */
   #contractPrint {
     position: relative;
-    /* 👈 importante */
     top: 0;
     left: 0;
     width: 100%;
     margin: 0;
     padding: 0;
-    page-break-inside: avoid;
+    font-size: 14.5px !important;
+    line-height: 1.35 !important;
   }
 
-  /* Texto compacto */
-  #contractPrint p {
-    margin: 4px 0;
+  #contractPrint p,
+  #contractPrint .clausula {
+    margin: 2px 0 !important;
     text-align: justify;
+    line-height: 1.35 !important;
   }
+
+  #contractPrint h2.titulo-contrato {
+    font-size: 15px !important;
+    margin: 0 0 6px 0 !important;
+  }
+
+  #contractPrint h3 {
+    font-size: 13.5px !important;
+    margin: 3px 0 !important;
+  }
+
+  #contractPrint br {
+    display: none !important;
+  }
+
+  .signatures {
+    margin-top: 104px !important;
+  }
+
+  /* ============================= */
+  /* IMPRESIONES DIRIGIDAS */
+  /* ============================= */
+
+  /* Ocultar todo por defecto para impresiones dirigidas */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Mostrar áreas imprimibles */
+  #weeklyPrintArea,
+  #weeklyPrintArea *,
+  #finiquitoPrint,
+  #finiquitoPrint * {
+    visibility: visible;
+  }
+
+  /* ============================= */
+  /* RESUMEN SEMANAL */
+  /* ============================= */
+
+  /* Layout impresión semanal */
+  #weeklyPrintArea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    padding: 20px;
+  }
+
+  /* ocultar filas no pagadas */
+  .weeklyRow {
+    display: none;
+  }
+
+  /* mostrar solo las que están marcadas */
+  .weeklyRow:has(.paidCheckbox:checked) {
+    display: table-row;
+  }
+
+  .paidCheckbox {
+    display: none;
+  }
+
+  th:first-child,
+  td:first-child {
+    display: none;
+  }
+
+  /* ============================= */
+  /* FINIQUITO */
+  /* ============================= */
+
+  /* Layout impresión finiquito */
+  #finiquitoPrint {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 40px;
+  }
+
+  /* Ocultar búsqueda en finiquito al imprimir */
+  #searchWorkerFiniquito,
+  #workerFiniquitoList,
+  .search-with-clear,
+  .worker-search {
+    display: none !important;
+  }
+
+  /* ============================= */
+  /* HOJA */
+  /* ============================= */
 
   /* Márgenes de hoja */
   @page {
-    margin: 1cm;
+    size: A4;
+    margin: 1.5cm;
   }
 }
 
@@ -548,54 +512,6 @@ tr:hover {
 .liq-doc th {
   border: 1px solid black;
   padding: 6px;
-}
-
-/* ============================= */
-/* 🖨️ PRINT RESUMEN SEMANAL */
-/* ============================= */
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  #weeklyPrintArea,
-  #weeklyPrintArea * {
-    visibility: visible;
-  }
-
-  #weeklyPrintArea {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: white;
-    color: black;
-    padding: 20px;
-  }
-}
-
-@media print {
-  /* ocultar filas no pagadas */
-  .weeklyRow {
-    display: none;
-  }
-
-  /* mostrar solo las que están marcadas */
-  .weeklyRow:has(.paidCheckbox:checked) {
-    display: table-row;
-  }
-}
-
-@media print {
-  .paidCheckbox {
-    display: none;
-  }
-
-  th:first-child,
-  td:first-child {
-    display: none;
-  }
 }
 
 .company-review {
@@ -696,26 +612,6 @@ tr:hover {
 /* 3. Logo más grande y visible */
 #viewHome .company-logo img {
   height: 110px;
-}
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  #finiquitoPrint,
-  #finiquitoPrint * {
-    visibility: visible;
-  }
-
-  #finiquitoPrint {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: white;
-    padding: 40px;
-  }
 }
 
 .sub-menu {
@@ -822,12 +718,4 @@ tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-@media print {
-  #searchWorkerFiniquito,
-  #workerFiniquitoList,
-  .search-with-clear,
-  .worker-search {
-    display: none !important;
-  }
 }

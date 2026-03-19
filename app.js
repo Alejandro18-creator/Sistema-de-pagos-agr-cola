@@ -626,6 +626,16 @@ function loadPagosWorkerFilter() {
 // 📋 TABLA TRABAJADORES
 // =============================
 
+function filterWorkersDB() {
+  renderWorkersTable();
+}
+
+function clearWorkerDBSearch() {
+  const input = document.getElementById("searchWorkerDB");
+  if (input) input.value = "";
+  renderWorkersTable();
+}
+
 function renderWorkersTable() {
   const c = document.getElementById("workersTable");
   if (!c) return;
@@ -635,11 +645,33 @@ function renderWorkersTable() {
     return;
   }
 
+  const searchRaw = (document.getElementById("searchWorkerDB")?.value || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  const filtered = searchRaw
+    ? workers.filter((w) => {
+        const name = (w.name || "").toLowerCase();
+        const rut = (w.rut || "")
+          .toLowerCase()
+          .replace(/\./g, "")
+          .replace(/-/g, "");
+        return name.includes(searchRaw) || rut.includes(searchRaw);
+      })
+    : workers;
+
+  if (filtered.length === 0) {
+    c.innerHTML = "<p>No se encontraron trabajadores.</p>";
+    return;
+  }
+
   let html = "<div class='table-container'><table>";
   html +=
     "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
 
-  workers.forEach((w) => {
+  filtered.forEach((w) => {
     html += "<tr>";
 
     html += "<td>" + w.name + "</td>";
@@ -1346,7 +1378,11 @@ function filterWorkersFiniquito() {
         const parts = workerRecords[0].date.split("-");
         const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
         document.getElementById("f_startDate").textContent = formatted;
+      } else {
+        document.getElementById("f_startDate").textContent =
+          "____ / ____ / ______";
       }
+      refreshFiniquitoResumen();
       list.style.display = "none";
       list.innerHTML = "";
     };
@@ -1973,6 +2009,51 @@ function printContractScreen() {
   openScreenPrintWindow({
     title: "Contrato de Trabajo de Temporada",
     contentHtml: container.outerHTML,
+    extraStyles: `
+      @page {
+        size: A4;
+        margin: 1.5cm;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #contractPrint {
+        padding: 0;
+        margin: 0;
+        font-size: 13.5px !important;
+        line-height: 1.35 !important;
+      }
+      #contractPrint p,
+      #contractPrint .clausula {
+        margin: 2px 0 !important;
+        line-height: 1.35 !important;
+      }
+      #contractPrint h2.titulo-contrato {
+        font-size: 15px !important;
+        margin: 0 0 6px 0 !important;
+        text-align: center;
+      }
+      #contractPrint h3 {
+        font-size: 13.5px !important;
+        margin: 3px 0 !important;
+      }
+      #contractPrint br {
+        display: none !important;
+      }
+      .signatures {
+        margin-top: 104px !important;
+      }
+      .line {
+        width: 200px !important;
+      }
+      .sign-name,
+      .sign-role,
+      .sign-rut {
+        width: 200px !important;
+        font-size: 13px !important;
+      }
+    `,
   });
 }
 
@@ -2056,30 +2137,35 @@ async function generateContract() {
         margin: 0 auto;
         max-width: 740px;
         font-family: "Times New Roman", serif;
-        font-size: 13px;
-        line-height: 1.2;
+        font-size: 14.5px;
+        line-height: 1.35;
       }
 
       #contractPrint .titulo-contrato {
         text-align: center;
-        font-size: 23px;
-        margin: 0 0 14px 0;
+        font-size: 15px;
+        margin: 0 0 6px 0;
       }
 
       #contractPrint p,
       #contractPrint .clausula {
-        margin: 4px 0;
+        margin: 2px 0;
         text-align: justify;
-        line-height: 1.2;
+        line-height: 1.35;
       }
 
       #contractPrint h3 {
-        margin: 10px 0 6px;
+        margin: 3px 0;
+        font-size: 13.5px;
         text-align: center;
       }
 
+      #contractPrint br {
+        display: none;
+      }
+
       #contractPrint .signatures {
-        margin-top: 55px;
+        margin-top: 104px;
       }
     `,
     scale: 2,
@@ -2107,6 +2193,147 @@ async function generateContract() {
     console.log("Contrato guardado en Supabase");
   }
 }
+function calcularTotalPagadoFiniquito(worker, inicio, fin) {
+  if (!worker || !inicio || !fin) return 0;
+
+  const inicioValido = DateHelper.isISO(inicio) || DateHelper.isCLAny(inicio);
+  const finValido = DateHelper.isISO(fin) || DateHelper.isCLAny(fin);
+
+  if (!inicioValido || !finValido) return 0;
+
+  return history
+    .filter(
+      (r) =>
+        r.rut === worker.rut &&
+        r.paid === true &&
+        DateHelper.isBetween(r.date, inicio, fin),
+    )
+    .reduce((sum, r) => sum + Number(r.total), 0);
+}
+
+function getFiniquitoPaidRecords(worker, inicio, fin) {
+  if (!worker || !inicio || !fin) return [];
+
+  const inicioValido = DateHelper.isISO(inicio) || DateHelper.isCLAny(inicio);
+  const finValido = DateHelper.isISO(fin) || DateHelper.isCLAny(fin);
+
+  if (!inicioValido || !finValido) return [];
+
+  return history.filter(
+    (r) =>
+      r.rut === worker.rut && r.paid === true && DateHelper.isBetween(r.date, inicio, fin),
+  );
+}
+
+function showFiniquitoConfirmModal({ workerName, inicio, fin, days, laborRows, total }) {
+  const existing = document.getElementById("finiquitoConfirmModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "finiquitoConfirmModal";
+  modal.style.cssText =
+    "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;";
+
+  const daysHtml = days
+    .map(
+      (d) =>
+        "<span style='display:inline-block;background:#eef4ff;border:1px solid #c9d8ff;color:#1e3c72;padding:4px 8px;border-radius:8px;margin:3px 4px 0 0;font-size:12px;'>" +
+        d +
+        "</span>",
+    )
+    .join("");
+
+  const laborTableRows = laborRows
+    .map(
+      (item) =>
+        "<tr>" +
+        "<td style='padding:6px;border-bottom:1px solid #eee;'>" +
+        item.labor +
+        "</td>" +
+        "<td style='padding:6px;border-bottom:1px solid #eee;text-align:right;'>$" +
+        item.total.toLocaleString("es-CL") +
+        "</td>" +
+        "</tr>",
+    )
+    .join("");
+
+  modal.innerHTML = `
+    <div style="background:white;padding:24px;border-radius:12px;max-width:700px;width:95%;box-shadow:0 4px 24px rgba(0,0,0,0.25);max-height:90vh;overflow:auto;">
+      <h3 style="margin:0 0 12px 0;font-size:17px;">Revisar finiquito antes de generar</h3>
+      <p style="margin:6px 0;"><strong>Trabajador:</strong> ${workerName}</p>
+      <p style="margin:6px 0;"><strong>Rango:</strong> ${inicio} hasta ${fin}</p>
+
+      <div style="margin-top:12px;">
+        <p style="margin:0 0 6px 0;"><strong>Días pagados incluidos:</strong></p>
+        <div>${daysHtml || "<span style='color:#999;'>Sin días</span>"}</div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <p style="margin:0 0 6px 0;"><strong>Labores pagadas:</strong></p>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr>
+            <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd;">Labor</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid #ddd;">Total</th>
+          </tr>
+          ${laborTableRows}
+        </table>
+      </div>
+
+      <p style="margin:14px 0 0 0;font-size:15px;"><strong>Total a finiquitar:</strong> $${total.toLocaleString("es-CL")}</p>
+
+      <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end;">
+        <button id="finiquitoCancelBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #ccc;background:#f5f5f5;color:#222;cursor:pointer;font-size:14px;">Cancelar</button>
+        <button id="finiquitoConfirmBtn" style="padding:10px 20px;border-radius:8px;border:none;background:#2d7a4f;color:white;cursor:pointer;font-size:14px;">Aceptar y generar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  return new Promise((resolve) => {
+    const finish = (result) => {
+      modal.remove();
+      resolve(result);
+    };
+
+    document.getElementById("finiquitoConfirmBtn").onclick = () => finish(true);
+    document.getElementById("finiquitoCancelBtn").onclick = () => finish(false);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        finish(false);
+      }
+    });
+  });
+}
+
+function refreshFiniquitoResumen() {
+  const totalElement = document.getElementById("f_totalLiquido");
+  if (!totalElement) return;
+
+  const workerIndex = document.getElementById("workerFiniquito")?.value;
+  const inicio = (
+    document.getElementById("f_startDate")?.textContent || ""
+  ).trim();
+  const fin = (document.getElementById("f_endDate")?.value || "").trim();
+
+  const finCompleto = DateHelper.isISO(fin) || DateHelper.isCLAny(fin);
+
+  if (
+    workerIndex === "" ||
+    !inicio ||
+    !fin ||
+    inicio.includes("_") ||
+    !finCompleto
+  ) {
+    totalElement.textContent = "$ _______________________";
+    return;
+  }
+
+  const worker = workers[workerIndex];
+  const totalPagado = calcularTotalPagadoFiniquito(worker, inicio, fin);
+  totalElement.textContent = `$ ${totalPagado.toLocaleString("es-CL")}`;
+}
+
 async function generateFiniquito() {
   const workerIndex = document.getElementById("workerFiniquito").value;
 
@@ -2120,6 +2347,51 @@ async function generateFiniquito() {
 
   syncFiniquitoEndDate(endDate);
 
+  const inicio = (
+    document.getElementById("f_startDate")?.textContent || ""
+  ).trim();
+  const fin = (document.getElementById("f_endDate")?.value || "").trim();
+
+  if (!fin || !(DateHelper.isISO(fin) || DateHelper.isCLAny(fin))) {
+    alert("Ingrese una fecha de término válida.");
+    return;
+  }
+
+  const paidRecords = getFiniquitoPaidRecords(worker, inicio, fin);
+
+  if (paidRecords.length === 0) {
+    alert("No hay días pagados en ese rango para este trabajador.");
+    return;
+  }
+
+  const days = [...new Set(paidRecords.map((r) => r.date))]
+    .sort()
+    .map((d) => DateHelper.toCL(d) || d);
+
+  const laborTotals = {};
+  paidRecords.forEach((r) => {
+    const laborKey = r.labor || "Sin labor";
+    if (!laborTotals[laborKey]) laborTotals[laborKey] = 0;
+    laborTotals[laborKey] += Number(r.total) || 0;
+  });
+
+  const laborRows = Object.entries(laborTotals)
+    .map(([labor, total]) => ({ labor, total }))
+    .sort((a, b) => b.total - a.total);
+
+  const totalPagado = calcularTotalPagadoFiniquito(worker, inicio, fin);
+
+  const confirmed = await showFiniquitoConfirmModal({
+    workerName: worker.name,
+    inicio,
+    fin,
+    days,
+    laborRows,
+    total: totalPagado,
+  });
+
+  if (!confirmed) return;
+
   const today = new Date().toLocaleDateString("es-CL");
 
   const html = `
@@ -2132,11 +2404,15 @@ async function generateFiniquito() {
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
+  <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
   <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
 
   <br>
 
   <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
+
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
+  <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
 
@@ -2166,7 +2442,6 @@ async function generateFiniquito() {
 
   </div>
   `;
-
   const pdfBlob = await createPdfBlobFromHtml(html, {
     scale: 2,
   });
@@ -2200,6 +2475,7 @@ function syncFiniquitoEndDate(value) {
 
   const normalizedValue = (value || "").trim();
   endDatePrint.textContent = normalizedValue || "__________";
+  refreshFiniquitoResumen();
 }
 
 function generateMonthlySummary() {
@@ -2410,7 +2686,29 @@ function focusFirstFieldInView(viewId) {
   });
 }
 
+function closeFloatingUi() {
+  // Cierra listas de búsqueda flotantes que pueden quedar sobre inputs.
+  document
+    .querySelectorAll(".worker-search-list, .mandante-worker-list")
+    .forEach((list) => {
+      list.style.display = "none";
+    });
+
+  // Si un modal quedó abierto por error, lo removemos para recuperar interacción.
+  const productionModal = document.getElementById("productionConfirmModal");
+  if (productionModal) {
+    productionModal.remove();
+  }
+
+  const finiquitoModal = document.getElementById("finiquitoConfirmModal");
+  if (finiquitoModal) {
+    finiquitoModal.remove();
+  }
+}
+
 function showView(id) {
+  closeFloatingUi();
+
   document.querySelectorAll(".view").forEach(function (v) {
     v.classList.add("hidden");
   });
@@ -2428,6 +2726,28 @@ function showView(id) {
 
   focusFirstFieldInView(id);
 }
+
+window.addEventListener("resize", closeFloatingUi);
+window.addEventListener("focus", closeFloatingUi);
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    closeFloatingUi();
+  }
+});
+
+document.addEventListener("pointerdown", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+
+  const clickedInsideFloatingUi = target.closest(
+    ".worker-search, .mandante-search, #productionConfirmModal, #finiquitoConfirmModal",
+  );
+
+  if (!clickedInsideFloatingUi) {
+    closeFloatingUi();
+  }
+});
 
 // =============================
 // 📂 TOGGLE SUBMENU
@@ -3250,16 +3570,46 @@ function generateWeeklySummary() {
   const account = worker.account_number || "-";
 
   // Obtener días seleccionados del Set
-  const selectedDates = Array.from(selectedDays);
+  let selectedDates = Array.from(selectedDays);
   selectedDates.sort();
 
-  const startDate = selectedDates[0].split("-")[2];
-  const endDate = selectedDates[selectedDates.length - 1].split("-")[2];
-
+  // Si no hay selección manual, cargar automáticamente los días pagados
+  // del mes actual para este trabajador
   if (selectedDates.length === 0) {
-    alert("Seleccione al menos un día del calendario.");
-    return;
+    const year = currentCalendarDate.getFullYear();
+    const monthStr = String(currentCalendarDate.getMonth() + 1).padStart(
+      2,
+      "0",
+    );
+    const prefix = year + "-" + monthStr + "-";
+    const paidDates = [
+      ...new Set(
+        history
+          .filter(
+            (r) =>
+              r.rut === worker.rut &&
+              r.date.startsWith(prefix) &&
+              r.paid === true,
+          )
+          .map((r) => r.date),
+      ),
+    ].sort();
+
+    if (paidDates.length === 0) {
+      alert(
+        "No hay días pagados este mes. Seleccione los días en el calendario.",
+      );
+      return;
+    }
+    selectedDates = paidDates;
   }
+
+  const startDateParts = (selectedDates[0] || "").split("-");
+  const endDateParts = (selectedDates[selectedDates.length - 1] || "").split(
+    "-",
+  );
+  const startDate = startDateParts.length === 3 ? startDateParts[2] : "-";
+  const endDate = endDateParts.length === 3 ? endDateParts[2] : "-";
 
   // Filtrar registros solo de los días seleccionados
   const records = history.filter((r) => {
@@ -3413,9 +3763,10 @@ async function payWeekly() {
     return;
   }
 
-  // Filtrar registros a pagar
+  // Filtrar registros a pagar (excluir ya pagados para evitar doble pago)
   const recordsToPay = history.filter(
-    (r) => r.rut === worker.rut && selectedDates.includes(r.date),
+    (r) =>
+      r.rut === worker.rut && selectedDates.includes(r.date) && r.paid !== true,
   );
 
   if (recordsToPay.length === 0) {
@@ -4212,9 +4563,15 @@ async function loadWorkerDocuments(rut) {
     return;
   }
 
+  const sortedFiles = [...data].sort((a, b) => {
+    const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+    const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
+
   let html = "<ul>";
 
-  data.forEach((file) => {
+  sortedFiles.forEach((file) => {
     const publicUrl = supabaseClient.storage
       .from("worker-files")
       .getPublicUrl(rut + "/" + file.name).data.publicUrl;
@@ -4321,3 +4678,86 @@ fetch("./package.json")
     const el = document.getElementById("appVersion");
     if (el) el.textContent = pkg.version;
   });
+// =============================
+// 📅 HELPER DE FECHAS PRO
+// =============================
+
+const DateHelper = {
+  // Detecta si una fecha está en formato chileno
+  isCL(fecha) {
+    return /^\d{2}\/\d{2}\/\d{4}$/.test(fecha);
+  },
+
+  // Detecta formato chileno con guiones
+  isCLDash(fecha) {
+    return /^\d{2}-\d{2}-\d{4}$/.test(fecha);
+  },
+
+  // Detecta formato chileno con / o -
+  isCLAny(fecha) {
+    return this.isCL(fecha) || this.isCLDash(fecha);
+  },
+
+  // Detecta formato ISO
+  isISO(fecha) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(fecha);
+  },
+
+  // Convierte cualquier formato a ISO (para cálculos)
+  toISO(fecha) {
+    if (!fecha) return "";
+
+    if (this.isISO(fecha)) return fecha;
+
+    if (this.isCLAny(fecha)) {
+      const [d, m, y] = fecha.split(/[\/-]/);
+      return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    }
+
+    console.warn("Formato de fecha no reconocido:", fecha);
+    return "";
+  },
+
+  // Convierte cualquier formato a chileno (para mostrar)
+  toCL(fecha) {
+    if (!fecha) return "";
+
+    if (this.isCL(fecha)) return fecha;
+
+    if (this.isCLDash(fecha)) {
+      const [d, m, y] = fecha.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    if (this.isISO(fecha)) {
+      const [y, m, d] = fecha.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    console.warn("Formato de fecha no reconocido:", fecha);
+    return "";
+  },
+
+  // Compara fechas sin importar formato
+  isBetween(fecha, inicio, fin) {
+    const f = this.toISO(fecha);
+    const i = this.toISO(inicio);
+    const e = this.toISO(fin);
+
+    return f >= i && f <= e;
+  },
+};
+function formatFechaInput(input) {
+  let value = input.value.replace(/\D/g, ""); // solo números
+
+  if (value.length > 8) value = value.slice(0, 8);
+
+  if (value.length >= 5) {
+    input.value =
+      value.slice(0, 2) + "/" + value.slice(2, 4) + "/" + value.slice(4);
+  } else if (value.length >= 3) {
+    input.value = value.slice(0, 2) + "/" + value.slice(2);
+  } else {
+    input.value = value;
+  }
+}
