@@ -55,7 +55,9 @@ async function saveWorkerToCloud(worker) {
 }
 
 async function saveProductionToCloud(record) {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    return { ok: false, errorMessage: "Sin conexión a Supabase" };
+  }
   const { data, error } = await supabaseClient
     .from("history")
     .insert([record])
@@ -64,13 +66,14 @@ async function saveProductionToCloud(record) {
 
   if (error) {
     console.error("Error guardando producción:", error.message);
-    return;
+    return { ok: false, errorMessage: error.message };
   }
 
   console.log("Producción guardada en Supabase");
 
   // guardar el ID que genera Supabase
   record.id = data.id;
+  return { ok: true, id: data.id };
 }
 
 async function loadWorkersFromCloud() {
@@ -298,6 +301,8 @@ async function addWorker() {
     .replace(/\./g, "");
 
   let photoUrl = null;
+  let workerCloudSaved = false;
+  let workerCloudErrorMessage = "";
 
   if (!name || !rut) {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
@@ -374,6 +379,13 @@ async function addWorker() {
     console.log("UPDATE RESULT:", data);
     console.log("UPDATE ERROR:", error);
 
+    if (error) {
+      workerCloudErrorMessage =
+        error.message || "Error actualizando en Supabase.";
+    } else {
+      workerCloudSaved = true;
+    }
+
     editIndexWorker = null;
   }
 
@@ -400,8 +412,10 @@ async function addWorker() {
 
     if (error) {
       console.error("Error guardando en nube:", error.message);
+      workerCloudErrorMessage = error.message || "Error guardando en Supabase.";
     } else {
       console.log("Trabajador guardado en Supabase");
+      workerCloudSaved = true;
     }
   }
 
@@ -411,7 +425,16 @@ async function addWorker() {
   loadWorkers();
   renderWorkersTable();
 
-  alert("Trabajador guardado correctamente.");
+  if (workerCloudSaved) {
+    alert("✅ Guardado en Supabase OK");
+  } else {
+    alert(
+      "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
+    );
+    if (workerCloudErrorMessage) {
+      console.error("Detalle Supabase:", workerCloudErrorMessage);
+    }
+  }
 }
 
 function loadWorkerToEdit() {
@@ -856,9 +879,9 @@ function showProductionConfirmModal(
 
   document.body.appendChild(modal);
 
-  document.getElementById("prodConfirmBtn").onclick = () => {
+  document.getElementById("prodConfirmBtn").onclick = async () => {
     modal.remove();
-    onConfirm();
+    await onConfirm();
   };
 
   document.getElementById("prodCancelBtn").onclick = () => {
@@ -910,7 +933,7 @@ function registerWork() {
 
   showProductionConfirmModal(
     { workerName: worker.name, date, labor, quantity, total },
-    () => {
+    async () => {
       const newRecord = {
         id: crypto.randomUUID(),
         name: worker.name,
@@ -933,7 +956,7 @@ function registerWork() {
         history.push(newRecord);
       }
 
-      saveProductionToCloud({
+      const cloudSave = await saveProductionToCloud({
         name: worker.name,
         rut: worker.rut,
         date,
@@ -943,6 +966,14 @@ function registerWork() {
         fundo: fundo || "",
         mandante_paid: false,
       });
+
+      if (cloudSave?.ok) {
+        alert("✅ Guardado en Supabase OK");
+      } else {
+        alert(
+          "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
+        );
+      }
 
       localStorage.setItem("history", JSON.stringify(history));
 
@@ -1756,8 +1787,10 @@ async function generateLiquidation() {
 
   if (error) {
     console.error("Error subiendo liquidación:", error);
+    alert("⚠️ No se guardó en nube la liquidación.");
   } else {
     console.log("Liquidación guardada en Supabase");
+    alert("✅ Liquidación guardada en Supabase OK");
   }
 }
 
@@ -2189,8 +2222,10 @@ async function generateContract() {
 
   if (error) {
     console.error("Error subiendo contrato:", error);
+    alert("⚠️ No se guardó en nube el contrato.");
   } else {
     console.log("Contrato guardado en Supabase");
+    alert("✅ Contrato guardado en Supabase OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -2209,101 +2244,6 @@ function calcularTotalPagadoFiniquito(worker, inicio, fin) {
         DateHelper.isBetween(r.date, inicio, fin),
     )
     .reduce((sum, r) => sum + Number(r.total), 0);
-}
-
-function getFiniquitoPaidRecords(worker, inicio, fin) {
-  if (!worker || !inicio || !fin) return [];
-
-  const inicioValido = DateHelper.isISO(inicio) || DateHelper.isCLAny(inicio);
-  const finValido = DateHelper.isISO(fin) || DateHelper.isCLAny(fin);
-
-  if (!inicioValido || !finValido) return [];
-
-  return history.filter(
-    (r) =>
-      r.rut === worker.rut && r.paid === true && DateHelper.isBetween(r.date, inicio, fin),
-  );
-}
-
-function showFiniquitoConfirmModal({ workerName, inicio, fin, days, laborRows, total }) {
-  const existing = document.getElementById("finiquitoConfirmModal");
-  if (existing) existing.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "finiquitoConfirmModal";
-  modal.style.cssText =
-    "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;";
-
-  const daysHtml = days
-    .map(
-      (d) =>
-        "<span style='display:inline-block;background:#eef4ff;border:1px solid #c9d8ff;color:#1e3c72;padding:4px 8px;border-radius:8px;margin:3px 4px 0 0;font-size:12px;'>" +
-        d +
-        "</span>",
-    )
-    .join("");
-
-  const laborTableRows = laborRows
-    .map(
-      (item) =>
-        "<tr>" +
-        "<td style='padding:6px;border-bottom:1px solid #eee;'>" +
-        item.labor +
-        "</td>" +
-        "<td style='padding:6px;border-bottom:1px solid #eee;text-align:right;'>$" +
-        item.total.toLocaleString("es-CL") +
-        "</td>" +
-        "</tr>",
-    )
-    .join("");
-
-  modal.innerHTML = `
-    <div style="background:white;padding:24px;border-radius:12px;max-width:700px;width:95%;box-shadow:0 4px 24px rgba(0,0,0,0.25);max-height:90vh;overflow:auto;">
-      <h3 style="margin:0 0 12px 0;font-size:17px;">Revisar finiquito antes de generar</h3>
-      <p style="margin:6px 0;"><strong>Trabajador:</strong> ${workerName}</p>
-      <p style="margin:6px 0;"><strong>Rango:</strong> ${inicio} hasta ${fin}</p>
-
-      <div style="margin-top:12px;">
-        <p style="margin:0 0 6px 0;"><strong>Días pagados incluidos:</strong></p>
-        <div>${daysHtml || "<span style='color:#999;'>Sin días</span>"}</div>
-      </div>
-
-      <div style="margin-top:14px;">
-        <p style="margin:0 0 6px 0;"><strong>Labores pagadas:</strong></p>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <tr>
-            <th style="text-align:left;padding:6px;border-bottom:1px solid #ddd;">Labor</th>
-            <th style="text-align:right;padding:6px;border-bottom:1px solid #ddd;">Total</th>
-          </tr>
-          ${laborTableRows}
-        </table>
-      </div>
-
-      <p style="margin:14px 0 0 0;font-size:15px;"><strong>Total a finiquitar:</strong> $${total.toLocaleString("es-CL")}</p>
-
-      <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end;">
-        <button id="finiquitoCancelBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #ccc;background:#f5f5f5;color:#222;cursor:pointer;font-size:14px;">Cancelar</button>
-        <button id="finiquitoConfirmBtn" style="padding:10px 20px;border-radius:8px;border:none;background:#2d7a4f;color:white;cursor:pointer;font-size:14px;">Aceptar y generar</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  return new Promise((resolve) => {
-    const finish = (result) => {
-      modal.remove();
-      resolve(result);
-    };
-
-    document.getElementById("finiquitoConfirmBtn").onclick = () => finish(true);
-    document.getElementById("finiquitoCancelBtn").onclick = () => finish(false);
-    modal.addEventListener("click", (event) => {
-      if (event.target === modal) {
-        finish(false);
-      }
-    });
-  });
 }
 
 function refreshFiniquitoResumen() {
@@ -2351,46 +2291,7 @@ async function generateFiniquito() {
     document.getElementById("f_startDate")?.textContent || ""
   ).trim();
   const fin = (document.getElementById("f_endDate")?.value || "").trim();
-
-  if (!fin || !(DateHelper.isISO(fin) || DateHelper.isCLAny(fin))) {
-    alert("Ingrese una fecha de término válida.");
-    return;
-  }
-
-  const paidRecords = getFiniquitoPaidRecords(worker, inicio, fin);
-
-  if (paidRecords.length === 0) {
-    alert("No hay días pagados en ese rango para este trabajador.");
-    return;
-  }
-
-  const days = [...new Set(paidRecords.map((r) => r.date))]
-    .sort()
-    .map((d) => DateHelper.toCL(d) || d);
-
-  const laborTotals = {};
-  paidRecords.forEach((r) => {
-    const laborKey = r.labor || "Sin labor";
-    if (!laborTotals[laborKey]) laborTotals[laborKey] = 0;
-    laborTotals[laborKey] += Number(r.total) || 0;
-  });
-
-  const laborRows = Object.entries(laborTotals)
-    .map(([labor, total]) => ({ labor, total }))
-    .sort((a, b) => b.total - a.total);
-
   const totalPagado = calcularTotalPagadoFiniquito(worker, inicio, fin);
-
-  const confirmed = await showFiniquitoConfirmModal({
-    workerName: worker.name,
-    inicio,
-    fin,
-    days,
-    laborRows,
-    total: totalPagado,
-  });
-
-  if (!confirmed) return;
 
   const today = new Date().toLocaleDateString("es-CL");
 
@@ -2463,9 +2364,10 @@ async function generateFiniquito() {
 
   if (error) {
     console.error("Error subiendo finiquito:", error);
+    alert("⚠️ No se guardó en nube el finiquito.");
   } else {
     console.log("Finiquito guardado en Supabase");
-    alert("Finiquito generado y guardado.");
+    alert("✅ Finiquito guardado en Supabase OK");
   }
 }
 
@@ -2699,11 +2601,6 @@ function closeFloatingUi() {
   if (productionModal) {
     productionModal.remove();
   }
-
-  const finiquitoModal = document.getElementById("finiquitoConfirmModal");
-  if (finiquitoModal) {
-    finiquitoModal.remove();
-  }
 }
 
 function showView(id) {
@@ -2741,7 +2638,7 @@ document.addEventListener("pointerdown", (event) => {
   if (!(target instanceof Element)) return;
 
   const clickedInsideFloatingUi = target.closest(
-    ".worker-search, .mandante-search, #productionConfirmModal, #finiquitoConfirmModal",
+    ".worker-search, .mandante-search, #productionConfirmModal",
   );
 
   if (!clickedInsideFloatingUi) {
@@ -2786,6 +2683,7 @@ function importData(event) {
 
       localStorage.setItem("workers", JSON.stringify(workers));
       localStorage.setItem("history", JSON.stringify(history));
+
       localStorage.setItem("labors", JSON.stringify(labors));
 
       loadWorkers();
@@ -2890,6 +2788,11 @@ async function syncToCloud() {
   if (!confirm("¿Subir todos los datos locales a la nube?")) return;
 
   try {
+    let workerSuccess = 0;
+    let workerErrors = 0;
+    let historySuccess = 0;
+    let historyErrors = 0;
+
     // ===== TRABAJADORES =====
     for (const worker of workers) {
       const { error } = await supabaseClient
@@ -2898,6 +2801,9 @@ async function syncToCloud() {
 
       if (error) {
         console.error("Error subiendo trabajador:", error);
+        workerErrors += 1;
+      } else {
+        workerSuccess += 1;
       }
     }
 
@@ -2907,10 +2813,31 @@ async function syncToCloud() {
 
       if (error) {
         console.error("Error subiendo producción:", error);
+        historyErrors += 1;
+      } else {
+        historySuccess += 1;
       }
     }
 
-    alert("Datos subidos correctamente a la nube.");
+    if (workerErrors === 0 && historyErrors === 0) {
+      alert(
+        "✅ Guardado en Supabase OK. Trabajadores: " +
+          workerSuccess +
+          ", Producción: " +
+          historySuccess,
+      );
+    } else {
+      alert(
+        "⚠️ Subida parcial a Supabase. Trabajadores OK: " +
+          workerSuccess +
+          ", Trabajadores con error: " +
+          workerErrors +
+          ", Producción OK: " +
+          historySuccess +
+          ", Producción con error: " +
+          historyErrors,
+      );
+    }
   } catch (err) {
     console.error(err);
     alert("Error al sincronizar.");
@@ -3794,12 +3721,18 @@ async function payWeekly() {
   });
 
   // 🔹 Actualizar en Supabase
+  let paidUpdateErrors = 0;
   for (const record of recordsToPay) {
     if (record.id) {
-      await supabaseClient
+      const { error } = await supabaseClient
         .from("history")
         .update({ paid: true })
         .eq("id", record.id);
+
+      if (error) {
+        paidUpdateErrors += 1;
+        console.error("Error marcando pago en Supabase:", error.message);
+      }
     }
   }
   // 🔹 GUARDAR REGISTRO EN TABLA payments
@@ -3822,7 +3755,13 @@ async function payWeekly() {
 
   localStorage.setItem("history", JSON.stringify(history));
 
-  alert("Pago registrado correctamente.");
+  if (!paymentError && paidUpdateErrors === 0) {
+    alert("✅ Guardado en Supabase OK (pago semanal).");
+  } else {
+    alert(
+      "⚠️ No se guardó completo en nube el pago semanal. Revise conexión/permisos.",
+    );
+  }
 
   // 🔹 GENERAR PDF DETALLADO
   const { jsPDF } = window.jspdf;
@@ -4132,15 +4071,36 @@ async function markAllWeeklyPaid(state) {
     "#weeklyResult input[type='checkbox']",
   );
 
+  let failedUpdates = 0;
+
   for (const cb of checkboxes) {
     cb.checked = state;
 
     const id = cb.dataset.id;
 
-    await supabaseClient.from("history").update({ paid: state }).eq("id", id);
+    const { error } = await supabaseClient
+      .from("history")
+      .update({ paid: state })
+      .eq("id", id);
+
+    if (error) {
+      failedUpdates += 1;
+      console.error(
+        "Error actualizando pago masivo en Supabase:",
+        error.message,
+      );
+    }
   }
 
   updateWeeklyTotal();
+
+  if (failedUpdates === 0) {
+    alert("✅ Guardado en Supabase OK");
+  } else {
+    alert(
+      "⚠️ No se guardó en nube parte del cambio masivo. Revise conexión/permisos.",
+    );
+  }
 }
 
 function generatePagosResumen() {
