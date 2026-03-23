@@ -149,6 +149,129 @@ async function pruneHistoryOrphaned() {
   renderHistory();
 }
 
+async function syncPendingLocalDataBeforeCloudDownload() {
+  if (!supabaseClient) {
+    return { ok: true, failedHistory: 0, failedWorkers: 0 };
+  }
+
+  const [
+    { data: cloudWorkers, error: workersReadError },
+    { data: cloudHistory, error: historyReadError },
+  ] = await Promise.all([
+    supabaseClient.from("workers").select("rut"),
+    supabaseClient.from("history").select("id"),
+  ]);
+
+  if (workersReadError || historyReadError) {
+    console.error(
+      "Error leyendo datos de Supabase antes de sincronizar:",
+      workersReadError?.message || historyReadError?.message,
+    );
+    return {
+      ok: false,
+      failedHistory: 0,
+      failedWorkers: 0,
+      reason: "read-error",
+    };
+  }
+
+  const cloudWorkerRuts = new Set(
+    (cloudWorkers || []).map((w) => getRutKey(w.rut)).filter(Boolean),
+  );
+
+  const cloudHistoryIds = new Set(
+    (cloudHistory || []).map((r) => String(r.id)).filter(Boolean),
+  );
+
+  const pendingWorkers = [];
+  const localPendingRuts = new Set();
+
+  (workers || []).forEach((worker) => {
+    const rutKey = getRutKey(worker.rut);
+    if (
+      !rutKey ||
+      cloudWorkerRuts.has(rutKey) ||
+      localPendingRuts.has(rutKey)
+    ) {
+      return;
+    }
+    localPendingRuts.add(rutKey);
+    pendingWorkers.push(worker);
+  });
+
+  const pendingHistoryIndexes = [];
+  (history || []).forEach((record, index) => {
+    const localId = record?.id;
+    const idKey =
+      localId === undefined || localId === null ? "" : String(localId);
+    if (!idKey || !cloudHistoryIds.has(idKey)) {
+      pendingHistoryIndexes.push(index);
+    }
+  });
+
+  let failedWorkers = 0;
+  for (const worker of pendingWorkers) {
+    const payload = { ...worker };
+    delete payload.id;
+
+    const { data, error } = await supabaseClient
+      .from("workers")
+      .insert([payload])
+      .select("id")
+      .single();
+
+    if (error) {
+      failedWorkers++;
+      console.error(
+        "Error sincronizando trabajador pendiente:",
+        worker?.rut,
+        error.message,
+      );
+      continue;
+    }
+
+    if (data?.id !== undefined) {
+      worker.id = data.id;
+    }
+  }
+
+  let failedHistory = 0;
+  for (const index of pendingHistoryIndexes) {
+    const localRecord = history[index];
+    const payload = { ...localRecord };
+    delete payload.id;
+
+    const { data, error } = await supabaseClient
+      .from("history")
+      .insert([payload])
+      .select("id")
+      .single();
+
+    if (error) {
+      failedHistory++;
+      console.error(
+        "Error sincronizando producción pendiente:",
+        localRecord,
+        error.message,
+      );
+      continue;
+    }
+
+    if (data?.id !== undefined) {
+      history[index] = { ...localRecord, id: data.id };
+    }
+  }
+
+  localStorage.setItem("workers", JSON.stringify(workers));
+  localStorage.setItem("history", JSON.stringify(history));
+
+  return {
+    ok: failedWorkers === 0 && failedHistory === 0,
+    failedWorkers,
+    failedHistory,
+  };
+}
+
 // =============================
 // 🔐 PASSWORD
 // =============================
@@ -263,9 +386,30 @@ function logout() {
 // =============================
 async function initSystem() {
   if (navigator.onLine && supabaseClient) {
-    await loadWorkersFromCloud();
-    await loadHistoryFromCloud();
-    await pruneHistoryOrphaned();
+    const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
+    const totalFailedSync =
+      (pendingSyncResult.failedWorkers || 0) +
+      (pendingSyncResult.failedHistory || 0);
+
+    if (pendingSyncResult.ok) {
+      await loadWorkersFromCloud();
+      await loadHistoryFromCloud();
+      await pruneHistoryOrphaned();
+    } else if (totalFailedSync > 0) {
+      alert(
+        "⚠️ No se pudieron sincronizar " +
+          totalFailedSync +
+          " registros pendientes (" +
+          (pendingSyncResult.failedWorkers || 0) +
+          " trabajadores y " +
+          (pendingSyncResult.failedHistory || 0) +
+          " producciones). Se mantendrán los datos locales para evitar pérdida de información.",
+      );
+    } else {
+      alert(
+        "⚠️ No se pudo verificar/sincronizar pendientes con Supabase. Se mantendrán los datos locales para evitar pérdida de información.",
+      );
+    }
   }
 
   loadLabors();
@@ -611,6 +755,7 @@ function loadWorkers() {
     select.innerHTML = "<option value=''>-- Seleccionar trabajador --</option>";
 
     workers.forEach((w, i) => {
+      if (w.active === false) return;
       const opt = document.createElement("option");
       opt.value = i;
       opt.textContent = w.name;
@@ -631,6 +776,7 @@ function loadPagosWorkerFilter() {
   const seenWorkers = new Set();
 
   workers.forEach((w) => {
+    if (w.active === false) return;
     const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
     if (!workerKey || seenWorkers.has(workerKey)) {
       return;
@@ -697,7 +843,13 @@ function renderWorkersTable() {
   filtered.forEach((w) => {
     html += "<tr>";
 
-    html += "<td>" + w.name + "</td>";
+    html +=
+      "<td>" +
+      w.name +
+      (w.active === false
+        ? " <span style='color:#e74c3c; font-size:11px;'>(Inactivo)</span>"
+        : "") +
+      "</td>";
     html += "<td>" + w.rut + "</td>";
     html += "<td>" + (w.address || "-") + "</td>";
 
@@ -2270,7 +2422,10 @@ function refreshFiniquitoResumen() {
   }
 
   const worker = workers[workerIndex];
-  const totalPagado = calcularTotalPagadoFiniquito(worker, inicio, fin);
+  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
+  const totalCalculado = calcularTotalPagadoFiniquito(worker, inicio, fin);
+  const totalPagado =
+    sueldoMinimo > 0 ? Math.min(totalCalculado, sueldoMinimo) : totalCalculado;
   totalElement.textContent = `$ ${totalPagado.toLocaleString("es-CL")}`;
 }
 
@@ -2291,7 +2446,10 @@ async function generateFiniquito() {
     document.getElementById("f_startDate")?.textContent || ""
   ).trim();
   const fin = (document.getElementById("f_endDate")?.value || "").trim();
-  const totalPagado = calcularTotalPagadoFiniquito(worker, inicio, fin);
+  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
+  const totalCalculado = calcularTotalPagadoFiniquito(worker, inicio, fin);
+  const totalPagado =
+    sueldoMinimo > 0 ? Math.min(totalCalculado, sueldoMinimo) : totalCalculado;
 
   const today = new Date().toLocaleDateString("es-CL");
 
@@ -2709,53 +2867,41 @@ async function deleteWorker() {
   const index = document.getElementById("workerEditSelect").value;
 
   if (index === "") {
-    alert("Seleccione un trabajador para eliminar.");
+    alert("Seleccione un trabajador para inactivar.");
     return;
   }
 
   const worker = workers[index];
 
-  if (!confirm("¿Está seguro de eliminar este trabajador?")) return;
+  if (
+    !confirm(
+      `¿Está seguro de inactivar a ${worker.name}? El trabajador quedará inactivo y no aparecerá en las listas.`,
+    )
+  )
+    return;
 
-  // 🔹 1. Eliminar en Supabase
+  // 🔹 1. Marcar inactivo en Supabase
   const { error } = await supabaseClient
     .from("workers")
-    .delete()
+    .update({ active: false })
     .eq("rut", worker.rut);
 
   if (error) {
-    console.error("Error eliminando en Supabase:", error.message);
-    alert("Error al eliminar en la base de datos.");
+    console.error("Error actualizando trabajador en Supabase:", error.message);
+    alert("Error al actualizar en la base de datos.");
     return;
   }
 
-  // 🔹 2. Eliminar local
-  workers.splice(index, 1);
+  // 🔹 2. Marcar inactivo local
+  workers[index].active = false;
   localStorage.setItem("workers", JSON.stringify(workers));
-
-  // 🔹 2.1 Eliminar historial asociado
-  const { error: historyError } = await supabaseClient
-    .from("history")
-    .delete()
-    .eq("rut", worker.rut);
-
-  if (historyError) {
-    console.error(
-      "Error eliminando historial en Supabase:",
-      historyError.message,
-    );
-  }
-
-  history = history.filter((r) => r.rut !== worker.rut);
-  localStorage.setItem("history", JSON.stringify(history));
 
   // 🔹 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
-  renderHistory();
 
-  alert("Trabajador eliminado correctamente.");
+  alert(`Trabajador ${worker.name} marcado como inactivo.`);
 }
 
 function exportData() {
