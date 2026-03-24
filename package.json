@@ -1,6 +1,6 @@
 {
   "name": "sistema-de-pagos-agr-cola",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sistema de Gestión Agrícola",
   "main": "main.js",
   "scripts": {

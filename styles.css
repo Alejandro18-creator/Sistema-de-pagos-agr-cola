@@ -316,7 +316,8 @@ tr:hover {
   /* Ocultar sistema */
   .sidebar,
   header,
-  button {
+  button,
+  .no-print {
     display: none !important;
   }
 
@@ -406,23 +407,20 @@ tr:hover {
     padding: 20px;
   }
 
-  /* ocultar filas no pagadas */
-  .weeklyRow {
-    display: none;
-  }
-
-  /* mostrar solo las que están marcadas */
-  .weeklyRow:has(.paidCheckbox:checked) {
-    display: table-row;
-  }
-
   .paidCheckbox {
     display: none;
   }
 
-  th:first-child,
-  td:first-child {
-    display: none;
+  /* Ocultar botones de acción en resumen semanal */
+  #weeklyPrintArea button,
+  #weeklyPrintArea .action-right {
+    display: none !important;
+  }
+
+  /* Ocultar última columna (acciones con 🗑️) en tablas del resumen semanal */
+  #weeklyPrintArea table tr th:last-child,
+  #weeklyPrintArea table tr td:last-child {
+    display: none !important;
   }
 
   /* ============================= */
@@ -453,8 +451,8 @@ tr:hover {
 
   /* Márgenes de hoja */
   @page {
-    size: A4;
-    margin: 1.5cm;
+    size: letter;
+    margin: 1.2cm 1.5cm;
   }
 }
 
@@ -718,4 +716,44 @@ tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+@page {
+  size: Letter;
+  margin: 20mm;
+}
+
+@media print {
+  body {
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #contractPrint {
+    width: 100%;
+    font-family: "Times New Roman", serif;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #000;
+  }
+
+  #contractPrint p,
+  #contractPrint .clausula {
+    margin: 6px 0;
+    text-align: justify;
+  }
+
+  #contractPrint h1 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  #contractPrint h2 {
+    font-size: 14px;
+    margin-top: 12px;
+  }
+
+  #contractPrint .clausula {
+    text-indent: 25px;
+  }
 }

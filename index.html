@@ -691,6 +691,13 @@
             <button type="button" onclick="generateMandanteCobro()">
               📋 Generar Cobro Mandante
             </button>
+            <button
+              type="button"
+              onclick="printMandanteCobro()"
+              style="margin-top: 8px"
+            >
+              🖨️ Imprimir Cobro Mandante
+            </button>
           </div>
 
           <div id="mandanteResult" style="margin-top: 15px"></div>
@@ -761,9 +768,27 @@
             />
 
             <label style="margin-top: 10px">Filtrar por trabajador:</label>
-            <select id="filterPaymentsWorker" onchange="loadPaymentsHistory()">
-              <option value="">-- Todos --</option>
-            </select>
+            <div class="worker-search">
+              <div class="search-with-clear">
+                <input
+                  type="text"
+                  id="searchWorkerPagos"
+                  placeholder="Buscar trabajador por nombre o RUT"
+                  oninput="filterWorkersPagos()"
+                  autocomplete="off"
+                />
+                <button
+                  type="button"
+                  class="search-clear-btn"
+                  onclick="clearWorkerPagosSearch()"
+                  title="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              </div>
+              <div id="workerPagosList" class="worker-search-list"></div>
+            </div>
+            <input type="hidden" id="filterPaymentsWorker" value="" />
           </div>
 
           <!-- 🔷 TABLA -->
@@ -866,10 +891,12 @@
             </select>
 
             <p>
-              En San Clemente, a ____ de __________________ de 20____, entre el
-              empleador SERVICIO AGRÍCOLA SAN GERÓNIMO SPA, con domicilio en 1
-              SUR 690 OF 815 EDIFICIO OFICINA PLAZA MAULE, y el trabajador que
-              se indica por la otra, se acuerda el siguiente finiquito:
+              En San Clemente, a <span id="f_headerDay">____</span> de
+              <span id="f_headerMonth">__________________</span> de
+              <span id="f_headerYear">20____</span>, entre el empleador SERVICIO
+              AGRÍCOLA SAN GERÓNIMO SPA, con domicilio en 1 SUR 690 OF 815
+              EDIFICIO OFICINA PLAZA MAULE, y el trabajador que se indica por la
+              otra, se acuerda el siguiente finiquito:
             </p>
             <p>
               <strong>PRIMERO:</strong>

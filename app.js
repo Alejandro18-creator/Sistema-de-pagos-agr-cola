@@ -766,29 +766,75 @@ function loadWorkers() {
 }
 
 function loadPagosWorkerFilter() {
-  const select =
-    document.getElementById("filterPagosWorker") ||
-    document.getElementById("filterPaymentsWorker");
-  if (!select) return;
+  // El filtro ahora usa búsqueda dinámica, no hace falta poblar un select
+}
 
-  select.innerHTML = "<option value=''>-- Todos los trabajadores --</option>";
+function filterWorkersPagos() {
+  const searchInput = document.getElementById("searchWorkerPagos");
+  const list = document.getElementById("workerPagosList");
+  const hiddenInput = document.getElementById("filterPaymentsWorker");
 
-  const seenWorkers = new Set();
+  if (!searchInput || !list || !hiddenInput) return;
 
-  workers.forEach((w) => {
-    if (w.active === false) return;
-    const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
-    if (!workerKey || seenWorkers.has(workerKey)) {
-      return;
-    }
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
 
-    seenWorkers.add(workerKey);
+  hiddenInput.value = "";
+  list.innerHTML = "";
 
-    const opt = document.createElement("option");
-    opt.value = workerKey;
-    opt.textContent = w.name + " (" + w.rut + ")";
-    select.appendChild(opt);
+  if (search === "") {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter((w) => {
+    if (w.active === false) return false;
+    const name = (w.name || "").toLowerCase();
+    const cleanRut = (w.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+    return name.includes(search) || cleanRut.includes(search);
   });
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name}</strong><br><small style='color:#666;'>${worker.rut}</small>`;
+    div.onclick = () => {
+      const workerKey =
+        getRutKey(worker.rut) || "name:" + getWorkerNameKey(worker.name);
+      hiddenInput.value = workerKey;
+      searchInput.value = worker.name + " (" + worker.rut + ")";
+      list.style.display = "none";
+      list.innerHTML = "";
+    };
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
+
+function clearWorkerPagosSearch() {
+  const searchInput = document.getElementById("searchWorkerPagos");
+  const list = document.getElementById("workerPagosList");
+  const hiddenInput = document.getElementById("filterPaymentsWorker");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenInput) hiddenInput.value = "";
+  if (list) {
+    list.style.display = "none";
+    list.innerHTML = "";
+  }
 }
 
 // =============================
@@ -1760,6 +1806,15 @@ document.addEventListener("click", (event) => {
   }
 });
 
+document.addEventListener("click", (event) => {
+  const searchInput = document.getElementById("searchWorkerPagos");
+  const list = document.getElementById("workerPagosList");
+  if (!searchInput || !list) return;
+  if (searchInput.contains(event.target) || list.contains(event.target)) return;
+  list.style.display = "none";
+  list.innerHTML = "";
+});
+
 function selectWorkerWeekly(index, name) {
   document.getElementById("workerWeekly").value = index;
   document.getElementById("searchWorkerWeekly").value = name;
@@ -2196,8 +2251,8 @@ function printContractScreen() {
     contentHtml: container.outerHTML,
     extraStyles: `
       @page {
-        size: A4;
-        margin: 1.5cm;
+        size: letter;
+        margin: 1.2cm 1.5cm;
       }
       body {
         margin: 0;
@@ -2206,28 +2261,46 @@ function printContractScreen() {
       #contractPrint {
         padding: 0;
         margin: 0;
-        font-size: 13.5px !important;
-        line-height: 1.35 !important;
-      }
-      #contractPrint p,
-      #contractPrint .clausula {
-        margin: 2px 0 !important;
-        line-height: 1.35 !important;
-      }
-      #contractPrint h2.titulo-contrato {
         font-size: 15px !important;
-        margin: 0 0 6px 0 !important;
+        line-height: 1.3 !important;
+      }
+      #contractPrint {
+  font-family: "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.35;
+  color: #000;
+}
+
+#contractPrint p,
+#contractPrint .clausula {
+  margin: 4px 0;
+  text-align: justify;
+}
+
+#contractPrint h1,
+#contractPrint h2 {
+  text-align: center;
+  margin: 10px 0 6px 0;
+  font-weight: bold;
+}
+
+#contractPrint .clausula {
+  text-indent: 20px;
+}
+      #contractPrint h2.titulo-contrato {
+        font-size: 16px !important;
+        margin: 0 0 4px 0 !important;
         text-align: center;
       }
       #contractPrint h3 {
-        font-size: 13.5px !important;
-        margin: 3px 0 !important;
+        font-size: 13px !important;
+        margin: 2px 0 !important;
       }
       #contractPrint br {
         display: none !important;
       }
       .signatures {
-        margin-top: 104px !important;
+        margin-top: 60px !important;
       }
       .line {
         width: 200px !important;
@@ -2322,13 +2395,13 @@ async function generateContract() {
         margin: 0 auto;
         max-width: 740px;
         font-family: "Times New Roman", serif;
-        font-size: 14.5px;
+        font-size: 15px;
         line-height: 1.35;
       }
 
       #contractPrint .titulo-contrato {
         text-align: center;
-        font-size: 15px;
+        font-size: 16px;
         margin: 0 0 6px 0;
       }
 
@@ -2341,7 +2414,7 @@ async function generateContract() {
 
       #contractPrint h3 {
         margin: 3px 0;
-        font-size: 13.5px;
+        font-size: 14px;
         text-align: center;
       }
 
@@ -2535,6 +2608,40 @@ function syncFiniquitoEndDate(value) {
 
   const normalizedValue = (value || "").trim();
   endDatePrint.textContent = normalizedValue || "__________";
+
+  // Rellenar encabezado "En San Clemente, a __ de ___ de ____"
+  const months = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
+  const parts = normalizedValue.split("/");
+  const dayEl = document.getElementById("f_headerDay");
+  const monthEl = document.getElementById("f_headerMonth");
+  const yearEl = document.getElementById("f_headerYear");
+  if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+    const day = parseInt(parts[0], 10);
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const year = parts[2];
+    if (dayEl) dayEl.textContent = day || "____";
+    if (monthEl)
+      monthEl.textContent = months[monthIndex] || "__________________";
+    if (yearEl) yearEl.textContent = year || "20____";
+  } else {
+    if (dayEl) dayEl.textContent = "____";
+    if (monthEl) monthEl.textContent = "__________________";
+    if (yearEl) yearEl.textContent = "20____";
+  }
+
   refreshFiniquitoResumen();
 }
 
@@ -3771,7 +3878,7 @@ function generateWeeklySummary() {
 
   html += "</table>";
 
-  html += "<h3>Resumen para Mandante</h3>";
+  /*html += "<h3>Resumen para Mandante</h3>";*/
 
   html += "<table>";
   html +=
@@ -3797,13 +3904,6 @@ function generateWeeklySummary() {
     "<h2 style='margin-top:15px'>TOTAL PAGADO: $" +
     totalMandante.toLocaleString("es-CL") +
     "</h2>";
-  html += `
-<div class="action-right">
-  <button onclick="printMandanteCobro()" class="btn-pay">
-    🖨️ Imprimir Cobro Mandante
-  </button>
-</div>
-`;
 
   html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html +=
@@ -4746,7 +4846,7 @@ function loadMinimumWage() {
   }
 }
 function printMandanteCobro() {
-  const container = document.getElementById("weeklyResult");
+  const container = document.getElementById("mandanteResult");
 
   if (!container || container.innerHTML.trim() === "") {
     alert("Primero genere el resumen.");
