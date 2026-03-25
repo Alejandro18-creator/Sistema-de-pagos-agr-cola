@@ -3037,9 +3037,7 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-async function syncToCloud() {
-  if (!confirm("¿Subir todos los datos locales a la nube?")) return;
-
+async function syncToCloud(showAlerts = false) {
   try {
     let workerSuccess = 0;
     let workerErrors = 0;
@@ -3072,30 +3070,48 @@ async function syncToCloud() {
       }
     }
 
-    if (workerErrors === 0 && historyErrors === 0) {
-      alert(
-        "✅ Guardado en Supabase OK. Trabajadores: " +
-          workerSuccess +
-          ", Producción: " +
-          historySuccess,
-      );
-    } else {
-      alert(
-        "⚠️ Subida parcial a Supabase. Trabajadores OK: " +
-          workerSuccess +
-          ", Trabajadores con error: " +
-          workerErrors +
-          ", Producción OK: " +
-          historySuccess +
-          ", Producción con error: " +
-          historyErrors,
-      );
+    if (showAlerts) {
+      if (workerErrors === 0 && historyErrors === 0) {
+        alert(
+          "✅ Guardado en Supabase OK. Trabajadores: " +
+            workerSuccess +
+            ", Producción: " +
+            historySuccess,
+        );
+      } else {
+        alert(
+          "⚠️ Subida parcial a Supabase. Trabajadores OK: " +
+            workerSuccess +
+            ", Trabajadores con error: " +
+            workerErrors +
+            ", Producción OK: " +
+            historySuccess +
+            ", Producción con error: " +
+            historyErrors,
+        );
+      }
     }
   } catch (err) {
     console.error(err);
-    alert("Error al sincronizar.");
+    if (showAlerts) alert("Error al sincronizar.");
   }
 }
+
+// Sincronización automática al detectar conexión a internet
+window.addEventListener("online", () => {
+  if (supabaseClient) {
+    syncToCloud(false);
+    console.log("Sincronización automática con la nube ejecutada.");
+  }
+});
+
+// Al cargar la app, si hay internet, sincroniza automáticamente
+window.addEventListener("DOMContentLoaded", () => {
+  if (navigator.onLine && supabaseClient) {
+    syncToCloud(false);
+    console.log("Sincronización automática con la nube ejecutada al iniciar.");
+  }
+});
 
 async function syncFromCloud() {
   if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
