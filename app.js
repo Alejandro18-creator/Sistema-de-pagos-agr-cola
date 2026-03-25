@@ -395,22 +395,14 @@ async function initSystem() {
         (pendingSyncResult.failedHistory || 0);
 
       if (pendingSyncResult.ok) {
+        // Solo si TODO se sincronizó bien, descargar de la nube
         await loadWorkersFromCloud();
         await loadHistoryFromCloud();
         await pruneHistoryOrphaned();
-      } else if (totalFailedSync > 0) {
-        alert(
-          "⚠️ No se pudieron sincronizar " +
-            totalFailedSync +
-            " registros pendientes (" +
-            (pendingSyncResult.failedWorkers || 0) +
-            " trabajadores y " +
-            (pendingSyncResult.failedHistory || 0) +
-            " producciones). Se mantendrán los datos locales para evitar pérdida de información.",
-        );
       } else {
+        // Si hubo cualquier error, NO descargar de la nube para no perder datos locales
         alert(
-          "⚠️ No se pudo verificar/sincronizar pendientes con Supabase. Se mantendrán los datos locales para evitar pérdida de información.",
+          "⚠️ No se pudieron sincronizar todos los datos con la nube.\n\nTus datos locales se mantendrán intactos para evitar pérdida de información.\n\nPor favor, revisa la conexión o los datos y vuelve a intentarlo.",
         );
       }
     } finally {
