@@ -385,30 +385,36 @@ function logout() {
 // 🚀 INIT
 // =============================
 async function initSystem() {
+  const syncIndicator = document.getElementById("syncIndicator");
   if (navigator.onLine && supabaseClient) {
-    const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
-    const totalFailedSync =
-      (pendingSyncResult.failedWorkers || 0) +
-      (pendingSyncResult.failedHistory || 0);
+    if (syncIndicator) syncIndicator.style.display = "flex";
+    try {
+      const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
+      const totalFailedSync =
+        (pendingSyncResult.failedWorkers || 0) +
+        (pendingSyncResult.failedHistory || 0);
 
-    if (pendingSyncResult.ok) {
-      await loadWorkersFromCloud();
-      await loadHistoryFromCloud();
-      await pruneHistoryOrphaned();
-    } else if (totalFailedSync > 0) {
-      alert(
-        "⚠️ No se pudieron sincronizar " +
-          totalFailedSync +
-          " registros pendientes (" +
-          (pendingSyncResult.failedWorkers || 0) +
-          " trabajadores y " +
-          (pendingSyncResult.failedHistory || 0) +
-          " producciones). Se mantendrán los datos locales para evitar pérdida de información.",
-      );
-    } else {
-      alert(
-        "⚠️ No se pudo verificar/sincronizar pendientes con Supabase. Se mantendrán los datos locales para evitar pérdida de información.",
-      );
+      if (pendingSyncResult.ok) {
+        await loadWorkersFromCloud();
+        await loadHistoryFromCloud();
+        await pruneHistoryOrphaned();
+      } else if (totalFailedSync > 0) {
+        alert(
+          "⚠️ No se pudieron sincronizar " +
+            totalFailedSync +
+            " registros pendientes (" +
+            (pendingSyncResult.failedWorkers || 0) +
+            " trabajadores y " +
+            (pendingSyncResult.failedHistory || 0) +
+            " producciones). Se mantendrán los datos locales para evitar pérdida de información.",
+        );
+      } else {
+        alert(
+          "⚠️ No se pudo verificar/sincronizar pendientes con Supabase. Se mantendrán los datos locales para evitar pérdida de información.",
+        );
+      }
+    } finally {
+      if (syncIndicator) syncIndicator.style.display = "none";
     }
   }
 
@@ -1125,6 +1131,17 @@ function registerWork() {
   if (!worker || !date || !labor || quantity <= 0) {
     alert("Datos incompletos.");
     return;
+  }
+
+  // Validar si ya existe producción para el mismo trabajador (RUT) y día
+  const existeMismoDia = history.some(
+    (r) => r.rut === worker.rut && r.date === date,
+  );
+  if (existeMismoDia && editProductionIndex === null) {
+    const continuar = confirm(
+      "Ya existe un registro de producción para este trabajador en este día.\n¿Deseas agregar igualmente este nuevo registro?\n(Si no, presiona Cancelar para deshacer la información)",
+    );
+    if (!continuar) return;
   }
 
   const total = quantity * unitValue;
@@ -1955,6 +1972,11 @@ async function generateLiquidation() {
 </table>
 
 <h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+
+<div style="margin-top:60px;text-align:center">
+  <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
+  <span style="font-size:15px">${worker.name}</span>
+</div>
 
 </div>
 `;
@@ -2866,6 +2888,17 @@ function closeFloatingUi() {
   if (productionModal) {
     productionModal.remove();
   }
+
+  // Restaurar el foco al primer input visible en la vista activa
+  const activeView = document.querySelector(".view:not(.hidden)");
+  if (activeView) {
+    const input = activeView.querySelector(
+      'input:not([type="hidden"]):not([disabled])',
+    );
+    if (input) {
+      input.focus();
+    }
+  }
 }
 
 function showView(id) {
@@ -3097,20 +3130,17 @@ async function syncToCloud(showAlerts = false) {
   }
 }
 
-// Sincronización automática al detectar conexión a internet
+// Sincronización automática robusta al detectar conexión a internet o al cargar la app
 window.addEventListener("online", () => {
-  if (supabaseClient) {
-    syncToCloud(false);
-    console.log("Sincronización automática con la nube ejecutada.");
-  }
+  initSystem();
+  console.log(
+    "Sincronización automática con la nube ejecutada (evento online).",
+  );
 });
 
-// Al cargar la app, si hay internet, sincroniza automáticamente
 window.addEventListener("DOMContentLoaded", () => {
-  if (navigator.onLine && supabaseClient) {
-    syncToCloud(false);
-    console.log("Sincronización automática con la nube ejecutada al iniciar.");
-  }
+  initSystem();
+  console.log("Sincronización automática con la nube ejecutada al iniciar.");
 });
 
 async function syncFromCloud() {

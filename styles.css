@@ -411,16 +411,16 @@ tr:hover {
     display: none;
   }
 
-  /* Ocultar botones de acción en resumen semanal */
-  #weeklyPrintArea button,
-  #weeklyPrintArea .action-right {
-    display: none !important;
-  }
-
-  /* Ocultar última columna (acciones con 🗑️) en tablas del resumen semanal */
-  #weeklyPrintArea table tr th:last-child,
-  #weeklyPrintArea table tr td:last-child {
-    display: none !important;
+  /* Ocultar botones de acción y columna de acciones SOLO al imprimir */
+  @media print {
+    #weeklyPrintArea button,
+    #weeklyPrintArea .action-right {
+      display: none !important;
+    }
+    #weeklyPrintArea table tr th:last-child,
+    #weeklyPrintArea table tr td:last-child {
+      display: none !important;
+    }
   }
 
   /* ============================= */
