@@ -195,15 +195,14 @@ async function syncPendingLocalDataBeforeCloudDownload() {
 
   (workers || []).forEach((worker) => {
     const rutKey = getRutKey(worker.rut);
-    if (
-      !rutKey ||
-      cloudWorkerRuts.has(rutKey) ||
-      localPendingRuts.has(rutKey)
-    ) {
+    if (!rutKey || localPendingRuts.has(rutKey)) {
       return;
     }
-    localPendingRuts.add(rutKey);
-    pendingWorkers.push(worker);
+    // 🔥 NUEVA LÓGICA SEGURA
+    if (worker.pending === true || !cloudWorkerRuts.has(rutKey)) {
+      localPendingRuts.add(rutKey);
+      pendingWorkers.push(worker);
+    }
   });
 
   const pendingHistoryIndexes = [];
@@ -235,6 +234,10 @@ async function syncPendingLocalDataBeforeCloudDownload() {
         error.message,
       );
       continue;
+    }
+    if (data?.id !== undefined) {
+      worker.id = data.id;
+      worker.pending = false; // 👈 ESTA ES LA LÍNEA QUE TE FALTA
     }
 
     if (data?.id !== undefined) {
@@ -553,6 +556,7 @@ async function addWorker() {
       baseSalary,
       account_number: account,
       id_card_photo: photoUrl,
+      pending: true,
     };
 
     workers.push(newWorker);
