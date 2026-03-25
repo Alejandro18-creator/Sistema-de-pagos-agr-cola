@@ -86,7 +86,14 @@ async function loadWorkersFromCloud() {
     return;
   }
 
-  workers = data || [];
+  const localMap = new Map((workers || []).map((w) => [getRutKey(w.rut), w]));
+
+  (data || []).forEach((cloudWorker) => {
+    const key = getRutKey(cloudWorker.rut);
+    localMap.set(key, cloudWorker);
+  });
+
+  workers = Array.from(localMap.values());
 
   localStorage.setItem("workers", JSON.stringify(workers));
 
