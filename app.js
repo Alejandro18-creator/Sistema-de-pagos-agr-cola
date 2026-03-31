@@ -1,3 +1,17 @@
+// --- Parche preventivo: ocultar overlay de sincronización en cualquier interacción de input ---
+document.addEventListener("focusin", function (e) {
+  if (
+    e.target &&
+    (e.target.tagName === "INPUT" ||
+      e.target.tagName === "SELECT" ||
+      e.target.tagName === "TEXTAREA")
+  ) {
+    const syncIndicator = document.getElementById("syncIndicator");
+    if (syncIndicator && syncIndicator.style.display !== "none") {
+      syncIndicator.style.display = "none";
+    }
+  }
+});
 // =============================
 // 🌐 SUPABASE CONEXIÓN
 // =============================
@@ -2843,10 +2857,21 @@ window.onload = async function () {
 };
 
 function focusFirstFieldInView(viewId) {
+  // Asegura que el overlay de sincronización esté oculto antes de enfocar
+  const syncIndicator = document.getElementById("syncIndicator");
+  if (syncIndicator) syncIndicator.style.display = "none";
+
   requestAnimationFrame(() => {
     setTimeout(() => {
       const view = document.getElementById(viewId);
       if (!view) return;
+
+      // Si hay overlays visibles, ocultarlos
+      document
+        .querySelectorAll('.hidden, [style*="display: none"]')
+        .forEach((el) => {
+          if (el.id === "syncIndicator") el.style.display = "none";
+        });
 
       const selectors = [
         'input:not([type="hidden"]):not([disabled])',
@@ -2870,11 +2895,15 @@ function focusFirstFieldInView(viewId) {
       const target = focusableElements[0];
       if (!target) return;
 
+      // Forzar el foco dos veces para asegurar que el navegador lo aplique
       target.focus();
-      if (typeof target.select === "function") {
-        target.select();
-      }
-    }, 0);
+      setTimeout(() => {
+        target.focus();
+        if (typeof target.select === "function") {
+          target.select();
+        }
+      }, 30);
+    }, 100);
   });
 }
 
