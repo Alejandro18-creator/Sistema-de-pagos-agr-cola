@@ -1,4 +1,21 @@
+// Refuerzo: ocultar overlay de sincronización al hacer clic en cualquier parte
+document.addEventListener("mousedown", function () {
+  const syncIndicator = document.getElementById("syncIndicator");
+  if (syncIndicator && syncIndicator.style.display !== "none") {
+    syncIndicator.style.display = "none";
+  }
+});
+// Devuelve el trabajador seleccionado en la sección de contrato
+function getSelectedWorkerForContract() {
+  const select = document.getElementById("workerContract");
+  if (!select) return {};
+  const idx = select.value;
+  if (!idx || !workers[idx]) return {};
+  return workers[idx];
+}
 // --- Parche preventivo: ocultar overlay de sincronización en cualquier interacción de input ---
+
+// ...existing code...
 document.addEventListener("focusin", function (e) {
   if (
     e.target &&
@@ -1515,6 +1532,14 @@ function clearWorkerContractSearch() {
     list.style.display = "none";
     list.innerHTML = "";
   }
+
+  // Limpiar campos de contrato
+  const startDate = document.getElementById("startDate");
+  const faena = document.getElementById("faena");
+  const salary = document.getElementById("salary");
+  if (startDate) startDate.value = "";
+  if (faena) faena.value = "";
+  if (salary) salary.value = "";
 }
 
 function filterWorkersMonthly() {
