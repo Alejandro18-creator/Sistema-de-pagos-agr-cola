@@ -494,10 +494,9 @@
             </p>
             <p class="clausula">
               <b>TERCERO:</b>
-              La jornada ordinaria de trabajo será de 44 horas semanales
-              distribuidas de la siguiente forma: lunes a Jueves de 07:00 a
-              12:00 y de 13:00 a 16:00 hrs. Y Viernes de 7: a 12:00 y de 13:00 a
-              15:30 hrs.
+              <span id="c_workSchedule"
+                >La jornada ordinaria de trabajo será _______________________________.</span
+              >
             </p>
             <p class="clausula">
               <b>CUARTO:</b>
@@ -624,9 +623,30 @@
             oninput="formatBirthDate(this)"
           />
 
-          <input type="text" id="faena" placeholder="Fundo" />
+          <label for="fundoSelect">Fundo</label>
+          <select id="fundoSelect">
+            <option value="">-- Seleccionar fundo --</option>
+          </select>
+
+          <input
+            type="text"
+            id="newFundo"
+            placeholder="Nuevo fundo (opcional)"
+          />
+
+          <input
+            type="text"
+            id="workSchedule"
+            placeholder="Jornada (ej: lunes a jueves 07:00-16:00, viernes 07:00-15:30)"
+          />
 
           <input type="text" id="salary" placeholder="Sueldo / Trato" />
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button type="button" onclick="clearAllContract()">
+              🗑️ Limpiar todo
+            </button>
+          </div>
 
           <button type="button" onclick="generateContract()">
             Generar Contrato

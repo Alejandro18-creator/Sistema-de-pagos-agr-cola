@@ -48,6 +48,8 @@ let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
+let fundos = JSON.parse(localStorage.getItem("fundos")) || [];
+let isGeneratingFiniquito = false;
 
 // =============================
 // 📊 TABLA INTERNA AFP (COMISIONES)
@@ -452,6 +454,7 @@ async function initSystem() {
   }
 
   loadLabors();
+  loadFundos();
   renderWorkersTable();
   loadAFPOptions();
   loadPagosWorkerFilter();
@@ -981,6 +984,25 @@ function loadLabors() {
 
     select.appendChild(opt);
   });
+}
+
+function loadFundos() {
+  const select = document.getElementById("fundoSelect");
+  if (!select) return;
+
+  const currentValue = select.value;
+  select.innerHTML = "<option value=''>-- Seleccionar fundo --</option>";
+
+  fundos.forEach((f) => {
+    const option = document.createElement("option");
+    option.value = f;
+    option.textContent = f;
+    select.appendChild(option);
+  });
+
+  if (currentValue && fundos.includes(currentValue)) {
+    select.value = currentValue;
+  }
 }
 // =============================
 // 🏦 CARGAR AFP EN SELECT
@@ -1533,13 +1555,47 @@ function clearWorkerContractSearch() {
     list.innerHTML = "";
   }
 
-  // Limpiar campos de contrato
+  // Limpiar solo datos del trabajador (mantener fecha/fundo/sueldo/jornada)
+  document.getElementById("c_name").textContent = "_______________________________";
+  document.getElementById("c_rut").textContent = "______________________";
+  document.getElementById("c_maritalStatus").textContent =
+    "______________________";
+  document.getElementById("c_birthDate").textContent = "____ / ____ / ____";
+  document.getElementById("c_address").textContent = "_________________________";
+  document.getElementById("c_nationality").textContent =
+    "______________________";
+  document.getElementById("c_afp").textContent = "______________";
+  document.getElementById("c_health").textContent = "____________";
+  document.getElementById("c_workerSign").textContent = "________________";
+}
+
+function clearAllContract() {
+  clearWorkerContractSearch();
+
   const startDate = document.getElementById("startDate");
-  const faena = document.getElementById("faena");
+  const fundoSelect = document.getElementById("fundoSelect");
+  const newFundo = document.getElementById("newFundo");
+  const workSchedule = document.getElementById("workSchedule");
   const salary = document.getElementById("salary");
+
   if (startDate) startDate.value = "";
-  if (faena) faena.value = "";
+  if (fundoSelect) fundoSelect.value = "";
+  if (newFundo) newFundo.value = "";
+  if (workSchedule) workSchedule.value = "";
   if (salary) salary.value = "";
+
+  document.getElementById("c_day").textContent = "____";
+  document.getElementById("c_month").textContent = "__________________";
+  document.getElementById("c_year").textContent = "20____";
+  document.getElementById("c_startDate").textContent = "___/___/20__";
+  document.getElementById("c_faena").textContent = "________________________";
+  document.getElementById("c_salary").textContent = "____________";
+
+  const scheduleEl = document.getElementById("c_workSchedule");
+  if (scheduleEl) {
+    scheduleEl.textContent =
+      "La jornada ordinaria de trabajo será _______________________________.";
+  }
 }
 
 function filterWorkersMonthly() {
@@ -2205,24 +2261,32 @@ async function createPdfBlobFromHtml(
 
   document.body.appendChild(exportRoot);
 
-  if (document.fonts && document.fonts.ready) {
-    await document.fonts.ready;
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    const blob = await createPdfBlobFromElement(exportRoot, { scale });
+    return blob;
+  } finally {
+    if (exportRoot.parentNode) {
+      exportRoot.parentNode.removeChild(exportRoot);
+    }
   }
-
-  const blob = await createPdfBlobFromElement(exportRoot, { scale });
-
-  document.body.removeChild(exportRoot);
-
-  return blob;
 }
 
 async function createPdfBlobFromElement(element, { scale = 2 } = {}) {
   const { jsPDF } = window.jspdf;
 
-  const canvas = await html2canvas(element, {
-    scale,
-    backgroundColor: "#ffffff",
-  });
+  const canvas = await Promise.race([
+    html2canvas(element, {
+      scale,
+      backgroundColor: "#ffffff",
+    }),
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout al renderizar PDF")), 25000);
+    }),
+  ]);
 
   const imgData = canvas.toDataURL("image/png");
 
@@ -2389,12 +2453,37 @@ async function generateContract() {
 
   const worker = workers[workerIndex];
 
+  const fundoSelect = document.getElementById("fundoSelect");
+  const newFundoInput = document.getElementById("newFundo");
+  const selectedFundo = (fundoSelect?.value || "").trim();
+  const newFundo = (newFundoInput?.value || "").trim();
+  const contractFundo = newFundo || selectedFundo;
+
+  if (newFundo && !fundos.some((f) => f.toLowerCase() === newFundo.toLowerCase())) {
+    fundos.push(newFundo);
+    localStorage.setItem("fundos", JSON.stringify(fundos));
+    loadFundos();
+    if (fundoSelect) fundoSelect.value = newFundo;
+  }
+
   // 🔹 COMPLETAR NOMBRE Y RUT
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
-    document.getElementById("faena").value;
+    contractFundo || "________________________";
   document.getElementById("c_workerSign").textContent = worker.name;
+
+  const workScheduleInput = document.getElementById("workSchedule");
+  const workScheduleValue = (workScheduleInput?.value || "").trim();
+  const workScheduleElement = document.getElementById("c_workSchedule");
+  if (workScheduleElement && workScheduleValue) {
+    const fixedPrefix = "La jornada ordinaria de trabajo será ";
+    const normalized =
+      workScheduleValue.toLowerCase().startsWith(fixedPrefix.toLowerCase())
+        ? workScheduleValue
+        : fixedPrefix + workScheduleValue;
+    workScheduleElement.textContent = normalized;
+  }
 
   // 🔹 AQUÍ VA EL PASO 2 👇
 
@@ -2525,14 +2614,34 @@ function calcularTotalPagadoFiniquito(worker, inicio, fin) {
 
   if (!inicioValido || !finValido) return 0;
 
-  return history
-    .filter(
-      (r) =>
-        r.rut === worker.rut &&
-        r.paid === true &&
-        DateHelper.isBetween(r.date, inicio, fin),
-    )
-    .reduce((sum, r) => sum + Number(r.total), 0);
+  let total = 0;
+  for (const record of history) {
+    if (!record || record.rut !== worker.rut || record.paid !== true) continue;
+    if (!DateHelper.isBetween(record.date, inicio, fin)) continue;
+
+    const value = Number(record.total);
+    if (!Number.isFinite(value)) continue;
+
+    total += value;
+  }
+
+  return total;
+}
+
+function normalizeWorkerForDocs(worker) {
+  const safe = worker && typeof worker === "object" ? worker : {};
+
+  const safeName = String(safe.name || "").trim().slice(0, 120);
+  const safeRut = String(safe.rut || "").trim().slice(0, 25);
+  const safePosition = String(safe.position || "-")
+    .trim()
+    .slice(0, 80);
+
+  return {
+    name: safeName,
+    rut: safeRut,
+    position: safePosition || "-",
+  };
 }
 
 function refreshFiniquitoResumen() {
@@ -2567,6 +2676,11 @@ function refreshFiniquitoResumen() {
 }
 
 async function generateFiniquito() {
+  if (isGeneratingFiniquito) {
+    alert("Ya se está generando un finiquito. Espere un momento.");
+    return;
+  }
+
   const workerIndex = document.getElementById("workerFiniquito").value;
 
   if (workerIndex === "") {
@@ -2574,23 +2688,41 @@ async function generateFiniquito() {
     return;
   }
 
-  const worker = workers[workerIndex];
-  const endDate = (document.getElementById("f_endDate")?.value || "").trim();
+  const rawWorker = workers[workerIndex];
+  if (!rawWorker || typeof rawWorker !== "object") {
+    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
+    return;
+  }
 
-  syncFiniquitoEndDate(endDate);
+  const worker = normalizeWorkerForDocs(rawWorker);
+  if (!worker.name || !worker.rut) {
+    alert(
+      "El trabajador tiene datos incompletos (Nombre/RUT). Corrija el registro antes de generar el finiquito.",
+    );
+    return;
+  }
 
-  const inicio = (
-    document.getElementById("f_startDate")?.textContent || ""
-  ).trim();
-  const fin = (document.getElementById("f_endDate")?.value || "").trim();
-  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
-  const totalCalculado = calcularTotalPagadoFiniquito(worker, inicio, fin);
-  const totalPagado =
-    sueldoMinimo > 0 ? Math.min(totalCalculado, sueldoMinimo) : totalCalculado;
+  isGeneratingFiniquito = true;
 
-  const today = new Date().toLocaleDateString("es-CL");
+  try {
+    const endDate = (document.getElementById("f_endDate")?.value || "").trim();
 
-  const html = `
+    syncFiniquitoEndDate(endDate);
+
+    const inicio = (
+      document.getElementById("f_startDate")?.textContent || ""
+    ).trim();
+    const fin = (document.getElementById("f_endDate")?.value || "").trim();
+    const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
+    const totalCalculado = calcularTotalPagadoFiniquito(rawWorker, inicio, fin);
+    const totalPagado =
+      sueldoMinimo > 0
+        ? Math.min(totalCalculado, sueldoMinimo)
+        : totalCalculado;
+
+    const today = new Date().toLocaleDateString("es-CL");
+
+    const html = `
   <div id="finiquitoDoc">
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
@@ -2638,31 +2770,38 @@ async function generateFiniquito() {
 
   </div>
   `;
-  const pdfBlob = await createPdfBlobFromHtml(html, {
-    scale: 2,
-  });
 
-  if (!pdfBlob) return;
-
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-
-  const fileName = "finiquito_" + worker.rut + "_" + stamp + ".pdf";
-
-  const filePath = worker.rut + "/" + fileName;
-
-  const { error } = await supabaseClient.storage
-    .from("worker-files")
-    .upload(filePath, pdfBlob, {
-      contentType: "application/pdf",
-      upsert: true,
+    const pdfBlob = await createPdfBlobFromHtml(html, {
+      scale: 2,
     });
 
-  if (error) {
-    console.error("Error subiendo finiquito:", error);
-    alert("⚠️ No se guardó en nube el finiquito.");
-  } else {
-    console.log("Finiquito guardado en Supabase");
-    alert("✅ Finiquito guardado en Supabase OK");
+    if (!pdfBlob) return;
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    const fileName = "finiquito_" + worker.rut + "_" + stamp + ".pdf";
+
+    const filePath = worker.rut + "/" + fileName;
+
+    const { error } = await supabaseClient.storage
+      .from("worker-files")
+      .upload(filePath, pdfBlob, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Error subiendo finiquito:", error);
+      alert("⚠️ No se guardó en nube el finiquito.");
+    } else {
+      console.log("Finiquito guardado en Supabase");
+      alert("✅ Finiquito guardado en Supabase OK");
+    }
+  } catch (error) {
+    console.error("Error generando finiquito:", error);
+    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
+  } finally {
+    isGeneratingFiniquito = false;
   }
 }
 
