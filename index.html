@@ -22,7 +22,6 @@
     <span>🔄 Sincronizando con la nube...</span>
   </div>
 </div>
-<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -197,7 +196,7 @@
                 type="text"
                 id="searchWorkerEdit"
                 placeholder="Buscar trabajador para editar"
-                oninput="filterWorkersEdit()"
+                oninput="debounceSearch(filterWorkersEdit)"
                 autocomplete="off"
               />
               <button
@@ -308,7 +307,7 @@
                 type="text"
                 id="searchWorkerDB"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="filterWorkersDB()"
+                oninput="debounceSearch(filterWorkersDB)"
                 autocomplete="off"
               />
               <button
@@ -334,7 +333,7 @@
                 type="text"
                 id="searchWorkerProduction"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="filterWorkersProduction()"
+                oninput="debounceSearch(filterWorkersProduction)"
                 autocomplete="off"
               />
               <button
@@ -401,7 +400,7 @@
                 type="text"
                 id="searchWorkerLiquidation"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="filterWorkersLiquidation()"
+                oninput="debounceSearch(filterWorkersLiquidation)"
                 autocomplete="off"
               />
               <button
@@ -495,7 +494,8 @@
             <p class="clausula">
               <b>TERCERO:</b>
               <span id="c_workSchedule"
-                >La jornada ordinaria de trabajo será _______________________________.</span
+                >La jornada ordinaria de trabajo será
+                _______________________________.</span
               >
             </p>
             <p class="clausula">
@@ -594,7 +594,7 @@
                 type="text"
                 id="searchWorkerContract"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="filterWorkersContract()"
+                oninput="debounceSearch(filterWorkersContract)"
                 autocomplete="off"
               />
               <button
@@ -663,7 +663,7 @@
                 type="text"
                 id="searchWorkerMonthly"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="filterWorkersMonthly()"
+                oninput="debounceSearch(filterWorkersMonthly)"
                 autocomplete="off"
               />
               <button
@@ -757,7 +757,7 @@
                 type="text"
                 id="searchWorkerWeekly"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="filterWorkersWeekly()"
+                oninput="debounceSearch(filterWorkersWeekly)"
                 autocomplete="off"
               />
               <button
@@ -818,7 +818,7 @@
                   type="text"
                   id="searchWorkerPagos"
                   placeholder="Buscar trabajador por nombre o RUT"
-                  oninput="filterWorkersPagos()"
+                  oninput="debounceSearch(filterWorkersPagos)"
                   autocomplete="off"
                 />
                 <button
@@ -911,7 +911,7 @@
                   type="text"
                   id="searchWorkerFiniquito"
                   placeholder="Buscar trabajador por nombre o RUT"
-                  oninput="filterWorkersFiniquito()"
+                  oninput="debounceSearch(filterWorkersFiniquito)"
                   autocomplete="off"
                 />
                 <button

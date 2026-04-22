@@ -1,34 +1,26 @@
-// Refuerzo: ocultar overlay de sincronización al hacer clic en cualquier parte
-document.addEventListener("mousedown", function () {
-  const syncIndicator = document.getElementById("syncIndicator");
-  if (syncIndicator && syncIndicator.style.display !== "none") {
-    syncIndicator.style.display = "none";
-  }
-});
-// Devuelve el trabajador seleccionado en la sección de contrato
-function getSelectedWorkerForContract() {
-  const select = document.getElementById("workerContract");
-  if (!select) return {};
-  const idx = select.value;
-  if (!idx || !workers[idx]) return {};
-  return workers[idx];
+// =============================
+// 💾 GUARDADO DE DATOS DEBOUNCEADO
+// =============================
+let saveTimer;
+function saveLocalDataDebounced() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem("workers", JSON.stringify(workers));
+    localStorage.setItem("history", JSON.stringify(history));
+    localStorage.setItem("labors", JSON.stringify(labors));
+    localStorage.setItem("fundos", JSON.stringify(fundos));
+    console.log("Datos guardados localmente");
+  }, 500);
 }
-// --- Parche preventivo: ocultar overlay de sincronización en cualquier interacción de input ---
+// =============================
+// 🔄 DEBOUNCE PARA BUSCADORES
+// =============================
+let debounceTimer;
+function debounceSearch(fn) {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(fn, 300);
+}
 
-// ...existing code...
-document.addEventListener("focusin", function (e) {
-  if (
-    e.target &&
-    (e.target.tagName === "INPUT" ||
-      e.target.tagName === "SELECT" ||
-      e.target.tagName === "TEXTAREA")
-  ) {
-    const syncIndicator = document.getElementById("syncIndicator");
-    if (syncIndicator && syncIndicator.style.display !== "none") {
-      syncIndicator.style.display = "none";
-    }
-  }
-});
 // =============================
 // 🌐 SUPABASE CONEXIÓN
 // =============================
@@ -191,20 +183,55 @@ async function pruneHistoryOrphaned() {
 
 async function syncPendingLocalDataBeforeCloudDownload() {
   if (!supabaseClient) {
+    console.warn("[syncPendingLocalDataBeforeCloudDownload] No supabaseClient");
     return { ok: true, failedHistory: 0, failedWorkers: 0 };
   }
 
-  const [
-    { data: cloudWorkers, error: workersReadError },
-    { data: cloudHistory, error: historyReadError },
-  ] = await Promise.all([
-    supabaseClient.from("workers").select("rut"),
-    supabaseClient.from("history").select("id"),
-  ]);
+  console.log(
+    "[syncPendingLocalDataBeforeCloudDownload] Consultando workers y history en la nube...",
+  );
+  let cloudWorkers, workersReadError, cloudHistory, historyReadError;
+  try {
+    const results = await Promise.all([
+      supabaseClient.from("workers").select("rut"),
+      supabaseClient.from("history").select("id"),
+    ]);
+    cloudWorkers = results[0].data;
+    workersReadError = results[0].error;
+    cloudHistory = results[1].data;
+    historyReadError = results[1].error;
+    console.log(
+      "[syncPendingLocalDataBeforeCloudDownload] cloudWorkers:",
+      cloudWorkers,
+    );
+    console.log(
+      "[syncPendingLocalDataBeforeCloudDownload] cloudHistory:",
+      cloudHistory,
+    );
+  } catch (e) {
+    alert(
+      "[syncPendingLocalDataBeforeCloudDownload] Error en Promise.all: " +
+        (e && e.message ? e.message : e),
+    );
+    console.error(
+      "[syncPendingLocalDataBeforeCloudDownload] Excepción en Promise.all:",
+      e,
+    );
+    return {
+      ok: false,
+      failedHistory: 0,
+      failedWorkers: 0,
+      reason: "promise-all-error",
+    };
+  }
 
   if (workersReadError || historyReadError) {
+    alert(
+      "[syncPendingLocalDataBeforeCloudDownload] Error leyendo datos de Supabase: " +
+        (workersReadError?.message || historyReadError?.message),
+    );
     console.error(
-      "Error leyendo datos de Supabase antes de sincronizar:",
+      "[syncPendingLocalDataBeforeCloudDownload] Error leyendo datos de Supabase antes de sincronizar:",
       workersReadError?.message || historyReadError?.message,
     );
     return {
@@ -249,59 +276,67 @@ async function syncPendingLocalDataBeforeCloudDownload() {
   });
 
   let failedWorkers = 0;
-  for (const worker of pendingWorkers) {
-    const payload = { ...worker };
-    delete payload.id;
-
-    const { data, error } = await supabaseClient
-      .from("workers")
-      .insert([payload])
-      .select("id")
-      .single();
-
-    if (error) {
-      failedWorkers++;
-      console.error(
-        "Error sincronizando trabajador pendiente:",
-        worker?.rut,
-        error.message,
-      );
-      continue;
-    }
-    if (data?.id !== undefined) {
-      worker.id = data.id;
-      worker.pending = false; // 👈 ESTA ES LA LÍNEA QUE TE FALTA
-    }
-
-    if (data?.id !== undefined) {
-      worker.id = data.id;
+  if (pendingWorkers.length > 0) {
+    // Insertar en lote (batch) para optimizar
+    const batchPayload = pendingWorkers.map((w) => {
+      const payload = { ...w };
+      delete payload.id;
+      return payload;
+    });
+    try {
+      const { data, error } = await supabaseClient
+        .from("workers")
+        .insert(batchPayload)
+        .select("id, rut");
+      if (error) {
+        failedWorkers = pendingWorkers.length;
+        console.error("Error batch insert workers:", error.message);
+      } else {
+        // Marcar como sincronizados los que se insertaron
+        (data || []).forEach((inserted) => {
+          const idx = pendingWorkers.findIndex(
+            (w) => getRutKey(w.rut) === getRutKey(inserted.rut),
+          );
+          if (idx !== -1) {
+            pendingWorkers[idx].id = inserted.id;
+            pendingWorkers[idx].pending = false;
+          }
+        });
+      }
+    } catch (e) {
+      failedWorkers = pendingWorkers.length;
+      console.error("Excepción en batch insert workers:", e);
     }
   }
 
   let failedHistory = 0;
-  for (const index of pendingHistoryIndexes) {
-    const localRecord = history[index];
-    const payload = { ...localRecord };
-    delete payload.id;
-
-    const { data, error } = await supabaseClient
-      .from("history")
-      .insert([payload])
-      .select("id")
-      .single();
-
-    if (error) {
-      failedHistory++;
-      console.error(
-        "Error sincronizando producción pendiente:",
-        localRecord,
-        error.message,
-      );
-      continue;
-    }
-
-    if (data?.id !== undefined) {
-      history[index] = { ...localRecord, id: data.id };
+  if (pendingHistoryIndexes.length > 0) {
+    // Insertar en lote (batch) para optimizar
+    const batchPayload = pendingHistoryIndexes.map((idx) => {
+      const payload = { ...history[idx] };
+      delete payload.id;
+      return payload;
+    });
+    try {
+      const { data, error } = await supabaseClient
+        .from("history")
+        .insert(batchPayload)
+        .select("id, rut, date");
+      if (error) {
+        failedHistory = pendingHistoryIndexes.length;
+        console.error("Error batch insert history:", error.message);
+      } else {
+        // Marcar como sincronizados los que se insertaron
+        (data || []).forEach((inserted, i) => {
+          const idx = pendingHistoryIndexes[i];
+          if (idx !== undefined) {
+            history[idx] = { ...history[idx], id: inserted.id };
+          }
+        });
+      }
+    } catch (e) {
+      failedHistory = pendingHistoryIndexes.length;
+      console.error("Excepción en batch insert history:", e);
     }
   }
 
@@ -412,7 +447,8 @@ async function loginUser() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    await initSystem();
+    // Ejecutar la sincronización en segundo plano, no bloquear la UI
+    initSystem();
   } else {
     alert("Contraseña incorrecta");
   }
@@ -429,28 +465,54 @@ function logout() {
 // =============================
 async function initSystem() {
   const syncIndicator = document.getElementById("syncIndicator");
+  console.log("[initSystem] Iniciando sincronización...");
   if (navigator.onLine && supabaseClient) {
     if (syncIndicator) syncIndicator.style.display = "flex";
     try {
+      console.log("[initSystem] Sincronizando datos locales pendientes...");
       const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
+      console.log("[initSystem] Resultado sync pendientes:", pendingSyncResult);
       const totalFailedSync =
         (pendingSyncResult.failedWorkers || 0) +
         (pendingSyncResult.failedHistory || 0);
 
       if (pendingSyncResult.ok) {
-        // Solo si TODO se sincronizó bien, descargar de la nube
+        console.log("[initSystem] Descargando trabajadores de la nube...");
         await loadWorkersFromCloud();
+        console.log("[initSystem] Descargando historial de la nube...");
         await loadHistoryFromCloud();
+        console.log("[initSystem] Prune history orphaned...");
         await pruneHistoryOrphaned();
+        console.log("[initSystem] Sincronización completa.");
       } else {
-        // Si hubo cualquier error, NO descargar de la nube para no perder datos locales
         alert(
           "⚠️ No se pudieron sincronizar todos los datos con la nube.\n\nTus datos locales se mantendrán intactos para evitar pérdida de información.\n\nPor favor, revisa la conexión o los datos y vuelve a intentarlo.",
         );
+        console.error(
+          "[initSystem] Error en sincronización de pendientes:",
+          pendingSyncResult,
+        );
       }
+    } catch (e) {
+      alert(
+        "Error inesperado en sincronización: " +
+          (e && e.message ? e.message : e),
+      );
+      console.error("[initSystem] Excepción:", e);
     } finally {
-      if (syncIndicator) syncIndicator.style.display = "none";
+      if (syncIndicator) {
+        syncIndicator.style.display = "none";
+        // Forzar repaint en Electron para evitar congelamiento visual
+        if (window.require) {
+          setTimeout(() => {
+            document.body.style.transform = "scale(1)";
+          }, 10);
+        }
+        console.log("[initSystem] Overlay de sincronización oculto.");
+      }
     }
+  } else {
+    console.warn("[initSystem] Sin conexión o sin supabaseClient");
   }
 
   loadLabors();
@@ -606,7 +668,7 @@ async function addWorker() {
     }
   }
 
-  localStorage.setItem("workers", JSON.stringify(workers));
+  saveLocalDataDebounced();
 
   clearWorkerForm();
   loadWorkers();
@@ -1246,7 +1308,7 @@ function registerWork() {
         );
       }
 
-      localStorage.setItem("history", JSON.stringify(history));
+      saveLocalDataDebounced();
 
       renderHistory();
       // ===== LIMPIAR CAMPOS =====
@@ -1274,7 +1336,7 @@ function renderHistory() {
   html +=
     "<tr><th>Fecha</th><th>Trabajador</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
 
-  history.forEach((r) => {
+  history.slice(0, 200).forEach((r) => {
     html += "<tr>";
     html += "<td>" + r.date + "</td>";
     html += "<td>" + r.name + "</td>";
@@ -1556,12 +1618,14 @@ function clearWorkerContractSearch() {
   }
 
   // Limpiar solo datos del trabajador (mantener fecha/fundo/sueldo/jornada)
-  document.getElementById("c_name").textContent = "_______________________________";
+  document.getElementById("c_name").textContent =
+    "_______________________________";
   document.getElementById("c_rut").textContent = "______________________";
   document.getElementById("c_maritalStatus").textContent =
     "______________________";
   document.getElementById("c_birthDate").textContent = "____ / ____ / ____";
-  document.getElementById("c_address").textContent = "_________________________";
+  document.getElementById("c_address").textContent =
+    "_________________________";
   document.getElementById("c_nationality").textContent =
     "______________________";
   document.getElementById("c_afp").textContent = "______________";
@@ -2459,7 +2523,10 @@ async function generateContract() {
   const newFundo = (newFundoInput?.value || "").trim();
   const contractFundo = newFundo || selectedFundo;
 
-  if (newFundo && !fundos.some((f) => f.toLowerCase() === newFundo.toLowerCase())) {
+  if (
+    newFundo &&
+    !fundos.some((f) => f.toLowerCase() === newFundo.toLowerCase())
+  ) {
     fundos.push(newFundo);
     localStorage.setItem("fundos", JSON.stringify(fundos));
     loadFundos();
@@ -2478,10 +2545,11 @@ async function generateContract() {
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
     const fixedPrefix = "La jornada ordinaria de trabajo será ";
-    const normalized =
-      workScheduleValue.toLowerCase().startsWith(fixedPrefix.toLowerCase())
-        ? workScheduleValue
-        : fixedPrefix + workScheduleValue;
+    const normalized = workScheduleValue
+      .toLowerCase()
+      .startsWith(fixedPrefix.toLowerCase())
+      ? workScheduleValue
+      : fixedPrefix + workScheduleValue;
     workScheduleElement.textContent = normalized;
   }
 
@@ -2631,8 +2699,12 @@ function calcularTotalPagadoFiniquito(worker, inicio, fin) {
 function normalizeWorkerForDocs(worker) {
   const safe = worker && typeof worker === "object" ? worker : {};
 
-  const safeName = String(safe.name || "").trim().slice(0, 120);
-  const safeRut = String(safe.rut || "").trim().slice(0, 25);
+  const safeName = String(safe.name || "")
+    .trim()
+    .slice(0, 120);
+  const safeRut = String(safe.rut || "")
+    .trim()
+    .slice(0, 25);
   const safePosition = String(safe.position || "-")
     .trim()
     .slice(0, 80);
@@ -3230,7 +3302,7 @@ async function deleteWorker() {
 
   // 🔹 2. Marcar inactivo local
   workers[index].active = false;
-  localStorage.setItem("workers", JSON.stringify(workers));
+  saveLocalDataDebounced();
 
   // 🔹 3. Actualizar sistema
   loadWorkers();
@@ -4241,7 +4313,7 @@ async function payWeekly() {
     console.error("Error guardando pago:", paymentError);
   }
 
-  localStorage.setItem("history", JSON.stringify(history));
+  saveLocalDataDebounced();
 
   if (!paymentError && paidUpdateErrors === 0) {
     alert("✅ Guardado en Supabase OK (pago semanal).");
