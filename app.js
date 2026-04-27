@@ -286,7 +286,7 @@ async function syncPendingLocalDataBeforeCloudDownload() {
     try {
       const { data, error } = await supabaseClient
         .from("workers")
-        .insert(batchPayload)
+        .upsert(batchPayload, { onConflict: "rut" })
         .select("id, rut");
       if (error) {
         failedWorkers = pendingWorkers.length;
@@ -502,14 +502,18 @@ async function initSystem() {
     } finally {
       if (syncIndicator) {
         syncIndicator.style.display = "none";
-        // Forzar repaint en Electron para evitar congelamiento visual
-        if (window.require) {
-          setTimeout(() => {
-            document.body.style.transform = "scale(1)";
-          }, 10);
-        }
-        console.log("[initSystem] Overlay de sincronización oculto.");
+        syncIndicator.style.visibility = "hidden";
+        syncIndicator.style.pointerEvents = "none";
       }
+
+      // Forzar repaint en Electron para evitar congelamiento visual
+      if (window.require) {
+        setTimeout(() => {
+          document.body.style.transform = "scale(1)";
+        }, 10);
+      }
+
+      console.log("[initSystem] Overlay de sincronización oculto.");
     }
   } else {
     console.warn("[initSystem] Sin conexión o sin supabaseClient");
@@ -4547,11 +4551,13 @@ async function deleteFromWeeklySummary(index) {
   const record = history[index];
 
   // Eliminar de Supabase si tiene id
-  if (record.id) {
+  if (record.rut && record.date) {
     const { error } = await supabaseClient
       .from("history")
       .delete()
-      .eq("id", record.id);
+      .eq("rut", record.rut)
+      .eq("date", record.date)
+      .eq("labor", record.labor);
 
     if (error) {
       console.error("Error eliminando en Supabase:", error.message);
