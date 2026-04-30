@@ -1,31 +1,21 @@
 <!doctype html>
-<!-- Indicador de sincronización -->
-<div
-  id="syncIndicator"
-  style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.7);
-    z-index: 99999;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: #2d7a4f;
-    font-weight: bold;
-  "
->
-  <div style="margin: auto; text-align: center">
-    <span>🔄 Sincronizando con la nube...</span>
-  </div>
-</div>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <title>Sistema Agrícola</title>
+
+    <!-- Content Security Policy -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+      default-src 'self';
+      script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+      style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+      img-src 'self' data:;
+      font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+      connect-src 'self' https://nvqdctmqyziectwswiop.supabase.co https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+    "
+    />
 
     <!-- RESPONSIVE -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,6 +28,29 @@
   </head>
 
   <body>
+    <!-- Indicador de sincronización -->
+    <div
+      id="syncIndicator"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 99999;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #2d7a4f;
+        font-weight: bold;
+      "
+    >
+      <div style="margin: auto; text-align: center">
+        <span>🔄 Sincronizando con la nube...</span>
+      </div>
+    </div>
     <!-- LOGIN -->
     <div id="login" class="card">
       <h2>Ingreso Contratista</h2>
@@ -49,7 +62,7 @@
         autocomplete="off"
       />
 
-      <button type="button" onclick="loginUser()">Ingresar</button>
+      <button type="button" id="btnLoginUser">Ingresar</button>
     </div>
 
     <!-- APP -->
@@ -58,82 +71,61 @@
       <aside class="sidebar">
         <h2>🌱 Sistema</h2>
 
-        <button type="button" onclick="showView('viewHome')">🏠 Inicio</button>
-        <button type="button" onclick="showView('viewWorkers')">
+        <button type="button" id="btnViewHome">🏠 Inicio</button>
+        <button type="button" id="btnViewWorkers">
           👨‍🌾 Ingreso Trabajadores
         </button>
-        <button type="button" onclick="showView('viewContract')">
-          🧾 Contrato
-        </button>
-        <button type="button" onclick="showView('viewWorkersDB')">
+        <button type="button" id="btnViewContract">🧾 Contrato</button>
+        <button type="button" id="btnViewWorkersDB">
           📋 Base de Datos Trabajadores
         </button>
-        <button type="button" onclick="showView('viewProduction')">
-          🛠️ Producción
-        </button>
-        <button type="button" onclick="toggleSubmenu('weeklySubmenu')">
+        <button type="button" id="btnViewProduction">🛠️ Producción</button>
+        <button type="button" id="btnToggleWeeklySubmenu">
           📊 Resumen Semanal ▼
         </button>
         <div id="weeklySubmenu" class="sidebar-submenu">
-          <button type="button" onclick="showView('viewWeekly')">
-            • Resumen Semanal
-          </button>
+          <button type="button" id="btnViewWeekly">• Resumen Semanal</button>
 
-          <button type="button" onclick="generateWeeklySummary()">
+          <button type="button" id="btnGenerateWeeklySummary">
             • Generar Resumen
           </button>
-          <button type="button" onclick="showView('viewPagos')">
-            • Pagos / Pendientes
-          </button>
-          <button type="button" onclick="showView('viewHistory')">
+          <button type="button" id="btnViewPagos">• Pagos / Pendientes</button>
+          <button type="button" id="btnViewHistory">
             • Ver Historial Completo
           </button>
         </div>
-        <button type="button" onclick="showView('viewLiquidation')">
-          📄 Liquidación
-        </button>
-        <button type="button" onclick="toggleSubmenu('monthlySubmenu')">
+        <button type="button" id="btnViewLiquidation">📄 Liquidación</button>
+        <button type="button" id="btnToggleMonthlySubmenu">
           📅 Resumen Mensual ▼
         </button>
 
         <div id="monthlySubmenu" class="sidebar-submenu">
-          <button type="button" onclick="showView('viewMonthly')">
+          <button type="button" id="btnViewMonthly">
             • Mensual Trabajador
           </button>
 
-          <button type="button" onclick="showView('viewMonthlyGeneral')">
+          <button type="button" id="btnViewMonthlyGeneral">
             • Mensual General
           </button>
 
-          <button type="button" onclick="showView('viewCobrosMandante')">
+          <button type="button" id="btnViewCobrosMandante">
             • Cobros Mandantes
           </button>
         </div>
 
-        <button type="button" onclick="showView('viewHistory')">
-          📜 Historial
-        </button>
-        <button
-          onclick="
-            showView('viewPaymentsHistory');
-            loadPaymentsHistory();
-          "
-        >
+        <button type="button" id="btnViewHistory2">📜 Historial</button>
+        <button type="button" id="btnViewPaymentsHistory">
           📂 Historial de Pagos
         </button>
-        <button type="button" onclick="showView('viewBackup')">
-          💾 Respaldo
-        </button>
-        <button type="button" onclick="showView('viewFiniquito')">
-          📑 Finiquito
-        </button>
+        <button type="button" id="btnViewBackup">💾 Respaldo</button>
+        <button type="button" id="btnViewFiniquito">📑 Finiquito</button>
       </aside>
 
       <!-- CONTENIDO -->
       <main class="content">
         <header>
           <h1>Sistema de Producción Agrícola</h1>
-          <button type="button" onclick="logout()">Cerrar sesión</button>
+          <button type="button" id="btnLogout">Cerrar sesión</button>
         </header>
 
         <!-- INICIO -->
@@ -196,13 +188,12 @@
                 type="text"
                 id="searchWorkerEdit"
                 placeholder="Buscar trabajador para editar"
-                oninput="debounceSearch(filterWorkersEdit)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearWorkerEditSearch()"
+                id="btnClearWorkerEditSearch"
                 title="Cambiar trabajador"
               >
                 ✕
@@ -211,21 +202,12 @@
             <div id="workerEditList" class="worker-search-list"></div>
           </div>
 
-          <select
-            id="workerEditSelect"
-            onchange="loadWorkerToEdit()"
-            style="display: none"
-          >
+          <select id="workerEditSelect" style="display: none">
             <option value="">-- Seleccionar para editar --</option>
           </select>
 
           <input type="text" id="workerName" placeholder="Nombre" />
-          <input
-            type="text"
-            id="workerRut"
-            placeholder="RUT"
-            oninput="formatRutInput(this)"
-          />
+          <input type="text" id="workerRut" placeholder="RUT" />
           <label for="workerBirthDate">Fecha de nacimiento</label>
           <input
             type="text"
@@ -233,7 +215,6 @@
             placeholder="DD/MM/AAAA"
             inputmode="numeric"
             maxlength="10"
-            oninput="formatBirthDate(this)"
           />
           <input
             type="text"
@@ -260,12 +241,7 @@
             placeholder="Número de cuenta bancaria"
           />
           <label>Sueldo Base</label>
-          <input
-            type="text"
-            id="workerBaseSalary"
-            placeholder="Sueldo Base"
-            oninput="formatCurrency(this)"
-          />
+          <input type="text" id="workerBaseSalary" placeholder="Sueldo Base" />
           <label for="workerIdPhoto">Foto Carnet</label>
           <input
             type="file"
@@ -280,17 +256,17 @@
             value="Trabajador Agricola"
             readonly
           />
-          <button type="button" onclick="addWorker()">Guardar</button>
+          <button type="button" id="btnAddWorker">Guardar</button>
           <button
             type="button"
-            onclick="clearWorkerForm()"
+            id="btnClearWorkerForm"
             style="background: #7f8c8d"
           >
             Limpiar
           </button>
           <button
             type="button"
-            onclick="deleteWorker()"
+            id="btnDeleteWorker"
             style="background: #c0392b"
           >
             Eliminar Trabajador
@@ -307,13 +283,12 @@
                 type="text"
                 id="searchWorkerDB"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="debounceSearch(filterWorkersDB)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearWorkerDBSearch()"
+                id="btnClearWorkerDBSearch"
                 title="Limpiar búsqueda"
               >
                 ✕
@@ -333,13 +308,12 @@
                 type="text"
                 id="searchWorkerProduction"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="debounceSearch(filterWorkersProduction)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearWorkerProductionSearch()"
+                id="btnClearWorkerProductionSearch"
                 title="Cambiar trabajador"
               >
                 ✕
@@ -374,15 +348,10 @@
             min="0"
             step="1"
           />
-          <input
-            type="text"
-            id="unitValue"
-            placeholder="Valor por unidad"
-            oninput="formatCurrency(this)"
-          />
+          <input type="text" id="unitValue" placeholder="Valor por unidad" />
           <input type="text" id="observation" placeholder="Observación" />
-          <button type="button" onclick="registerWork()">Registrar</button>
-          <button type="button" onclick="loadDailyRecords()">
+          <button type="button" id="btnRegisterWork">Registrar</button>
+          <button type="button" id="btnLoadDailyRecords">
             🔍 Buscar registros del día
           </button>
 
@@ -400,13 +369,12 @@
                 type="text"
                 id="searchWorkerLiquidation"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="debounceSearch(filterWorkersLiquidation)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearLiquidationSearch()"
+                id="btnClearLiquidationSearch"
                 title="Cambiar trabajador"
               >
                 ✕
@@ -427,7 +395,7 @@
             placeholder="Anticipos del mes"
             style="position: relative; z-index: 9999"
           />
-          <button type="button" onclick="generateLiquidation()">
+          <button type="button" id="btnGenerateLiquidation">
             Generar Liquidación
           </button>
           <hr style="margin-top: 30px" />
@@ -443,13 +411,9 @@
             style="position: relative; z-index: 9999"
           />
 
-          <button onclick="saveMinimumWage()">Guardar Sueldo Mínimo</button>
+          <button id="btnSaveMinimumWage">Guardar Sueldo Mínimo</button>
 
-          <button
-            type="button"
-            onclick="printLiquidationScreen()"
-            class="no-print"
-          >
+          <button type="button" id="btnPrintLiquidationScreen" class="no-print">
             🖨️ Imprimir Liquidación
           </button>
         </section>
@@ -584,7 +548,7 @@
               </div>
             </div>
           </div>
-          <button class="no-print" onclick="printContractScreen()">
+          <button type="button" id="btnPrintContractScreen" class="no-print">
             🖨️ Imprimir Contrato
           </button>
 
@@ -594,13 +558,12 @@
                 type="text"
                 id="searchWorkerContract"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="debounceSearch(filterWorkersContract)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearWorkerContractSearch()"
+                id="btnClearWorkerContractSearch"
                 title="Cambiar trabajador"
               >
                 ✕
@@ -620,7 +583,6 @@
             placeholder="DD/MM/AAAA"
             inputmode="numeric"
             maxlength="10"
-            oninput="formatBirthDate(this)"
           />
 
           <label for="fundoSelect">Fundo</label>
@@ -643,12 +605,12 @@
           <input type="text" id="salary" placeholder="Sueldo / Trato" />
 
           <div style="display: flex; gap: 8px; flex-wrap: wrap">
-            <button type="button" onclick="clearAllContract()">
+            <button type="button" id="btnClearAllContract">
               🗑️ Limpiar todo
             </button>
           </div>
 
-          <button type="button" onclick="generateContract()">
+          <button type="button" id="btnGenerateContract">
             Generar Contrato
           </button>
         </section>
@@ -663,13 +625,12 @@
                 type="text"
                 id="searchWorkerMonthly"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="debounceSearch(filterWorkersMonthly)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearWorkerMonthlySearch()"
+                id="btnClearWorkerMonthlySearch"
                 title="Cambiar trabajador"
               >
                 ✕
@@ -684,7 +645,7 @@
 
           <input type="month" id="monthMonthly" />
 
-          <button type="button" onclick="generateMonthlySummary()">
+          <button type="button" id="btnGenerateMonthlySummary">
             Calcular Mes
           </button>
 
@@ -697,19 +658,15 @@
 
           <input type="month" id="monthGeneral" />
 
-          <button type="button" onclick="generateMonthlyGeneral()">
+          <button type="button" id="btnGenerateMonthlyGeneral">
             Calcular Mes
           </button>
-          <button
-            type="button"
-            onclick="printMonthlyGeneral()"
-            class="no-print"
-          >
+          <button type="button" id="btnPrintMonthlyGeneral" class="no-print">
             🖨️ Imprimir Resumen
           </button>
           <button
             type="button"
-            onclick="exportMonthlyGeneralExcel()"
+            id="btnExportMonthlyGeneralExcel"
             class="no-print"
           >
             📊 Exportar a Excel
@@ -732,12 +689,12 @@
           </div>
 
           <div style="margin-top: 15px">
-            <button type="button" onclick="generateMandanteCobro()">
+            <button type="button" id="btnGenerateMandanteCobro">
               📋 Generar Cobro Mandante
             </button>
             <button
               type="button"
-              onclick="printMandanteCobro()"
+              id="btnPrintMandanteCobro"
               style="margin-top: 8px"
             >
               🖨️ Imprimir Cobro Mandante
@@ -757,13 +714,12 @@
                 type="text"
                 id="searchWorkerWeekly"
                 placeholder="Buscar trabajador por nombre o RUT"
-                oninput="debounceSearch(filterWorkersWeekly)"
                 autocomplete="off"
               />
               <button
                 type="button"
                 class="search-clear-btn"
-                onclick="clearWeeklySearch()"
+                id="btnClearWeeklySearch"
                 title="Cambiar trabajador"
               >
                 ✕
@@ -794,7 +750,7 @@
             <div id="weeklyResult"></div>
           </div>
 
-          <button onclick="printWeeklySummary()" class="no-print">
+          <button type="button" id="btnPrintWeeklySummary" class="no-print">
             🖨️ Imprimir Resumen Semanal
           </button>
         </section>
@@ -805,11 +761,7 @@
           <!-- 🔷 FILTROS -->
           <div class="card">
             <label>Filtrar por mes:</label>
-            <input
-              type="month"
-              id="filterPaymentsMonth"
-              onchange="loadPaymentsHistory()"
-            />
+            <input type="month" id="filterPaymentsMonth" />
 
             <label style="margin-top: 10px">Filtrar por trabajador:</label>
             <div class="worker-search">
@@ -818,13 +770,12 @@
                   type="text"
                   id="searchWorkerPagos"
                   placeholder="Buscar trabajador por nombre o RUT"
-                  oninput="debounceSearch(filterWorkersPagos)"
                   autocomplete="off"
                 />
                 <button
                   type="button"
                   class="search-clear-btn"
-                  onclick="clearWorkerPagosSearch()"
+                  id="btnClearWorkerPagosSearch"
                   title="Limpiar búsqueda"
                 >
                   ✕
@@ -840,7 +791,7 @@
             <div id="paymentsHistoryTablePanel"></div>
           </div>
 
-          <button onclick="generatePagosResumen()">Calcular Resumen</button>
+          <button id="btnGeneratePagosResumen">Calcular Resumen</button>
 
           <div id="pagosResult"></div>
         </section>
@@ -863,19 +814,9 @@
         <section class="card view hidden" id="viewBackup">
           <h3>Respaldo del Sistema</h3>
 
-          <button type="button" onclick="exportData()">
-            Exportar Respaldo
-          </button>
-          <input
-            type="file"
-            id="importFile"
-            style="display: none"
-            onchange="importData(event)"
-          />
-          <button
-            type="button"
-            onclick="document.getElementById('importFile').click()"
-          >
+          <button type="button" id="btnExportData">Exportar Respaldo</button>
+          <input type="file" id="importFile" style="display: none" />
+          <button type="button" id="btnImportDataTrigger">
             Importar Respaldo
           </button>
         </section>
@@ -894,12 +835,8 @@
           <br />
 
           <input type="file" id="workerFileUpload" />
-
-          <button onclick="uploadWorkerDocument()">⬆ Subir documento</button>
-
-          <button onclick="showView('viewWorkersDB')">
-            ← Volver a trabajadores
-          </button>
+          <button id="btnUploadWorkerDocument">⬆ Subir documento</button>
+          <button id="btnBackToWorkersDB">← Volver a trabajadores</button>
         </section>
         <section class="card view hidden" id="viewFiniquito">
           <div id="finiquitoPrint">
@@ -911,13 +848,12 @@
                   type="text"
                   id="searchWorkerFiniquito"
                   placeholder="Buscar trabajador por nombre o RUT"
-                  oninput="debounceSearch(filterWorkersFiniquito)"
                   autocomplete="off"
                 />
                 <button
                   type="button"
                   class="search-clear-btn"
-                  onclick="clearWorkerFiniquitoSearch()"
+                  id="btnClearWorkerFiniquitoSearch"
                   title="Cambiar trabajador"
                 >
                   ✕
@@ -952,10 +888,6 @@
               type="text"
               id="f_endDate"
               placeholder="DD/MM/AAAA"
-              oninput="
-                formatFechaInput(this);
-                syncFiniquitoEndDate(this.value);
-              "
               class="no-print"
             />
 
@@ -991,11 +923,11 @@
             </div>
           </div>
 
-          <button class="no-print" onclick="window.print()">
+          <button type="button" id="btnPrintFiniquito" class="no-print">
             🖨️ Imprimir Finiquito
           </button>
 
-          <button type="button" onclick="generateFiniquito()">
+          <button type="button" id="btnGenerateFiniquito">
             Generar Finiquito
           </button>
         </section>
@@ -1011,6 +943,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- APP JS -->
+    <script src="js/core.js"></script>
+    <script src="js/workers.js"></script>
+    <script src="js/production.js"></script>
     <script src="app.js"></script>
+    <script src="js/ui.js"></script>
   </body>
 </html>

@@ -78,5 +78,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Agregar encabezados para cross-origin isolation
+  const { session } = require("electron");
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        "Cross-Origin-Opener-Policy": ["same-origin"],
+        "Cross-Origin-Embedder-Policy": ["require-corp"],
+      },
+    });
+  });
   createWindow();
 });

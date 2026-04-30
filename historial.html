@@ -13,7 +13,7 @@
     <div class="content">
       <header>
         <h1>Historial Completo de Producción</h1>
-        <button onclick="goBack()">Volver al Sistema</button>
+        <button id="goBackBtn">Volver al Sistema</button>
       </header>
 
       <!-- ===== ACCIONES ===== -->
@@ -23,13 +23,13 @@
 
         <input type="month" id="deleteMonth" />
 
-        <button onclick="deleteByMonth()" style="background: #e67e22">
+        <button id="deleteByMonthBtn" style="background: #e67e22">
           Borrar Mes Seleccionado
         </button>
 
         <hr style="margin: 20px 0" />
 
-        <button onclick="clearHistory()" style="background: #c0392b">
+        <button id="clearHistoryBtn" style="background: #c0392b">
           Borrar Todo el Historial
         </button>
       </div>
@@ -48,6 +48,16 @@
     <script src="app.js"></script>
 
     <script>
+      // Asignar eventos para cumplir CSP
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("goBackBtn").addEventListener("click", goBack);
+        document
+          .getElementById("deleteByMonthBtn")
+          .addEventListener("click", deleteByMonth);
+        document
+          .getElementById("clearHistoryBtn")
+          .addEventListener("click", clearHistory);
+      });
       // =============================
       // 🚀 CARGA INICIAL
       // =============================

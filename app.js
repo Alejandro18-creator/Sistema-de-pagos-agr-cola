@@ -358,29 +358,6 @@ const LOGIN_PASSWORD = "1234";
 
 let editIndexWorker = null;
 
-function formatMoney(value) {
-  if (!value) return "$0";
-
-  return (
-    "$" +
-    Number(value).toLocaleString("es-CL", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-  );
-}
-function formatCLPCurrency(value) {
-  if (!value) return "";
-
-  const numericValue = Number(
-    value.replace(/\$/g, "").replace(/\./g, "").replace(/,/g, ""),
-  );
-
-  if (isNaN(numericValue)) return value;
-
-  return "$" + numericValue.toLocaleString("es-CL");
-}
-
 // =============================
 // 🔄 CARGAR RESPALDO SI NO HAY DATOS
 // =============================
@@ -689,190 +666,9 @@ async function addWorker() {
     }
   }
 }
-
-function loadWorkerToEdit() {
-  const index = document.getElementById("workerEditSelect").value;
-
-  if (index === "") return;
-
-  const worker = workers[index];
-  const editSearch = document.getElementById("searchWorkerEdit");
-  if (editSearch) editSearch.value = worker.name || "";
-
-  // 🧠 ACTIVAR MODO EDICIÓN
-  editIndexWorker = index;
-
-  document.getElementById("workerName").value = worker.name || "";
-
-  document.getElementById("workerRut").value = worker.rut || "";
-
-  document.getElementById("workerAddress").value = worker.address || "";
-
-  document.getElementById("workerAFP").value = worker.afp || "";
-
-  document.getElementById("workerHealth").value = worker.health || "";
-
-  document.getElementById("workerPosition").value = worker.position || "";
-
-  document.getElementById("workerNationality").value = worker.nationality || "";
-  document.getElementById("workerBirthDate").value = worker.birthDate || "";
-  document.getElementById("workerMaritalStatus").value =
-    worker.maritalStatus || "";
-  document.getElementById("workerAccount").value = worker.account_number || "";
-}
-
-function clearWorkerForm() {
-  editIndexWorker = null;
-  document.getElementById("workerEditSelect").value = "";
-  const editSearch = document.getElementById("searchWorkerEdit");
-  const editList = document.getElementById("workerEditList");
-  if (editSearch) editSearch.value = "";
-  if (editList) {
-    editList.style.display = "none";
-    editList.innerHTML = "";
-  }
-  document.getElementById("workerName").value = "";
-  document.getElementById("workerRut").value = "";
-  document.getElementById("workerBirthDate").value = "";
-  document.getElementById("workerMaritalStatus").value = "";
-  document.getElementById("workerAddress").value = "";
-  document.getElementById("workerAFP").value = "";
-  document.getElementById("workerHealth").value = "";
-  document.getElementById("workerPosition").value = "";
-  document.getElementById("workerNationality").value = "";
-  document.getElementById("workerAccount").value = "";
-}
-
-function clearWorkerInputs() {
-  document.getElementById("workerName").value = "";
-  document.getElementById("workerRut").value = "";
-  document.getElementById("workerBirthDate").value = "";
-  document.getElementById("workerMaritalStatus").value = "";
-  document.getElementById("workerAddress").value = "";
-}
-
-function formatBirthDate(input) {
-  let value = input.value.replace(/\D/g, "").slice(0, 8);
-  if (value.length >= 5) {
-    value = value.replace(/(\d{2})(\d{2})(\d{0,4})/, "$1/$2/$3");
-  } else if (value.length >= 3) {
-    value = value.replace(/(\d{2})(\d{0,2})/, "$1/$2");
-  }
-  input.value = value;
-}
-
 // =============================
 // 📋 SELECTS
 // =============================
-
-function loadWorkers() {
-  const ids = [
-    "workerSelect",
-    "workerLiquidation",
-    "workerMonthly",
-    "workerWeekly",
-    "workerContract",
-    "workerFiniquito",
-    "workerEditSelect",
-  ];
-
-  const liquidationSearch = document.getElementById("searchWorkerLiquidation");
-  if (liquidationSearch) {
-    liquidationSearch.value = "";
-  }
-
-  const liquidationList = document.getElementById("workerLiquidationList");
-  if (liquidationList) {
-    liquidationList.innerHTML = "";
-    liquidationList.style.display = "none";
-  }
-
-  const workerEditSearch = document.getElementById("searchWorkerEdit");
-  if (workerEditSearch) {
-    workerEditSearch.value = "";
-  }
-
-  const workerEditList = document.getElementById("workerEditList");
-  if (workerEditList) {
-    workerEditList.innerHTML = "";
-    workerEditList.style.display = "none";
-  }
-
-  const workerContractSearch = document.getElementById("searchWorkerContract");
-  if (workerContractSearch) {
-    workerContractSearch.value = "";
-  }
-
-  const workerContractList = document.getElementById("workerContractList");
-  if (workerContractList) {
-    workerContractList.innerHTML = "";
-    workerContractList.style.display = "none";
-  }
-
-  const workerMonthlySearch = document.getElementById("searchWorkerMonthly");
-  if (workerMonthlySearch) {
-    workerMonthlySearch.value = "";
-  }
-
-  const workerMonthlyList = document.getElementById("workerMonthlyList");
-  if (workerMonthlyList) {
-    workerMonthlyList.innerHTML = "";
-    workerMonthlyList.style.display = "none";
-  }
-
-  const workerFiniquitoSearch = document.getElementById(
-    "searchWorkerFiniquito",
-  );
-  if (workerFiniquitoSearch) {
-    workerFiniquitoSearch.value = "";
-  }
-
-  const workerFiniquitoList = document.getElementById("workerFiniquitoList");
-  if (workerFiniquitoList) {
-    workerFiniquitoList.innerHTML = "";
-    workerFiniquitoList.style.display = "none";
-  }
-
-  const workerProductionSearch = document.getElementById(
-    "searchWorkerProduction",
-  );
-  if (workerProductionSearch) {
-    workerProductionSearch.value = "";
-  }
-
-  const workerProductionList = document.getElementById("workerProductionList");
-  if (workerProductionList) {
-    workerProductionList.innerHTML = "";
-    workerProductionList.style.display = "none";
-  }
-
-  const workerWeeklySearch = document.getElementById("searchWorkerWeekly");
-  if (workerWeeklySearch) {
-    workerWeeklySearch.value = "";
-  }
-
-  const workerWeeklyList = document.getElementById("workerWeeklyList");
-  if (workerWeeklyList) {
-    workerWeeklyList.innerHTML = "";
-    workerWeeklyList.style.display = "none";
-  }
-
-  ids.forEach((id) => {
-    const select = document.getElementById(id);
-    if (!select) return;
-
-    select.innerHTML = "<option value=''>-- Seleccionar trabajador --</option>";
-
-    workers.forEach((w, i) => {
-      if (w.active === false) return;
-      const opt = document.createElement("option");
-      opt.value = i;
-      opt.textContent = w.name;
-
-      select.appendChild(opt);
-    });
-  });
-}
 
 function loadPagosWorkerFilter() {
   // El filtro ahora usa búsqueda dinámica, no hace falta poblar un select
@@ -898,163 +694,6 @@ function filterWorkersPagos() {
     list.style.display = "none";
     return;
   }
-
-  const filtered = workers.filter((w) => {
-    if (w.active === false) return false;
-    const name = (w.name || "").toLowerCase();
-    const cleanRut = (w.rut || "")
-      .toLowerCase()
-      .replace(/\./g, "")
-      .replace(/-/g, "");
-    return name.includes(search) || cleanRut.includes(search);
-  });
-
-  if (filtered.length === 0) {
-    list.innerHTML =
-      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
-    list.style.display = "block";
-    return;
-  }
-
-  filtered.forEach((worker) => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${worker.name}</strong><br><small style='color:#666;'>${worker.rut}</small>`;
-    div.onclick = () => {
-      const workerKey =
-        getRutKey(worker.rut) || "name:" + getWorkerNameKey(worker.name);
-      hiddenInput.value = workerKey;
-      searchInput.value = worker.name + " (" + worker.rut + ")";
-      list.style.display = "none";
-      list.innerHTML = "";
-    };
-    list.appendChild(div);
-  });
-
-  list.style.display = "block";
-}
-
-function clearWorkerPagosSearch() {
-  const searchInput = document.getElementById("searchWorkerPagos");
-  const list = document.getElementById("workerPagosList");
-  const hiddenInput = document.getElementById("filterPaymentsWorker");
-
-  if (searchInput) searchInput.value = "";
-  if (hiddenInput) hiddenInput.value = "";
-  if (list) {
-    list.style.display = "none";
-    list.innerHTML = "";
-  }
-}
-
-// =============================
-// 📋 TABLA TRABAJADORES
-// =============================
-
-function filterWorkersDB() {
-  renderWorkersTable();
-}
-
-function clearWorkerDBSearch() {
-  const input = document.getElementById("searchWorkerDB");
-  if (input) input.value = "";
-  renderWorkersTable();
-}
-
-function renderWorkersTable() {
-  const c = document.getElementById("workersTable");
-  if (!c) return;
-
-  if (workers.length === 0) {
-    c.innerHTML = "<p>No hay trabajadores.</p>";
-    return;
-  }
-
-  const searchRaw = (document.getElementById("searchWorkerDB")?.value || "")
-    .toLowerCase()
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .trim();
-
-  const filtered = searchRaw
-    ? workers.filter((w) => {
-        const name = (w.name || "").toLowerCase();
-        const rut = (w.rut || "")
-          .toLowerCase()
-          .replace(/\./g, "")
-          .replace(/-/g, "");
-        return name.includes(searchRaw) || rut.includes(searchRaw);
-      })
-    : workers;
-
-  if (filtered.length === 0) {
-    c.innerHTML = "<p>No se encontraron trabajadores.</p>";
-    return;
-  }
-
-  let html = "<div class='table-container'><table>";
-  html +=
-    "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
-
-  filtered.forEach((w) => {
-    html += "<tr>";
-
-    html +=
-      "<td>" +
-      w.name +
-      (w.active === false
-        ? " <span style='color:#e74c3c; font-size:11px;'>(Inactivo)</span>"
-        : "") +
-      "</td>";
-    html += "<td>" + w.rut + "</td>";
-    html += "<td>" + (w.address || "-") + "</td>";
-
-    html += "<td>";
-    if (w.id_card_photo) {
-      html +=
-        "<img src='" +
-        w.id_card_photo +
-        "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
-    } else {
-      html += "—";
-    }
-    html += "</td>";
-
-    // 📁 BOTÓN CARPETA
-    html += "<td>";
-    html += "<button onclick=\"openWorkerFolder('" + w.rut + "')\">📁</button>";
-    html += "</td>";
-
-    html += "</tr>";
-  });
-
-  html += "</table></div>";
-
-  c.innerHTML = html;
-}
-
-// =============================
-// 🛠️ LABORES
-// =============================
-
-function loadLabors() {
-  const select = document.getElementById("laborSelect");
-
-  if (!select) return;
-
-  select.innerHTML = "<option value=''>-- Seleccionar labor --</option>";
-
-  labors.forEach((l) => {
-    const opt = document.createElement("option");
-    opt.value = l;
-    opt.textContent = l;
-
-    select.appendChild(opt);
-  });
-}
-
-function loadFundos() {
-  const select = document.getElementById("fundoSelect");
-  if (!select) return;
 
   const currentValue = select.value;
   select.innerHTML = "<option value=''>-- Seleccionar fundo --</option>";
@@ -1089,48 +728,6 @@ function loadAFPOptions() {
   });
 }
 
-function normalizeLaborText(value) {
-  return (value || "").trim().replace(/\s+/g, " ");
-}
-
-function getWorkerNameKey(value) {
-  return (value || "").trim().replace(/\s+/g, " ").toLowerCase();
-}
-
-function getRutKey(value) {
-  return (value || "")
-    .toLowerCase()
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .replace(/\s/g, "")
-    .trim();
-}
-
-function getLaborKey(value) {
-  return normalizeLaborText(value).toLowerCase();
-}
-
-function normalizeFundoText(value) {
-  const normalized = (value || "").trim().replace(/\s+/g, " ");
-  return normalized.replace(/^fundo\s*/i, "").trim();
-}
-
-function getFundoKey(value) {
-  return normalizeFundoText(value).toLowerCase();
-}
-
-function getFundoDisplay(value, fallback = "-") {
-  const normalized = normalizeFundoText(value);
-  if (!normalized) return fallback;
-  return "Fundo " + normalized.toUpperCase();
-}
-
-function normalizeFundoForSave(value) {
-  const normalized = normalizeFundoText(value);
-  if (!normalized) return "";
-  return "Fundo " + normalized.toUpperCase();
-}
-
 function loadMandanteFundoFilter() {
   const select = document.getElementById("mandanteFundoFilter");
   if (!select) return;
@@ -1161,198 +758,6 @@ function loadMandanteFundoFilter() {
   if (currentValue && fundoMap.has(currentValue)) {
     select.value = currentValue;
   }
-}
-
-function getCanonicalLaborName(value) {
-  const normalized = normalizeLaborText(value);
-  if (!normalized) return "";
-
-  const key = getLaborKey(normalized);
-  const existing = labors.find((l) => getLaborKey(l) === key);
-  return existing || normalized;
-}
-
-// =============================
-// 🧾 PRODUCCIÓN
-// =============================
-
-function showProductionConfirmModal(
-  { workerName, date, labor, quantity, total },
-  onConfirm,
-) {
-  const existing = document.getElementById("productionConfirmModal");
-  if (existing) existing.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "productionConfirmModal";
-  modal.style.cssText =
-    "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;";
-
-  modal.innerHTML = `
-    <div style="background:white;padding:30px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.25);">
-      <h3 style="margin:0 0 16px 0;font-size:16px;">Confirme registro de producción</h3>
-      <p style="margin:6px 0;"><strong>Trabajador:</strong> ${workerName}</p>
-      <p style="margin:6px 0;"><strong>Fecha:</strong> ${date}</p>
-      <p style="margin:6px 0;"><strong>Labor:</strong> ${labor}</p>
-      <p style="margin:6px 0;"><strong>Cantidad:</strong> ${quantity}</p>
-      <p style="margin:6px 0;"><strong>Total:</strong> $${total.toLocaleString("es-CL")}</p>
-      <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end;">
-        <button id="prodCancelBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #ccc;background:#f5f5f5;color:#222;cursor:pointer;font-size:14px;">Cancelar</button>
-        <button id="prodConfirmBtn" style="padding:10px 20px;border-radius:8px;border:none;background:#2d7a4f;color:white;cursor:pointer;font-size:14px;">Registrar</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  document.getElementById("prodConfirmBtn").onclick = async () => {
-    modal.remove();
-    await onConfirm();
-  };
-
-  document.getElementById("prodCancelBtn").onclick = () => {
-    modal.remove();
-  };
-}
-
-function registerWork() {
-  const worker = workers[document.getElementById("workerSelect").value];
-
-  const date = document.getElementById("workDate").value;
-
-  let labor = normalizeLaborText(document.getElementById("laborSelect").value);
-
-  const newLabor = normalizeLaborText(
-    document.getElementById("newLabor").value,
-  );
-  const fundo = normalizeFundoForSave(
-    document.getElementById("fundoProduction").value,
-  );
-
-  const quantity = Number(document.getElementById("quantity").value);
-
-  const unitValue = Number(
-    document
-      .getElementById("unitValue")
-      .value.replace(/\$/g, "")
-      .replace(/\./g, ""),
-  );
-
-  if (newLabor) {
-    labor = getCanonicalLaborName(newLabor);
-
-    if (!labors.some((l) => getLaborKey(l) === getLaborKey(newLabor))) {
-      labors.push(labor);
-      localStorage.setItem("labors", JSON.stringify(labors));
-      loadLabors();
-    }
-  } else {
-    labor = getCanonicalLaborName(labor);
-  }
-
-  if (!worker || !date || !labor || quantity <= 0) {
-    alert("Datos incompletos.");
-    return;
-  }
-
-  // Validar si ya existe producción para el mismo trabajador (RUT) y día
-  const existeMismoDia = history.some(
-    (r) => r.rut === worker.rut && r.date === date,
-  );
-  if (existeMismoDia && editProductionIndex === null) {
-    const continuar = confirm(
-      "Ya existe un registro de producción para este trabajador en este día.\n¿Deseas agregar igualmente este nuevo registro?\n(Si no, presiona Cancelar para deshacer la información)",
-    );
-    if (!continuar) return;
-  }
-
-  const total = quantity * unitValue;
-
-  showProductionConfirmModal(
-    { workerName: worker.name, date, labor, quantity, total },
-    async () => {
-      const newRecord = {
-        id: crypto.randomUUID(),
-        name: worker.name,
-        rut: worker.rut,
-        date,
-        labor,
-        quantity,
-        total,
-        fundo: fundo || "",
-        mandante_paid: false,
-      };
-
-      if (editProductionIndex !== null) {
-        history[editProductionIndex] = newRecord;
-        editProductionIndex = null;
-        document.querySelector(
-          "#viewProduction button[onclick='registerWork()']",
-        ).textContent = "Registrar";
-      } else {
-        history.push(newRecord);
-      }
-
-      const cloudSave = await saveProductionToCloud({
-        name: worker.name,
-        rut: worker.rut,
-        date,
-        labor,
-        quantity,
-        total,
-        fundo: fundo || "",
-        mandante_paid: false,
-      });
-
-      if (cloudSave?.ok) {
-        alert("✅ Guardado en Supabase OK");
-      } else {
-        alert(
-          "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
-        );
-      }
-
-      saveLocalDataDebounced();
-
-      renderHistory();
-      // ===== LIMPIAR CAMPOS =====
-
-      document.getElementById("workDate").value = "";
-      document.getElementById("quantity").value = "";
-    },
-  );
-}
-
-// =============================
-// 📜 HISTORIAL
-// =============================
-
-function renderHistory() {
-  const c = document.getElementById("history");
-  if (!c) return;
-
-  if (history.length === 0) {
-    c.innerHTML = "<p>No hay registros.</p>";
-    return;
-  }
-
-  let html = "<div class='table-container'><table>";
-  html +=
-    "<tr><th>Fecha</th><th>Trabajador</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
-
-  history.slice(0, 200).forEach((r) => {
-    html += "<tr>";
-    html += "<td>" + r.date + "</td>";
-    html += "<td>" + r.name + "</td>";
-    html += "<td>" + r.labor + "</td>";
-    html += "<td>" + r.quantity + "</td>";
-    html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-    html += "</tr>";
-  });
-
-  html += "</table></div>";
-
-  c.innerHTML = html;
 }
 
 // =============================
@@ -1420,19 +825,30 @@ function filterWorkersWeekly() {
   let html = "";
   filtered.forEach((worker, i) => {
     const originalIndex = workers.indexOf(worker);
-    html +=
-      "<div onclick='selectWorkerWeekly(" +
-      originalIndex +
-      ', "' +
-      worker.name.replace(/"/g, "&quot;") +
-      "\")' style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;' onmouseover='this.style.background=\"#f0f0f0\"' onmouseout='this.style.background=\"white\"'>";
-    html += "<strong>" + worker.name + "</strong><br>";
-    html += "<small style='color: #666;'>" + worker.rut + "</small>";
+    html += `<div class="worker-weekly-item" data-index="${originalIndex}" data-name="${worker.name.replace(/"/g, "&quot;")}" style='padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;'>`;
+    html += `<strong>${worker.name}</strong><br>`;
+    html += `<small style='color: #666;'>${worker.rut}</small>`;
     html += "</div>";
   });
 
   resultsList.innerHTML = html;
   resultsList.style.display = "block";
+
+  // Asignar eventos CSP-compliant
+  resultsList.querySelectorAll(".worker-weekly-item").forEach((div) => {
+    div.addEventListener("click", function () {
+      selectWorkerWeekly(
+        Number(this.getAttribute("data-index")),
+        this.getAttribute("data-name"),
+      );
+    });
+    div.addEventListener("mouseover", function () {
+      this.style.background = "#f0f0f0";
+    });
+    div.addEventListener("mouseout", function () {
+      this.style.background = "white";
+    });
+  });
 }
 
 function filterWorkersProduction() {
@@ -1457,13 +873,11 @@ function filterWorkersProduction() {
   filtered.forEach((w) => {
     const div = document.createElement("div");
     div.textContent = `${w.name} - ${w.rut}`;
-
-    div.onclick = () => {
+    div.addEventListener("click", () => {
       document.getElementById("searchWorkerProduction").value = w.name;
       document.getElementById("workerSelect").value = workers.indexOf(w);
       list.style.display = "none";
-    };
-
+    });
     list.appendChild(div);
   });
 
@@ -1474,76 +888,6 @@ function clearWorkerProductionSearch() {
   const searchInput = document.getElementById("searchWorkerProduction");
   const list = document.getElementById("workerProductionList");
   const hiddenSelect = document.getElementById("workerSelect");
-
-  if (searchInput) searchInput.value = "";
-  if (hiddenSelect) hiddenSelect.value = "";
-  if (list) {
-    list.style.display = "none";
-    list.innerHTML = "";
-  }
-}
-
-function filterWorkersEdit() {
-  const searchInput = document.getElementById("searchWorkerEdit");
-  const list = document.getElementById("workerEditList");
-  const hiddenSelect = document.getElementById("workerEditSelect");
-
-  if (!searchInput || !list || !hiddenSelect) return;
-
-  const search = searchInput.value
-    .toLowerCase()
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .trim();
-
-  hiddenSelect.value = "";
-  list.innerHTML = "";
-
-  if (search === "") {
-    list.style.display = "none";
-    return;
-  }
-
-  const filtered = workers.filter((worker) => {
-    const name = (worker.name || "").toLowerCase();
-    const cleanRut = (worker.rut || "")
-      .toLowerCase()
-      .replace(/\./g, "")
-      .replace(/-/g, "");
-
-    return name.includes(search) || cleanRut.includes(search);
-  });
-
-  if (filtered.length === 0) {
-    list.innerHTML =
-      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
-    list.style.display = "block";
-    return;
-  }
-
-  filtered.forEach((worker) => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-
-    div.onclick = () => {
-      const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
-      searchInput.value = worker.name || "";
-      list.style.display = "none";
-      list.innerHTML = "";
-      loadWorkerToEdit();
-    };
-
-    list.appendChild(div);
-  });
-
-  list.style.display = "block";
-}
-
-function clearWorkerEditSearch() {
-  const searchInput = document.getElementById("searchWorkerEdit");
-  const list = document.getElementById("workerEditList");
-  const hiddenSelect = document.getElementById("workerEditSelect");
 
   if (searchInput) searchInput.value = "";
   if (hiddenSelect) hiddenSelect.value = "";
@@ -1594,15 +938,13 @@ function filterWorkersContract() {
   filtered.forEach((worker) => {
     const div = document.createElement("div");
     div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-
-    div.onclick = () => {
+    div.addEventListener("click", () => {
       const index = workers.indexOf(worker);
       hiddenSelect.value = index;
       searchInput.value = worker.name || "";
       list.style.display = "none";
       list.innerHTML = "";
-    };
-
+    });
     list.appendChild(div);
   });
 
@@ -1707,15 +1049,13 @@ function filterWorkersMonthly() {
   filtered.forEach((worker) => {
     const div = document.createElement("div");
     div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-
-    div.onclick = () => {
+    div.addEventListener("click", () => {
       const index = workers.indexOf(worker);
       hiddenSelect.value = index;
       searchInput.value = worker.name || "";
       list.style.display = "none";
       list.innerHTML = "";
-    };
-
+    });
     list.appendChild(div);
   });
 
@@ -1776,8 +1116,7 @@ function filterWorkersFiniquito() {
   filtered.forEach((worker) => {
     const div = document.createElement("div");
     div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-
-    div.onclick = () => {
+    div.addEventListener("click", () => {
       const index = workers.indexOf(worker);
       hiddenSelect.value = index;
       searchInput.value = worker.name || "";
@@ -1797,8 +1136,7 @@ function filterWorkersFiniquito() {
       refreshFiniquitoResumen();
       list.style.display = "none";
       list.innerHTML = "";
-    };
-
+    });
     list.appendChild(div);
   });
 
@@ -1854,20 +1192,25 @@ function filterWorkersLiquidation() {
   filtered.forEach((w) => {
     const div = document.createElement("div");
     div.textContent = `${w.name} - ${w.rut}`;
-
-    div.onclick = () => {
+    div.addEventListener("click", () => {
       const index = workers.indexOf(w);
       hiddenSelect.value = index;
       document.getElementById("searchWorkerLiquidation").value = w.name;
       list.style.display = "none";
       list.innerHTML = "";
-    };
-
+    });
     list.appendChild(div);
   });
 
   list.style.display = "block";
 }
+document.addEventListener(
+  "mousedown",
+  (event) => {
+    event.stopPropagation();
+  },
+  true,
+);
 
 document.addEventListener("click", (event) => {
   const searchInput = document.getElementById("searchWorkerLiquidation");
@@ -3618,7 +2961,7 @@ function showCalendarMandante(year = null, month = null) {
   html +=
     "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
   html +=
-    "<button type='button' onclick='changeMonthMandante(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+    "<button type='button' class='btn-month-mandante' data-dir='-1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
   html +=
     "<span style='font-weight: bold; text-transform: capitalize;'>" +
     monthNames[monthNum] +
@@ -3626,7 +2969,7 @@ function showCalendarMandante(year = null, month = null) {
     year +
     "</span>";
   html +=
-    "<button type='button' onclick='changeMonthMandante(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+    "<button type='button' class='btn-month-mandante' data-dir='1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
   html += "</div>";
 
   html +=
@@ -3663,9 +3006,9 @@ function showCalendarMandante(year = null, month = null) {
     }
 
     html +=
-      "<div onclick='toggleDayMandante(\"" +
+      "<div class='calendar-day-mandante' data-date='" +
       dateStr +
-      "\")' style='text-align:center; padding:8px; border-radius:50%; background:" +
+      "' style='text-align:center; padding:8px; border-radius:50%; background:" +
       bgColor +
       "; color:" +
       textColor +
@@ -3681,14 +3024,30 @@ function showCalendarMandante(year = null, month = null) {
   html +=
     "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
   html +=
-    "<button type='button' onclick='clearSelectedDaysMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
+    "<button type='button' class='btn-clear-mandante' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
   html +=
-    "<button type='button' onclick='todayDateMandante()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
+    "<button type='button' class='btn-today-mandante' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
   html += "</div>";
 
   html += "</div>";
 
   document.getElementById("calendarMandante").innerHTML = html;
+
+  // Asignar eventos CSP-compliant
+  document.querySelectorAll(".btn-month-mandante").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      changeMonthMandante(Number(this.getAttribute("data-dir")));
+    });
+  });
+  document.querySelectorAll(".calendar-day-mandante").forEach((day) => {
+    day.addEventListener("click", function () {
+      toggleDayMandante(this.getAttribute("data-date"));
+    });
+  });
+  const clearBtn = document.querySelector(".btn-clear-mandante");
+  if (clearBtn) clearBtn.addEventListener("click", clearSelectedDaysMandante);
+  const todayBtn = document.querySelector(".btn-today-mandante");
+  if (todayBtn) todayBtn.addEventListener("click", todayDateMandante);
 }
 
 function toggleDayMandante(dateStr) {
@@ -3823,147 +3182,6 @@ let currentCalendarDate = new Date();
 let selectedDays = new Set();
 let pendingCalendarMode = false;
 
-function showCalendar(year = null, month = null) {
-  const workerIndex = document.getElementById("workerWeekly").value;
-
-  if (!workerIndex) {
-    document.getElementById("calendarContainer").innerHTML = "";
-    return;
-  }
-
-  // Si no se pasa año/mes, usar la fecha actual guardada
-  if (year === null || month === null) {
-    year = currentCalendarDate.getFullYear();
-    month = currentCalendarDate.getMonth();
-  } else {
-    currentCalendarDate = new Date(year, month);
-  }
-
-  const monthNum = month;
-
-  // Generar todos los días del mes
-  const daysInMonth = new Date(year, monthNum + 1, 0).getDate();
-  const firstDay = new Date(year, monthNum, 1).getDay();
-
-  const monthNames = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
-  ];
-  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sá"];
-
-  let html =
-    "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
-
-  // Header con navegación
-  html +=
-    "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
-  html +=
-    "<button type='button' onclick='changeMonth(-1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
-  html +=
-    "<span style='font-weight: bold; text-transform: capitalize;'>" +
-    monthNames[monthNum] +
-    " de " +
-    year +
-    "</span>";
-  html +=
-    "<button type='button' onclick='changeMonth(1)' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
-  html += "</div>";
-
-  // Calendario
-  html +=
-    "<div style='display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;'>";
-
-  // Encabezados de días
-  dayNames.forEach((day) => {
-    html +=
-      "<div style='text-align: center; font-weight: bold; padding: 8px; font-size: 12px; color: #666;'>" +
-      day +
-      "</div>";
-  });
-
-  // Espacios vacíos antes del primer día
-  for (let i = 0; i < firstDay; i++) {
-    html += "<div style='padding: 8px;'></div>";
-  }
-
-  // Días del mes
-  for (let day = 1; day <= daysInMonth; day++) {
-    const monthStr = String(monthNum + 1).padStart(2, "0");
-    const dateStr = year + "-" + monthStr + "-" + String(day).padStart(2, "0");
-    const isSelected = selectedDays.has(dateStr);
-    // 🔹 Detectar si ese día ya fue pagado
-    const isPaid = history.some(
-      (r) =>
-        r.rut === workers[document.getElementById("workerWeekly").value]?.rut &&
-        r.date === dateStr &&
-        r.paid === true,
-    );
-    let bgColor = "transparent";
-    let textColor = "#000";
-    let fontWeight = "normal";
-    let cursorStyle = "pointer";
-    let clickAction = 'toggleDay("' + dateStr + '")';
-
-    if (isPaid) {
-      bgColor = "#d5f5e3"; // verde claro
-      textColor = "#1e8449";
-      fontWeight = "bold";
-      cursorStyle = "not-allowed";
-      clickAction = ""; // no permite clic
-    } else if (isSelected) {
-      bgColor = "#1a73e8";
-      textColor = "white";
-      fontWeight = "bold";
-    }
-
-    html +=
-      "<div " +
-      (clickAction ? "onclick='" + clickAction + "'" : "") +
-      " style='text-align:center; padding:8px; border-radius:50%; background:" +
-      bgColor +
-      "; color:" +
-      textColor +
-      "; font-weight:" +
-      fontWeight +
-      "; cursor:" +
-      cursorStyle +
-      "; transition:all 0.2s;'>";
-
-    html += isPaid ? "✔" : day;
-    html += "</div>";
-  }
-
-  html += "</div>";
-
-  // Botones inferiores
-  html +=
-    "<div style='display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;'>";
-  if (pendingCalendarMode) {
-    html +=
-      "<button type='button' onclick='exitPendingCalendar()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 600;'>Volver</button>";
-  } else {
-    html +=
-      "<button type='button' onclick='clearSelectedDays()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Borrar</button>";
-  }
-  html +=
-    "<button type='button' onclick='todayDate()' style='border: none; background: none; color: #1a73e8; cursor: pointer; font-weight: 500;'>Hoy</button>";
-  html += "</div>";
-
-  html += "</div>";
-
-  document.getElementById("calendarContainer").innerHTML = html;
-}
-
 function toggleDay(dateStr) {
   if (selectedDays.has(dateStr)) {
     selectedDays.delete(dateStr);
@@ -4054,371 +3272,6 @@ function changeMonth(direction) {
   showCalendar(newDate.getFullYear(), newDate.getMonth());
 }
 
-// 📊 RESUMEN SEMANAL - GENERAR CON DÍAS SELECCIONADOS
-// =============================
-function generateWeeklySummary() {
-  const workerIndex = document.getElementById("workerWeekly").value;
-
-  if (workerIndex === "") {
-    alert("Seleccione un trabajador.");
-    return;
-  }
-
-  const worker = workers[workerIndex];
-  const account = worker.account_number || "-";
-
-  // Obtener días seleccionados del Set
-  let selectedDates = Array.from(selectedDays);
-  selectedDates.sort();
-
-  // Si no hay selección manual, cargar automáticamente los días pagados
-  // del mes actual para este trabajador
-  if (selectedDates.length === 0) {
-    const year = currentCalendarDate.getFullYear();
-    const monthStr = String(currentCalendarDate.getMonth() + 1).padStart(
-      2,
-      "0",
-    );
-    const prefix = year + "-" + monthStr + "-";
-    const paidDates = [
-      ...new Set(
-        history
-          .filter(
-            (r) =>
-              r.rut === worker.rut &&
-              r.date.startsWith(prefix) &&
-              r.paid === true,
-          )
-          .map((r) => r.date),
-      ),
-    ].sort();
-
-    if (paidDates.length === 0) {
-      alert(
-        "No hay días pagados este mes. Seleccione los días en el calendario.",
-      );
-      return;
-    }
-    selectedDates = paidDates;
-  }
-
-  const startDateParts = (selectedDates[0] || "").split("-");
-  const endDateParts = (selectedDates[selectedDates.length - 1] || "").split(
-    "-",
-  );
-  const startDate = startDateParts.length === 3 ? startDateParts[2] : "-";
-  const endDate = endDateParts.length === 3 ? endDateParts[2] : "-";
-
-  // Filtrar registros solo de los días seleccionados
-  const records = history.filter((r) => {
-    return r.rut === worker.rut && selectedDates.includes(r.date);
-  });
-
-  if (records.length === 0) {
-    alert("No hay registros en los días seleccionados.");
-    return;
-  }
-
-  // Ocultar el calendario
-  document.getElementById("calendarContainer").innerHTML = "";
-
-  // ===== CALCULAR DÍAS TRABAJADOS =====
-  const uniqueDates = [...new Set(records.map((r) => r.date))];
-  const daysWorked = uniqueDates.length;
-
-  // ===== CALCULAR TOTAL =====
-
-  const resumen = {};
-
-  records.forEach((r) => {
-    const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
-    const key = fundoKey + "|" + getLaborKey(r.labor);
-
-    if (!resumen[key]) {
-      resumen[key] = {
-        fundo: getFundoDisplay(r.fundo, "Sin fundo"),
-        labor: r.labor,
-        cantidad: 0,
-        total: 0,
-      };
-    }
-
-    resumen[key].cantidad += r.quantity;
-    resumen[key].total += r.total;
-  });
-
-  let total = 0;
-  let html = "<h3>Detalle de Días Seleccionados</h3>";
-
-  html +=
-    "<p><strong>Periodo pagado:</strong> " +
-    startDate +
-    " → " +
-    endDate +
-    "</p>";
-  html += "<p><strong>Trabajador:</strong> " + worker.name + "</p>";
-  html += "<p><strong>RUT:</strong> " + worker.rut + "</p>";
-  html += "<p><strong>Número de Cuenta:</strong> " + account + "</p>";
-  html += "<hr>";
-
-  html +=
-    "<button type='button' onclick='showCalendar()' style='margin-bottom: 15px; background: #3498db;'>📅 Modificar días seleccionados</button>";
-
-  html += "<table>";
-  html +=
-    "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acciones</th></tr>";
-
-  records.forEach((r) => {
-    total += r.total;
-
-    const index = history.findIndex(
-      (h) =>
-        h.rut === r.rut &&
-        h.date === r.date &&
-        h.labor === r.labor &&
-        h.quantity === r.quantity &&
-        h.total === r.total &&
-        (h.fundo || "") === (r.fundo || ""),
-    );
-
-    html += "<tr class='weeklyRow'>";
-    html += "<td>" + r.date + "</td>";
-    html += "<td>" + (r.fundo || "-") + "</td>";
-    html += "<td>" + r.labor + "</td>";
-    html += "<td>" + r.quantity + "</td>";
-    html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-    html +=
-      "<td><button style='background:#c0392b' onclick='deleteFromWeeklySummary(" +
-      index +
-      ")'>🗑️</button></td>";
-    html += "</tr>";
-  });
-
-  html += "</table>";
-
-  /*html += "<h3>Resumen para Mandante</h3>";*/
-
-  html += "<table>";
-  html +=
-    "<tr><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>";
-
-  Object.values(resumen).forEach((r) => {
-    html += "<tr>";
-    html += "<td>" + r.fundo + "</td>";
-    html += "<td>" + r.labor + "</td>";
-    html += "<td>" + r.cantidad + "</td>";
-    html += "<td>$" + r.total.toLocaleString("es-CL") + "</td>";
-    html += "</tr>";
-  });
-
-  html += "</table>";
-  let totalMandante = 0;
-
-  Object.values(resumen).forEach((r) => {
-    totalMandante += r.total;
-  });
-
-  html +=
-    "<h2 style='margin-top:15px'>TOTAL PAGADO: $" +
-    totalMandante.toLocaleString("es-CL") +
-    "</h2>";
-
-  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
-  html +=
-    "<h2 id='weeklyTotal'>Total: $" + total.toLocaleString("es-CL") + "</h2>";
-  html += `
-  <div class="action-right">
-    <button type="button" class="btn-pay" onclick="payWeekly()">
-      💰 Pagar
-    </button>
-  </div>
-`;
-
-  document.getElementById("weeklyResult").innerHTML = html;
-}
-
-async function payWeekly() {
-  const workerIndex = document.getElementById("workerWeekly").value;
-
-  if (workerIndex === "") {
-    alert("No hay trabajador seleccionado.");
-    return;
-  }
-
-  const worker = workers[workerIndex];
-
-  const selectedDates = Array.from(selectedDays);
-
-  if (selectedDates.length === 0) {
-    alert("No hay días seleccionados.");
-    return;
-  }
-
-  // Filtrar registros a pagar (excluir ya pagados para evitar doble pago)
-  const recordsToPay = history.filter(
-    (r) =>
-      r.rut === worker.rut && selectedDates.includes(r.date) && r.paid !== true,
-  );
-
-  if (recordsToPay.length === 0) {
-    alert("No hay registros para pagar.");
-    return;
-  }
-
-  // 🔹 Calcular total UNA SOLA VEZ
-  let totalToPay = 0;
-  recordsToPay.forEach((r) => (totalToPay += r.total));
-
-  const confirmPayment = confirm(
-    "Se pagarán " +
-      recordsToPay.length +
-      " registros.\nTotal: $" +
-      totalToPay.toLocaleString("es-CL") +
-      "\n\n¿Confirmar pago?",
-  );
-
-  if (!confirmPayment) return;
-
-  // Marcar como pagado en memoria
-  recordsToPay.forEach((r) => {
-    r.paid = true;
-  });
-
-  // 🔹 Actualizar en Supabase
-  let paidUpdateErrors = 0;
-  for (const record of recordsToPay) {
-    if (record.id) {
-      const { error } = await supabaseClient
-        .from("history")
-        .update({ paid: true })
-        .eq("id", record.id);
-
-      if (error) {
-        paidUpdateErrors += 1;
-        console.error("Error marcando pago en Supabase:", error.message);
-      }
-    }
-  }
-  // 🔹 GUARDAR REGISTRO EN TABLA payments
-
-  const paymentRecord = {
-    rut: worker.rut,
-    name: worker.name,
-    total_paid: totalToPay,
-    payment_date: new Date().toISOString().split("T")[0],
-    dates_paid: selectedDates,
-  };
-
-  const { error: paymentError } = await supabaseClient
-    .from("payments")
-    .insert([paymentRecord]);
-
-  if (paymentError) {
-    console.error("Error guardando pago:", paymentError);
-  }
-
-  saveLocalDataDebounced();
-
-  if (!paymentError && paidUpdateErrors === 0) {
-    alert("✅ Guardado en Supabase OK (pago semanal).");
-  } else {
-    alert(
-      "⚠️ No se guardó completo en nube el pago semanal. Revise conexión/permisos.",
-    );
-  }
-
-  // 🔹 GENERAR PDF DETALLADO
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const today = new Date().toLocaleDateString("es-CL");
-
-  doc.setFontSize(16);
-  doc.text("COMPROBANTE DE PAGO SEMANAL", 20, 20);
-
-  doc.setFontSize(12);
-  doc.text("Trabajador: " + worker.name, 20, 35);
-  doc.text("RUT: " + worker.rut, 20, 43);
-  doc.text("Fecha de pago: " + today, 20, 51);
-
-  doc.text("Detalle:", 20, 65);
-
-  let y = 75;
-
-  recordsToPay.forEach((r) => {
-    const line =
-      r.date +
-      " | " +
-      (r.fundo || "-") +
-      " | " +
-      r.labor +
-      " | " +
-      r.quantity +
-      " | $" +
-      Number(r.total).toLocaleString("es-CL");
-
-    doc.text(line, 20, y);
-    y += 8;
-
-    if (y > 270) {
-      doc.addPage();
-      y = 20;
-    }
-  });
-
-  y += 10;
-
-  doc.setFontSize(14);
-  doc.text("TOTAL PAGADO: $" + totalToPay.toLocaleString("es-CL"), 20, y);
-
-  doc.save("Comprobante_Pago_" + worker.rut + ".pdf");
-
-  // 🔹 GENERAR EXCEL
-  const workbook = XLSX.utils.book_new();
-
-  const todayExcel = new Date().toLocaleDateString("es-CL");
-
-  // Construir datos
-  let excelData = [];
-
-  // Encabezado empresa
-  excelData.push(["COMPROBANTE DE PAGO SEMANAL"]);
-  excelData.push([]);
-  excelData.push(["Trabajador:", worker.name]);
-  excelData.push(["RUT:", worker.rut]);
-  excelData.push(["Fecha de pago:", todayExcel]);
-  excelData.push([]);
-
-  // Encabezado tabla
-  excelData.push(["Fecha", "Fundo", "Labor", "Cantidad", "Total"]);
-
-  // Filas detalle
-  recordsToPay.forEach((r) => {
-    excelData.push([r.date, r.fundo || "-", r.labor, r.quantity, r.total]);
-  });
-
-  // Línea total
-  excelData.push([]);
-  excelData.push(["TOTAL PAGADO", "", "", "", totalToPay]);
-
-  // Crear hoja
-  const worksheet = XLSX.utils.aoa_to_sheet(excelData);
-
-  // Agregar hoja al libro
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Pago Semanal");
-
-  // Descargar archivo
-  XLSX.writeFile(workbook, "Pago_Semanal_" + worker.rut + ".xlsx");
-
-  // Limpiar selección
-  selectedDays.clear();
-  document.getElementById("weeklyResult").innerHTML = "";
-}
-
-// =============================
-// ✏️ EDITAR ÚLTIMA PRODUCCIÓN
-// =============================
-
 // =============================
 // 🔍 CARGAR REGISTROS DEL DÍA
 // =============================
@@ -4465,21 +3318,28 @@ function loadDailyRecords() {
     html += "<td>" + r.labor + "</td>";
     html += "<td>" + r.quantity + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-    html +=
-      "<td>" +
-      "<button onclick='editProductionByIndex(" +
-      index +
-      ")'>✏️</button> " +
-      '<button style="background:#c0392b" onclick=\'deleteProductionByIndex(' +
-      index +
-      ")'>🗑️</button>" +
-      "</td>";
+    html += `<td>
+        <button class="btn-edit-production" data-index="${index}">✏️</button>
+        <button class="btn-delete-production" data-index="${index}" style="background:#c0392b">🗑️</button>
+      </td>`;
     html += "</tr>";
   });
 
   html += "</table>";
 
   container.innerHTML = html;
+
+  // Asignar eventos CSP-compliant
+  container.querySelectorAll(".btn-edit-production").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      editProductionByIndex(Number(this.getAttribute("data-index")));
+    });
+  });
+  container.querySelectorAll(".btn-delete-production").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      deleteProductionByIndex(Number(this.getAttribute("data-index")));
+    });
+  });
 }
 // =============================
 // ✏️ EDITAR POR ÍNDICE
@@ -4503,9 +3363,8 @@ function editProductionByIndex(index) {
 
   document.getElementById("laborSelect").value = record.labor;
 
-  document.querySelector(
-    "#viewProduction button[onclick='registerWork()']",
-  ).textContent = "Actualizar";
+  const regBtn = document.querySelector("#viewProduction .btn-register-work");
+  if (regBtn) regBtn.textContent = "Actualizar";
 
   alert("Registro cargado para modificar.");
 }
@@ -4546,388 +3405,376 @@ async function deleteProductionByIndex(index) {
 // 🗑️ ELIMINAR DESDE RESUMEN SEMANAL
 // =============================
 async function deleteFromWeeklySummary(index) {
-  if (!confirm("¿Está seguro de eliminar este registro?")) return;
+  // ...existing code...
+  // =============================
+  // RECALCULAR TOTAL SEMANAL
+  // =============================
 
-  const record = history[index];
+  function updateWeeklyTotal() {
+    const checkboxes = document.querySelectorAll(
+      "#weeklyResult input[type='checkbox']",
+    );
 
-  // Eliminar de Supabase si tiene id
-  if (record.rut && record.date) {
-    const { error } = await supabaseClient
-      .from("history")
-      .delete()
-      .eq("rut", record.rut)
-      .eq("date", record.date)
-      .eq("labor", record.labor);
+    let total = 0;
+    let paidDates = new Set();
 
-    if (error) {
-      console.error("Error eliminando en Supabase:", error.message);
-      alert("Error al eliminar en la base de datos.");
-      return;
-    }
+    checkboxes.forEach((cb) => {
+      if (cb.checked) {
+        total += Number(cb.dataset.total);
+
+        const row = cb.closest("tr");
+        const date = row.children[1].textContent;
+
+        paidDates.add(date);
+      }
+    });
+
+    document.getElementById("weeklyTotal").textContent =
+      "Total Semana: $" + total.toLocaleString("es-CL");
+
+    document.getElementById("paidDays").textContent = paidDates.size;
   }
 
-  // Eliminar local
-  history.splice(index, 1);
-  localStorage.setItem("history", JSON.stringify(history));
+  function printWeeklySummary() {
+    const container = document.getElementById("weeklyResult");
 
-  alert("Registro eliminado.");
+    if (!container) return;
 
-  // Regenerar el resumen
-  generateWeeklySummary();
-}
-// =============================
-// RECALCULAR TOTAL SEMANAL
-// =============================
+    const rows = container.querySelectorAll("table tr");
 
-function updateWeeklyTotal() {
-  const checkboxes = document.querySelectorAll(
-    "#weeklyResult input[type='checkbox']",
-  );
+    rows.forEach((row, index) => {
+      if (index === 0) return; // encabezado
 
-  let total = 0;
-  let paidDates = new Set();
+      const checkbox = row.querySelector("input[type='checkbox']");
 
-  checkboxes.forEach((cb) => {
-    if (cb.checked) {
-      total += Number(cb.dataset.total);
+      if (checkbox && !checkbox.checked) {
+        row.style.display = "none";
+      }
+    });
 
-      const row = cb.closest("tr");
-      const date = row.children[1].textContent;
+    window.print();
 
-      paidDates.add(date);
+    // restaurar vista después de imprimir
+    rows.forEach((row) => {
+      row.style.display = "";
+    });
+  }
+  window.printWeeklySummary = printWeeklySummary;
+  // =============================
+  // MARCAR / DESMARCAR TODA LA SEMANA
+  // =============================
+
+  async function markAllWeeklyPaid(state) {
+    const checkboxes = document.querySelectorAll(
+      "#weeklyResult input[type='checkbox']",
+    );
+
+    let failedUpdates = 0;
+
+    for (const cb of checkboxes) {
+      cb.checked = state;
+
+      const id = cb.dataset.id;
+
+      const { error } = await supabaseClient
+        .from("history")
+        .update({ paid: state })
+        .eq("id", id);
+
+      if (error) {
+        failedUpdates += 1;
+        console.error(
+          "Error actualizando pago masivo en Supabase:",
+          error.message,
+        );
+      }
     }
-  });
 
-  document.getElementById("weeklyTotal").textContent =
-    "Total Semana: $" + total.toLocaleString("es-CL");
+    updateWeeklyTotal();
 
-  document.getElementById("paidDays").textContent = paidDates.size;
-}
-
-function printWeeklySummary() {
-  const container = document.getElementById("weeklyResult");
-
-  if (!container) return;
-
-  const rows = container.querySelectorAll("table tr");
-
-  rows.forEach((row, index) => {
-    if (index === 0) return; // encabezado
-
-    const checkbox = row.querySelector("input[type='checkbox']");
-
-    if (checkbox && !checkbox.checked) {
-      row.style.display = "none";
-    }
-  });
-
-  window.print();
-
-  // restaurar vista después de imprimir
-  rows.forEach((row) => {
-    row.style.display = "";
-  });
-}
-// =============================
-// MARCAR / DESMARCAR TODA LA SEMANA
-// =============================
-
-async function markAllWeeklyPaid(state) {
-  const checkboxes = document.querySelectorAll(
-    "#weeklyResult input[type='checkbox']",
-  );
-
-  let failedUpdates = 0;
-
-  for (const cb of checkboxes) {
-    cb.checked = state;
-
-    const id = cb.dataset.id;
-
-    const { error } = await supabaseClient
-      .from("history")
-      .update({ paid: state })
-      .eq("id", id);
-
-    if (error) {
-      failedUpdates += 1;
-      console.error(
-        "Error actualizando pago masivo en Supabase:",
-        error.message,
+    if (failedUpdates === 0) {
+      alert("✅ Guardado en Supabase OK");
+    } else {
+      alert(
+        "⚠️ No se guardó en nube parte del cambio masivo. Revise conexión/permisos.",
       );
     }
   }
 
-  updateWeeklyTotal();
+  function generatePagosResumen() {
+    const selectedWorkerKey =
+      document.getElementById("filterPagosWorker")?.value ||
+      document.getElementById("filterPaymentsWorker")?.value ||
+      document.getElementById("workerResumenSelect")?.value ||
+      "";
 
-  if (failedUpdates === 0) {
-    alert("✅ Guardado en Supabase OK");
-  } else {
-    alert(
-      "⚠️ No se guardó en nube parte del cambio masivo. Revise conexión/permisos.",
-    );
-  }
-}
-
-function generatePagosResumen() {
-  const selectedWorkerKey =
-    document.getElementById("filterPagosWorker")?.value ||
-    document.getElementById("filterPaymentsWorker")?.value ||
-    document.getElementById("workerResumenSelect")?.value ||
-    "";
-
-  const selectedWorker = workers.find((w) => {
-    const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
-    return workerKey === selectedWorkerKey;
-  });
-  const selectedWorkerNameKey = selectedWorker
-    ? getWorkerNameKey(selectedWorker.name)
-    : "";
-
-  if (history.length === 0) {
-    alert("No hay registros.");
-    return;
-  }
-
-  // ===== FASE 1: PRE-ESCANEO de TODO el historial =====
-  // Se construyen los mapas de alias ANTES de agrupar, para que el orden
-  // de los registros no afecte el resultado. "refugio" y "REFUGIO" quedan
-  // con la misma clave canónica sin importar cuál llegue primero.
-  const canonicalByRut = {};
-  const canonicalByName = {};
-
-  history.forEach((r) => {
-    const rutKey = getRutKey(r.rut);
-    const nameKey = getWorkerNameKey(r.name);
-
-    const existing =
-      (rutKey && canonicalByRut[rutKey]) ||
-      (nameKey && canonicalByName[nameKey]);
-
-    const canonical =
-      existing || (rutKey ? "rut:" + rutKey : "name:" + nameKey);
-
-    if (rutKey) canonicalByRut[rutKey] = canonical;
-    if (nameKey) canonicalByName[nameKey] = canonical;
-  });
-
-  // ===== FASE 2: AGRUPACIÓN =====
-  const resumenTrabajador = {};
-  const resumenFundo = {};
-
-  history
-    .filter((r) => {
-      if (!selectedWorkerKey) return true;
-
-      const rutKey = getRutKey(r.rut);
-      const nameKey = getWorkerNameKey(r.name);
-      const recordWorkerKey =
-        (rutKey && canonicalByRut[rutKey]) ||
-        (nameKey && canonicalByName[nameKey]) ||
-        "";
-
-      if (recordWorkerKey === selectedWorkerKey) return true;
-
-      // Fallback por nombre normalizado (cubre variantes de capitalización)
-      if (
-        selectedWorkerNameKey &&
-        getWorkerNameKey(r.name) === selectedWorkerNameKey
-      ) {
-        return true;
-      }
-
-      return false;
-    })
-    .forEach((r) => {
-      const totalValue = Number.isFinite(Number(r.total)) ? Number(r.total) : 0;
-      const pagado = Boolean(r.paid);
-      const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
-      const fundoLabel = getFundoDisplay(r.fundo, "Sin fundo");
-      const rutKey = getRutKey(r.rut);
-      const nameKey = getWorkerNameKey(r.name);
-
-      const workerKey =
-        (rutKey && canonicalByRut[rutKey]) ||
-        (nameKey && canonicalByName[nameKey]) ||
-        (rutKey ? "rut:" + rutKey : "name:" + nameKey);
-
-      // ===== POR TRABAJADOR =====
-      if (!resumenTrabajador[workerKey]) {
-        resumenTrabajador[workerKey] = {
-          key: workerKey,
-          rut: r.rut,
-          name: r.name,
-          trabajado: 0,
-          pagado: 0,
-          pendiente: 0,
-          diasPendientes: new Set(),
-          laboresPendientes: {},
-        };
-      }
-
-      if (!resumenTrabajador[workerKey].rut && r.rut) {
-        resumenTrabajador[workerKey].rut = r.rut;
-      }
-
-      if (!resumenTrabajador[workerKey].name && r.name) {
-        resumenTrabajador[workerKey].name = r.name;
-      }
-
-      resumenTrabajador[workerKey].trabajado += totalValue;
-
-      if (pagado) {
-        resumenTrabajador[workerKey].pagado += totalValue;
-      } else {
-        resumenTrabajador[workerKey].pendiente += totalValue;
-        resumenTrabajador[workerKey].diasPendientes.add(r.date);
-
-        if (!resumenTrabajador[workerKey].laboresPendientes[r.labor]) {
-          resumenTrabajador[workerKey].laboresPendientes[r.labor] = 0;
-        }
-        resumenTrabajador[workerKey].laboresPendientes[r.labor] += totalValue;
-      }
-
-      // ===== POR FUNDO =====
-      if (!resumenFundo[fundoKey]) {
-        resumenFundo[fundoKey] = {
-          label: fundoLabel,
-          trabajado: 0,
-          pagado: 0,
-          pendiente: 0,
-        };
-      }
-
-      resumenFundo[fundoKey].trabajado += totalValue;
-
-      if (pagado) {
-        resumenFundo[fundoKey].pagado += totalValue;
-      } else {
-        resumenFundo[fundoKey].pendiente += totalValue;
-      }
+    const selectedWorker = workers.find((w) => {
+      const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
+      return workerKey === selectedWorkerKey;
     });
+    const selectedWorkerNameKey = selectedWorker
+      ? getWorkerNameKey(selectedWorker.name)
+      : "";
 
-  let html = "<h3>Por Trabajador</h3>";
-
-  html += "<table>";
-  html += "<tr>";
-
-  html += "<th>";
-  html += "<select id='workerResumenSelect' onchange='generatePagosResumen()'>";
-  html += "<option value=''>-- Todos --</option>";
-
-  const seenWorkers = new Set();
-  workers.forEach((w) => {
-    const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
-    if (!workerKey || seenWorkers.has(workerKey)) {
+    if (history.length === 0) {
+      alert("No hay registros.");
       return;
     }
 
-    seenWorkers.add(workerKey);
+    // ===== FASE 1: PRE-ESCANEO de TODO el historial =====
+    // Se construyen los mapas de alias ANTES de agrupar, para que el orden
+    // de los registros no afecte el resultado. "refugio" y "REFUGIO" quedan
+    // con la misma clave canónica sin importar cuál llegue primero.
+    const canonicalByRut = {};
+    const canonicalByName = {};
 
-    const isSelected = workerKey === selectedWorkerKey ? " selected" : "";
+    history.forEach((r) => {
+      const rutKey = getRutKey(r.rut);
+      const nameKey = getWorkerNameKey(r.name);
 
-    html +=
-      "<option value='" +
-      workerKey +
-      "'" +
-      isSelected +
-      ">" +
-      w.name +
-      "</option>";
-  });
+      const existing =
+        (rutKey && canonicalByRut[rutKey]) ||
+        (nameKey && canonicalByName[nameKey]);
 
-  html += "</select>";
-  html += "</th>";
+      const canonical =
+        existing || (rutKey ? "rut:" + rutKey : "name:" + nameKey);
 
-  html += "<th>Total</th>";
-  html += "<th>Pagado</th>";
-  html += "<th>Pendiente</th>";
-  html += "<th>Días Pendientes</th>";
-  html += "<th>Labor Pendiente</th>";
-
-  html += "</tr>";
-
-  Object.values(resumenTrabajador).forEach((w) => {
-    let laboresTexto = "";
-
-    Object.entries(w.laboresPendientes).forEach(([labor, total]) => {
-      laboresTexto += labor + " ($" + total.toLocaleString("es-CL") + ")<br>";
+      if (rutKey) canonicalByRut[rutKey] = canonical;
+      if (nameKey) canonicalByName[nameKey] = canonical;
     });
 
+    // ===== FASE 2: AGRUPACIÓN =====
+    const resumenTrabajador = {};
+    const resumenFundo = {};
+
+    history
+      .filter((r) => {
+        if (!selectedWorkerKey) return true;
+
+        const rutKey = getRutKey(r.rut);
+        const nameKey = getWorkerNameKey(r.name);
+        const recordWorkerKey =
+          (rutKey && canonicalByRut[rutKey]) ||
+          (nameKey && canonicalByName[nameKey]) ||
+          "";
+
+        if (recordWorkerKey === selectedWorkerKey) return true;
+
+        // Fallback por nombre normalizado (cubre variantes de capitalización)
+        if (
+          selectedWorkerNameKey &&
+          getWorkerNameKey(r.name) === selectedWorkerNameKey
+        ) {
+          return true;
+        }
+
+        return false;
+      })
+      .forEach((r) => {
+        const totalValue = Number.isFinite(Number(r.total))
+          ? Number(r.total)
+          : 0;
+        const pagado = Boolean(r.paid);
+        const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
+        const fundoLabel = getFundoDisplay(r.fundo, "Sin fundo");
+        const rutKey = getRutKey(r.rut);
+        const nameKey = getWorkerNameKey(r.name);
+
+        const workerKey =
+          (rutKey && canonicalByRut[rutKey]) ||
+          (nameKey && canonicalByName[nameKey]) ||
+          (rutKey ? "rut:" + rutKey : "name:" + nameKey);
+
+        // ===== POR TRABAJADOR =====
+        if (!resumenTrabajador[workerKey]) {
+          resumenTrabajador[workerKey] = {
+            key: workerKey,
+            rut: r.rut,
+            name: r.name,
+            trabajado: 0,
+            pagado: 0,
+            pendiente: 0,
+            diasPendientes: new Set(),
+            laboresPendientes: {},
+          };
+        }
+
+        if (!resumenTrabajador[workerKey].rut && r.rut) {
+          resumenTrabajador[workerKey].rut = r.rut;
+        }
+
+        if (!resumenTrabajador[workerKey].name && r.name) {
+          resumenTrabajador[workerKey].name = r.name;
+        }
+
+        resumenTrabajador[workerKey].trabajado += totalValue;
+
+        if (pagado) {
+          resumenTrabajador[workerKey].pagado += totalValue;
+        } else {
+          resumenTrabajador[workerKey].pendiente += totalValue;
+          resumenTrabajador[workerKey].diasPendientes.add(r.date);
+
+          if (!resumenTrabajador[workerKey].laboresPendientes[r.labor]) {
+            resumenTrabajador[workerKey].laboresPendientes[r.labor] = 0;
+          }
+          resumenTrabajador[workerKey].laboresPendientes[r.labor] += totalValue;
+        }
+
+        // ===== POR FUNDO =====
+        if (!resumenFundo[fundoKey]) {
+          resumenFundo[fundoKey] = {
+            label: fundoLabel,
+            trabajado: 0,
+            pagado: 0,
+            pendiente: 0,
+          };
+        }
+
+        resumenFundo[fundoKey].trabajado += totalValue;
+
+        if (pagado) {
+          resumenFundo[fundoKey].pagado += totalValue;
+        } else {
+          resumenFundo[fundoKey].pendiente += totalValue;
+        }
+      });
+
+    let html = "<h3>Por Trabajador</h3>";
+
+    html += "<table>";
     html += "<tr>";
-    html += "<td>" + w.name + "</td>";
-    html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
-    html +=
-      "<td style='color:green'>$" + w.pagado.toLocaleString("es-CL") + "</td>";
-    html +=
-      "<td style='color:red'>$" + w.pendiente.toLocaleString("es-CL") + "</td>";
-    if (w.diasPendientes.size > 0) {
-      const pendingDatesJson = JSON.stringify(Array.from(w.diasPendientes));
+
+    html += "<th>";
+    html += "<select id='workerResumenSelect'>";
+    html += "<option value=''>-- Todos --</option>";
+
+    const seenWorkers = new Set();
+    workers.forEach((w) => {
+      const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
+      if (!workerKey || seenWorkers.has(workerKey)) {
+        return;
+      }
+
+      seenWorkers.add(workerKey);
+
+      const isSelected = workerKey === selectedWorkerKey ? " selected" : "";
+
       html +=
-        "<td>" +
-        "<button type='button' onclick='showPendingDaysCalendar(\"" +
-        w.rut +
-        '", ' +
-        pendingDatesJson +
-        ")' style='background: none; border: none; color: #1a73e8; cursor: pointer; font-weight: 600; text-decoration: underline;'>" +
-        w.diasPendientes.size +
-        "</button>" +
+        "<option value='" +
+        workerKey +
+        "'" +
+        isSelected +
+        ">" +
+        w.name +
+        "</option>";
+    });
+
+    html += "</select>";
+    html += "</th>";
+
+    html += "<th>Total</th>";
+    html += "<th>Pagado</th>";
+    html += "<th>Pendiente</th>";
+    html += "<th>Días Pendientes</th>";
+    html += "<th>Labor Pendiente</th>";
+
+    html += "</tr>";
+
+    Object.values(resumenTrabajador).forEach((w) => {
+      let laboresTexto = "";
+
+      Object.entries(w.laboresPendientes).forEach(([labor, total]) => {
+        laboresTexto += labor + " ($" + total.toLocaleString("es-CL") + ")<br>";
+      });
+
+      html += "<tr>";
+      html += "<td>" + w.name + "</td>";
+      html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
+      html +=
+        "<td style='color:green'>$" +
+        w.pagado.toLocaleString("es-CL") +
         "</td>";
-    } else {
-      html += "<td>0</td>";
+      html +=
+        "<td style='color:red'>$" +
+        w.pendiente.toLocaleString("es-CL") +
+        "</td>";
+      if (w.diasPendientes.size > 0) {
+        const pendingDatesJson = JSON.stringify(Array.from(w.diasPendientes));
+        html += `<td>
+          <button type='button' class='btn-pending-days' data-rut='${w.rut}' data-dates='${encodeURIComponent(pendingDatesJson)}' style='background: none; border: none; color: #1a73e8; cursor: pointer; font-weight: 600; text-decoration: underline;'>${w.diasPendientes.size}</button>
+        </td>`;
+      } else {
+        html += "<td>0</td>";
+      }
+      html += "<td>" + (laboresTexto || "-") + "</td>";
+      html += "</tr>";
+    });
+
+    html += "</table>";
+
+    html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
+    html +=
+      "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
+
+    Object.values(resumenFundo).forEach((data) => {
+      html += "<tr>";
+      html += "<td>" + data.label + "</td>";
+      html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
+      html +=
+        "<td style='color:green'>$" +
+        data.pagado.toLocaleString("es-CL") +
+        "</td>";
+      html +=
+        "<td style='color:red'>$" +
+        data.pendiente.toLocaleString("es-CL") +
+        "</td>";
+      html += "</tr>";
+    });
+
+    html += "</table>";
+
+    document.getElementById("pagosResult").innerHTML = html;
+
+    // Asignar evento CSP-compliant al select
+    const resumenSelect = document.getElementById("workerResumenSelect");
+    if (resumenSelect) {
+      resumenSelect.addEventListener("change", generatePagosResumen);
     }
-    html += "<td>" + (laboresTexto || "-") + "</td>";
-    html += "</tr>";
-  });
 
-  html += "</table>";
-
-  html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
-  html +=
-    "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
-
-  Object.values(resumenFundo).forEach((data) => {
-    html += "<tr>";
-    html += "<td>" + data.label + "</td>";
-    html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
-    html +=
-      "<td style='color:green'>$" +
-      data.pagado.toLocaleString("es-CL") +
-      "</td>";
-    html +=
-      "<td style='color:red'>$" +
-      data.pendiente.toLocaleString("es-CL") +
-      "</td>";
-    html += "</tr>";
-  });
-
-  html += "</table>";
-
-  document.getElementById("pagosResult").innerHTML = html;
-}
-
-function exitWeeklyToPagos() {
-  pendingCalendarMode = false;
-  selectedDays.clear();
-  const calendar = document.getElementById("calendarContainer");
-  const weeklyResult = document.getElementById("weeklyResult");
-  if (calendar) calendar.innerHTML = "";
-  if (weeklyResult) weeklyResult.innerHTML = "";
-
-  const workerWeekly = document.getElementById("workerWeekly");
-  const searchWeekly = document.getElementById("searchWorkerWeekly");
-  const listWeekly = document.getElementById("workerWeeklyList");
-  if (workerWeekly) workerWeekly.value = "";
-  if (searchWeekly) searchWeekly.value = "";
-  if (listWeekly) {
-    listWeekly.style.display = "none";
-    listWeekly.innerHTML = "";
+    // Asignar eventos CSP-compliant
+    document.querySelectorAll(".btn-pending-days").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const rut = this.getAttribute("data-rut");
+        const dates = JSON.parse(
+          decodeURIComponent(this.getAttribute("data-dates")),
+        );
+        showPendingDaysCalendar(rut, dates);
+      });
+    });
   }
 
-  showView("viewPagos");
-}
+  function exitWeeklyToPagos() {
+    pendingCalendarMode = false;
+    selectedDays.clear();
+    const calendar = document.getElementById("calendarContainer");
+    const weeklyResult = document.getElementById("weeklyResult");
+    if (calendar) calendar.innerHTML = "";
+    if (weeklyResult) weeklyResult.innerHTML = "";
 
-function clearWeeklySearch() {
+    const workerWeekly = document.getElementById("workerWeekly");
+    const searchWeekly = document.getElementById("searchWorkerWeekly");
+    const listWeekly = document.getElementById("workerWeeklyList");
+    if (workerWeekly) workerWeekly.value = "";
+    if (searchWeekly) searchWeekly.value = "";
+    if (listWeekly) {
+      listWeekly.style.display = "none";
+      listWeekly.innerHTML = "";
+    }
+
+    showView("viewPagos");
+  }
+
   const searchInput = document.getElementById("searchWorkerWeekly");
   const resultsList = document.getElementById("workerWeeklyList");
   const hiddenSelect = document.getElementById("workerWeekly");
@@ -5110,18 +3957,23 @@ async function loadWorkerDocuments(rut) {
 
     html += "<li>";
     html += "<a href='" + freshUrl + "' target='_blank'>" + file.name + "</a> ";
-    html +=
-      "<button onclick=\"deleteWorkerDocument('" +
-      rut +
-      "','" +
-      file.name +
-      "')\">🗑</button>";
+    html += `<button class="btn-delete-worker-doc" data-rut="${rut}" data-filename="${file.name}">🗑</button>`;
     html += "</li>";
   });
 
   html += "</ul>";
 
   container.innerHTML = html;
+
+  // Asignar eventos CSP-compliant
+  container.querySelectorAll(".btn-delete-worker-doc").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      deleteWorkerDocument(
+        this.getAttribute("data-rut"),
+        this.getAttribute("data-filename"),
+      );
+    });
+  });
 }
 async function deleteWorkerDocument(rut, fileName) {
   if (!confirm("¿Eliminar este documento?")) return;
