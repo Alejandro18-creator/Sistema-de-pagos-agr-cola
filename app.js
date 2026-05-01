@@ -1213,6 +1213,7 @@ document.addEventListener(
 );
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerLiquidation");
   const list = document.getElementById("workerLiquidationList");
   const hiddenSelect = document.getElementById("workerLiquidation");
@@ -1233,6 +1234,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerWeekly");
   const list = document.getElementById("workerWeeklyList");
   const hiddenSelect = document.getElementById("workerWeekly");
@@ -1253,6 +1255,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerEdit");
   const list = document.getElementById("workerEditList");
   const hiddenSelect = document.getElementById("workerEditSelect");
@@ -1273,6 +1276,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerContract");
   const list = document.getElementById("workerContractList");
   const hiddenSelect = document.getElementById("workerContract");
@@ -1293,6 +1297,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerMonthly");
   const list = document.getElementById("workerMonthlyList");
   const hiddenSelect = document.getElementById("workerMonthly");
@@ -1313,6 +1318,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerFiniquito");
   const list = document.getElementById("workerFiniquitoList");
   const hiddenSelect = document.getElementById("workerFiniquito");
@@ -1333,6 +1339,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("click", (event) => {
+  if (event.target.closest("input, textarea, select")) return;
   const searchInput = document.getElementById("searchWorkerPagos");
   const list = document.getElementById("workerPagosList");
   if (!searchInput || !list) return;
@@ -2510,7 +2517,7 @@ function closeFloatingUi() {
     const input = activeView.querySelector(
       'input:not([type="hidden"]):not([disabled])',
     );
-    if (input) {
+    if (input && !document.activeElement?.matches("input, textarea, select")) {
       input.focus();
     }
   }
@@ -3753,6 +3760,7 @@ async function deleteFromWeeklySummary(index) {
       });
     });
   }
+  window.generatePagosResumen = generatePagosResumen;
 
   function exitWeeklyToPagos() {
     pendingCalendarMode = false;

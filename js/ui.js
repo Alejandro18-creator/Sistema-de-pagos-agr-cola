@@ -76,7 +76,7 @@ window.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("click", clearWorkerPagosSearch);
   document
     .getElementById("btnGeneratePagosResumen")
-    ?.addEventListener("click", generatePagosResumen);
+    ?.addEventListener("click", () => window.generatePagosResumen?.());
 });
 // Asignación de eventos para resumen semanal
 window.addEventListener("DOMContentLoaded", () => {
@@ -88,7 +88,7 @@ window.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("click", clearWeeklySearch);
   document
     .getElementById("btnPrintWeeklySummary")
-    ?.addEventListener("click", printWeeklySummary);
+    ?.addEventListener("click", () => window.printWeeklySummary?.());
 });
 // Asignación de eventos para Cobros Mandantes
 window.addEventListener("DOMContentLoaded", () => {

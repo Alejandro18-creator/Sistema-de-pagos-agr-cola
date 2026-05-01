@@ -216,6 +216,10 @@ function loadWorkers() {
   });
 }
 function renderWorkersTable() {
+  if (document.activeElement && 
+      ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+    return;
+  }
   const c = document.getElementById("workersTable");
   if (!c) return;
 
