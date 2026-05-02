@@ -215,9 +215,10 @@ function loadWorkers() {
     });
   });
 }
-function renderWorkersTable() {
-  if (document.activeElement && 
-      ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+function renderWorkersTable(force = false) {
+  if (!force && document.activeElement && 
+      ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName) &&
+      document.activeElement.id !== "searchWorkerDB") {
     return;
   }
   const c = document.getElementById("workersTable");
@@ -291,12 +292,81 @@ function renderWorkersTable() {
   c.innerHTML = html;
 }
 function filterWorkersDB() {
-  renderWorkersTable();
+  const searchInput = document.getElementById("searchWorkerDB");
+  const list = document.getElementById("workerDBList");
+
+  if (!searchInput || !list) return;
+
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  list.innerHTML = "";
+
+  if (search === "") {
+    list.style.display = "none";
+    renderWorkersTable(true);
+    return;
+  }
+
+  const filtered = workers.filter((worker) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+    return name.includes(search) || cleanRut.includes(search);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
+    div.style.cssText = "padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;";
+    div.addEventListener("mouseover", () => div.style.background = "#f0f0f0");
+    div.addEventListener("mouseout", () => div.style.background = "white");
+    div.addEventListener("click", () => {
+      searchInput.value = worker.name || "";
+      list.style.display = "none";
+      list.innerHTML = "";
+      // Filtrar tabla solo para este trabajador
+      const c = document.getElementById("workersTable");
+      if (!c) return;
+      let html = "<div class='table-container'><table>";
+      html += "<tr><th>Nombre</th><th>RUT</th><th>Dirección</th><th>Foto Carnet</th><th>Carpeta</th></tr>";
+      html += "<tr>";
+      html += "<td>" + worker.name + (worker.active === false ? " <span style='color:#e74c3c; font-size:11px;'>(Inactivo)</span>" : "") + "</td>";
+      html += "<td>" + worker.rut + "</td>";
+      html += "<td>" + (worker.address || "-") + "</td>";
+      html += "<td>";
+      if (worker.id_card_photo) {
+        html += "<img src='" + worker.id_card_photo + "' style='width:60px; height:40px; object-fit:cover; border-radius:6px;'>";
+      } else {
+        html += "—";
+      }
+      html += "</td>";
+      html += "<td><button onclick=\"openWorkerFolder('" + worker.rut + "')\">📁</button></td>";
+      html += "</tr></table></div>";
+      c.innerHTML = html;
+    });
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
 }
 function clearWorkerDBSearch() {
   const input = document.getElementById("searchWorkerDB");
+  const list = document.getElementById("workerDBList");
   if (input) input.value = "";
-  renderWorkersTable();
+  if (list) { list.style.display = "none"; list.innerHTML = ""; }
+  renderWorkersTable(true);
 }
 
 /*TRABAJADORES - EDICIÓN Y BUSCADOR*/
