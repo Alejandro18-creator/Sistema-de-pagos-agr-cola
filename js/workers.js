@@ -281,7 +281,10 @@ function renderWorkersTable(force = false) {
 
     // 📁 BOTÓN CARPETA
     html += "<td>";
-    html += "<button onclick=\"openWorkerFolder('" + w.rut + "')\">📁</button>";
+    html +=
+      "<button type='button' class='btn-open-worker-folder' data-rut='" +
+      (w.rut || "") +
+      "'>📁</button>";
     html += "</td>";
 
     html += "</tr>";
@@ -290,6 +293,13 @@ function renderWorkersTable(force = false) {
   html += "</table></div>";
 
   c.innerHTML = html;
+
+  c.querySelectorAll(".btn-open-worker-folder").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const rut = this.getAttribute("data-rut");
+      if (rut) openWorkerFolder(rut);
+    });
+  });
 }
 function filterWorkersDB() {
   const searchInput = document.getElementById("searchWorkerDB");
@@ -352,9 +362,19 @@ function filterWorkersDB() {
         html += "—";
       }
       html += "</td>";
-      html += "<td><button onclick=\"openWorkerFolder('" + worker.rut + "')\">📁</button></td>";
+      html +=
+        "<td><button type='button' class='btn-open-worker-folder' data-rut='" +
+        (worker.rut || "") +
+        "'>📁</button></td>";
       html += "</tr></table></div>";
       c.innerHTML = html;
+
+      c.querySelectorAll(".btn-open-worker-folder").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const rut = this.getAttribute("data-rut");
+          if (rut) openWorkerFolder(rut);
+        });
+      });
     });
     list.appendChild(div);
   });
