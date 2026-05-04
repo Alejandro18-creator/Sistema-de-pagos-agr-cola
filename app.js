@@ -42,6 +42,7 @@ let labors = JSON.parse(localStorage.getItem("labors")) || [];
 let history = JSON.parse(localStorage.getItem("history")) || [];
 let fundos = JSON.parse(localStorage.getItem("fundos")) || [];
 let isGeneratingFiniquito = false;
+let isSyncInProgress = false;
 
 // =============================
 // 📊 TABLA INTERNA AFP (COMISIONES)
@@ -101,6 +102,34 @@ async function saveProductionToCloud(record) {
   return { ok: true, id: data.id };
 }
 
+async function updateProductionInCloud(recordId, record) {
+  if (!supabaseClient) {
+    return { ok: false, errorMessage: "Sin conexión a Supabase" };
+  }
+
+  if (!recordId) {
+    return saveProductionToCloud(record);
+  }
+
+  const payload = { ...record };
+  delete payload.id;
+
+  const { data, error } = await supabaseClient
+    .from("history")
+    .update(payload)
+    .eq("id", recordId)
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("Error actualizando producción:", error.message);
+    return { ok: false, errorMessage: error.message };
+  }
+
+  record.id = data.id;
+  return { ok: true, id: data.id };
+}
+
 async function loadWorkersFromCloud() {
   if (!supabaseClient) return;
   const { data, error } = await supabaseClient.from("workers").select("*");
@@ -130,33 +159,102 @@ async function loadWorkersFromCloud() {
 
 async function loadHistoryFromCloud() {
   if (!supabaseClient) return;
-  const { data, error } = await supabaseClient
-    .from("history")
-    .select("*")
-    .order("date", { ascending: false });
 
-  if (error) {
-    console.error("Error cargando producción:", error.message);
-    return;
+  const PAGE_SIZE = 1000;
+  let allData = [];
+  let from = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabaseClient
+      .from("history")
+      .select("*")
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Error cargando producción:", error.message);
+      return;
+    }
+
+    allData = allData.concat(data || []);
+
+    if (!data || data.length < PAGE_SIZE) {
+      hasMore = false;
+    } else {
+      from += PAGE_SIZE;
+    }
   }
 
-  history = data || [];
+  const seenHistoryIds = new Set();
+  const businessKeyIndexMap = new Map();
+  const dedupedHistory = [];
+  let droppedById = 0;
+  let droppedByBusinessKey = 0;
+
+  (allData || []).forEach((record) => {
+    const idKey = record?.id ? String(record.id) : "";
+    const businessKey = getHistoryDedupeKey(record);
+
+    if (idKey && seenHistoryIds.has(idKey)) {
+      droppedById += 1;
+      return;
+    }
+
+    if (businessKey && businessKeyIndexMap.has(businessKey)) {
+      const existingIndex = businessKeyIndexMap.get(businessKey);
+      const existingRecord = dedupedHistory[existingIndex] || {};
+      dedupedHistory[existingIndex] = {
+        ...existingRecord,
+        ...record,
+        paid: existingRecord.paid === true || record?.paid === true,
+        mandante_paid:
+          existingRecord.mandante_paid === true || record?.mandante_paid === true,
+      };
+      droppedByBusinessKey += 1;
+      return;
+    }
+
+    if (idKey) seenHistoryIds.add(idKey);
+    dedupedHistory.push(record);
+    if (businessKey) {
+      businessKeyIndexMap.set(businessKey, dedupedHistory.length - 1);
+    }
+  });
+
+  history = dedupedHistory;
 
   localStorage.setItem("history", JSON.stringify(history));
 
   renderHistory();
 
-  console.log("Producción cargada desde Supabase");
+  console.log(
+    "Producción cargada desde Supabase. Total registros:",
+    history.length,
+    "(crudo:",
+    allData.length,
+    ", duplicados por id:",
+    droppedById,
+    ", duplicados por clave:",
+    droppedByBusinessKey,
+    ")",
+  );
 }
 
 async function pruneHistoryOrphaned() {
-  const workerRuts = new Set((workers || []).map((w) => w.rut));
+  const workerRuts = new Set(
+    (workers || []).map((w) => getRutKey(w.rut)).filter(Boolean),
+  );
 
   if (workerRuts.size === 0) {
     return;
   }
 
-  const orphaned = (history || []).filter((r) => !workerRuts.has(r.rut));
+  const orphaned = (history || []).filter((r) => {
+    const rutKey = getRutKey(r.rut);
+    return !rutKey || !workerRuts.has(rutKey);
+  });
 
   if (orphaned.length === 0) {
     return;
@@ -176,9 +274,188 @@ async function pruneHistoryOrphaned() {
     );
   }
 
-  history = history.filter((r) => workerRuts.has(r.rut));
+  history = history.filter((r) => {
+    const rutKey = getRutKey(r.rut);
+    return rutKey && workerRuts.has(rutKey);
+  });
   localStorage.setItem("history", JSON.stringify(history));
   renderHistory();
+}
+
+function getHistoryDedupeKey(record) {
+  const dateKey = getHistoryDateKey(record?.date);
+  return [
+    getRutKey(record?.rut),
+    dateKey,
+    getLaborKey(record?.labor),
+    Number(record?.quantity) || 0,
+    Number(record?.total) || 0,
+    getFundoKey(record?.fundo),
+  ].join("|");
+}
+
+function getHistoryDateKey(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  const clMatch = raw.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/);
+  if (clMatch) {
+    return `${clMatch[3]}-${clMatch[2]}-${clMatch[1]}`;
+  }
+
+  return raw.slice(0, 10);
+}
+
+function isHistoryRecordInMonth(recordDate, month) {
+  const dateKey = getHistoryDateKey(recordDate);
+  return !!month && !!dateKey && dateKey.startsWith(month);
+}
+
+function dedupeHistoryRecords(records) {
+  const seen = new Set();
+  const deduped = [];
+
+  (records || []).forEach((record) => {
+    const key = getHistoryDedupeKey(record);
+    if (!key) {
+      deduped.push(record);
+      return;
+    }
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    deduped.push(record);
+  });
+
+  return deduped;
+}
+
+async function purgeWorkerEverywhere({ name = "", rut = "" } = {}) {
+  const nameKey = getWorkerNameKey(name);
+  const rutKey = getRutKey(rut);
+
+  if (!nameKey && !rutKey) {
+    return { removedWorkers: 0, removedHistory: 0 };
+  }
+
+  const workerRutsToDelete = new Set();
+  const originalWorkersCount = (workers || []).length;
+  let cloudErrors = 0;
+  const nextWorkers = [];
+
+  (workers || []).forEach((w) => {
+    const workerNameKey = getWorkerNameKey(w?.name);
+    const workerRutKey = getRutKey(w?.rut);
+    const matches =
+      (nameKey && workerNameKey === nameKey) || (rutKey && workerRutKey === rutKey);
+
+    if (matches) {
+      if (w?.rut) workerRutsToDelete.add(w.rut);
+      return;
+    }
+
+    nextWorkers.push(w);
+  });
+
+  const historyIndexesToDelete = [];
+  const historyIdsToDelete = [];
+
+  (history || []).forEach((r, index) => {
+    const recordNameKey = getWorkerNameKey(r?.name);
+    const recordRutKey = getRutKey(r?.rut);
+
+    const matchesName = nameKey && recordNameKey === nameKey;
+    const matchesRut =
+      (rutKey && recordRutKey === rutKey) ||
+      (r?.rut && workerRutsToDelete.has(r.rut));
+
+    if (matchesName || matchesRut) {
+      historyIndexesToDelete.push(index);
+      if (r?.id) historyIdsToDelete.push(r.id);
+    }
+  });
+
+  if (supabaseClient) {
+    if (historyIdsToDelete.length > 0) {
+      const { error } = await supabaseClient
+        .from("history")
+        .delete()
+        .in("id", historyIdsToDelete);
+
+      if (error) {
+        cloudErrors += 1;
+        console.error("Error eliminando historial en Supabase:", error.message);
+      }
+    }
+
+    const rutsForCloudDelete = Array.from(workerRutsToDelete).filter(Boolean);
+    if (rutsForCloudDelete.length > 0) {
+      const { error: historyByRutError } = await supabaseClient
+        .from("history")
+        .delete()
+        .in("rut", rutsForCloudDelete);
+
+      if (historyByRutError) {
+        cloudErrors += 1;
+        console.error(
+          "Error eliminando historial por RUT en Supabase:",
+          historyByRutError.message,
+        );
+      }
+
+      const { error: workersError } = await supabaseClient
+        .from("workers")
+        .delete()
+        .in("rut", rutsForCloudDelete);
+
+      if (workersError) {
+        cloudErrors += 1;
+        console.error("Error eliminando trabajadores en Supabase:", workersError.message);
+      }
+    }
+  }
+
+  workers = nextWorkers;
+
+  historyIndexesToDelete
+    .sort((a, b) => b - a)
+    .forEach((index) => {
+      history.splice(index, 1);
+    });
+
+  localStorage.setItem("workers", JSON.stringify(workers));
+  localStorage.setItem("history", JSON.stringify(history));
+
+  loadWorkers();
+  renderWorkersTable();
+  renderHistory();
+
+  return {
+    removedWorkers: originalWorkersCount - nextWorkers.length,
+    removedHistory: historyIndexesToDelete.length,
+    cloudOk: cloudErrors === 0,
+  };
+}
+
+async function runOneTimeDataPurge() {
+  const flag = "one_time_data_purge_v1";
+  if (localStorage.getItem(flag) === "1") return;
+
+  try {
+    const result = await purgeWorkerEverywhere({ name: "keimer teran" });
+
+    if (result?.cloudOk !== false) {
+      localStorage.setItem(flag, "1");
+    }
+  } catch (e) {
+    console.error("Error en purga de datos:", e);
+  }
 }
 
 async function syncPendingLocalDataBeforeCloudDownload() {
@@ -187,79 +464,32 @@ async function syncPendingLocalDataBeforeCloudDownload() {
     return { ok: true, failedHistory: 0, failedWorkers: 0 };
   }
 
-  console.log(
-    "[syncPendingLocalDataBeforeCloudDownload] Consultando workers y history en la nube...",
+  const hasPendingWorkers = (workers || []).some(
+    (worker) => worker?.pending === true,
   );
-  let cloudWorkers, workersReadError, cloudHistory, historyReadError;
-  try {
-    const results = await Promise.all([
-      supabaseClient.from("workers").select("rut"),
-      supabaseClient.from("history").select("id"),
-    ]);
-    cloudWorkers = results[0].data;
-    workersReadError = results[0].error;
-    cloudHistory = results[1].data;
-    historyReadError = results[1].error;
+
+  const hasPendingHistory = (history || []).some((record) => {
+    const localId = record?.id;
+    return localId === undefined || localId === null || String(localId) === "";
+  });
+
+  if (!hasPendingWorkers && !hasPendingHistory) {
     console.log(
-      "[syncPendingLocalDataBeforeCloudDownload] cloudWorkers:",
-      cloudWorkers,
+      "[syncPendingLocalDataBeforeCloudDownload] Sin pendientes locales, se omite escaneo completo de nube.",
     );
-    console.log(
-      "[syncPendingLocalDataBeforeCloudDownload] cloudHistory:",
-      cloudHistory,
-    );
-  } catch (e) {
-    alert(
-      "[syncPendingLocalDataBeforeCloudDownload] Error en Promise.all: " +
-        (e && e.message ? e.message : e),
-    );
-    console.error(
-      "[syncPendingLocalDataBeforeCloudDownload] Excepción en Promise.all:",
-      e,
-    );
-    return {
-      ok: false,
-      failedHistory: 0,
-      failedWorkers: 0,
-      reason: "promise-all-error",
-    };
+    return { ok: true, failedHistory: 0, failedWorkers: 0 };
   }
-
-  if (workersReadError || historyReadError) {
-    alert(
-      "[syncPendingLocalDataBeforeCloudDownload] Error leyendo datos de Supabase: " +
-        (workersReadError?.message || historyReadError?.message),
-    );
-    console.error(
-      "[syncPendingLocalDataBeforeCloudDownload] Error leyendo datos de Supabase antes de sincronizar:",
-      workersReadError?.message || historyReadError?.message,
-    );
-    return {
-      ok: false,
-      failedHistory: 0,
-      failedWorkers: 0,
-      reason: "read-error",
-    };
-  }
-
-  const cloudWorkerRuts = new Set(
-    (cloudWorkers || []).map((w) => getRutKey(w.rut)).filter(Boolean),
-  );
-
-  const cloudHistoryIds = new Set(
-    (cloudHistory || []).map((r) => String(r.id)).filter(Boolean),
-  );
 
   const pendingWorkers = [];
   const localPendingRuts = new Set();
 
   (workers || []).forEach((worker) => {
-    const rutKey = getRutKey(worker.rut);
+    const rutKey = getRutKey(worker?.rut);
     if (!rutKey || localPendingRuts.has(rutKey)) {
       return;
     }
-    // 🔥 NUEVA LÓGICA SEGURA
-    if (worker.pending === true || !cloudWorkerRuts.has(rutKey)) {
+
+    if (worker?.pending === true) {
       localPendingRuts.add(rutKey);
       pendingWorkers.push(worker);
     }
@@ -270,10 +500,17 @@ async function syncPendingLocalDataBeforeCloudDownload() {
     const localId = record?.id;
     const idKey =
       localId === undefined || localId === null ? "" : String(localId);
-    if (!idKey || !cloudHistoryIds.has(idKey)) {
+    if (!idKey) {
       pendingHistoryIndexes.push(index);
     }
   });
+
+  console.log(
+    "[syncPendingLocalDataBeforeCloudDownload] Pendientes locales -> workers:",
+    pendingWorkers.length,
+    "history:",
+    pendingHistoryIndexes.length,
+  );
 
   let failedWorkers = 0;
   if (pendingWorkers.length > 0) {
@@ -424,8 +661,17 @@ async function loginUser() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
+    const syncIndicator = document.getElementById("syncIndicator");
+    if (syncIndicator) {
+      syncIndicator.style.display = "none";
+      syncIndicator.style.visibility = "hidden";
+      syncIndicator.style.pointerEvents = "none";
+    }
+
     // Ejecutar la sincronización en segundo plano, no bloquear la UI
-    initSystem();
+    setTimeout(() => {
+      initSystem();
+    }, 0);
   } else {
     alert("Contraseña incorrecta");
   }
@@ -441,59 +687,77 @@ function logout() {
 // 🚀 INIT
 // =============================
 async function initSystem() {
+  if (isSyncInProgress) {
+    console.log("[initSystem] Sincronización ya en curso, se omite llamada duplicada.");
+    return;
+  }
+
+  isSyncInProgress = true;
   const syncIndicator = document.getElementById("syncIndicator");
   console.log("[initSystem] Iniciando sincronización...");
+
+  const hideSyncIndicator = () => {
+    if (!syncIndicator) return;
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+  };
+
+  if (localStorage.getItem("sessionActive") !== "true") {
+    hideSyncIndicator();
+    isSyncInProgress = false;
+    return;
+  }
+
   if (navigator.onLine && supabaseClient) {
-    if (syncIndicator) syncIndicator.style.display = "flex";
-    try {
-      console.log("[initSystem] Sincronizando datos locales pendientes...");
-      const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
-      console.log("[initSystem] Resultado sync pendientes:", pendingSyncResult);
-      const totalFailedSync =
-        (pendingSyncResult.failedWorkers || 0) +
-        (pendingSyncResult.failedHistory || 0);
-
-      if (pendingSyncResult.ok) {
-        console.log("[initSystem] Descargando trabajadores de la nube...");
-        await loadWorkersFromCloud();
-        console.log("[initSystem] Descargando historial de la nube...");
-        await loadHistoryFromCloud();
-        console.log("[initSystem] Prune history orphaned...");
-        await pruneHistoryOrphaned();
-        console.log("[initSystem] Sincronización completa.");
-      } else {
-        alert(
-          "⚠️ No se pudieron sincronizar todos los datos con la nube.\n\nTus datos locales se mantendrán intactos para evitar pérdida de información.\n\nPor favor, revisa la conexión o los datos y vuelve a intentarlo.",
-        );
-        console.error(
-          "[initSystem] Error en sincronización de pendientes:",
-          pendingSyncResult,
-        );
-      }
-    } catch (e) {
-      alert(
-        "Error inesperado en sincronización: " +
-          (e && e.message ? e.message : e),
-      );
-      console.error("[initSystem] Excepción:", e);
-    } finally {
-      if (syncIndicator) {
-        syncIndicator.style.display = "none";
-        syncIndicator.style.visibility = "hidden";
-        syncIndicator.style.pointerEvents = "none";
-      }
-
-      // Forzar repaint en Electron para evitar congelamiento visual
-      if (window.require) {
-        setTimeout(() => {
-          document.body.style.transform = "scale(1)";
-        }, 10);
-      }
-
-      console.log("[initSystem] Overlay de sincronización oculto.");
+    if (syncIndicator) {
+      syncIndicator.style.display = "flex";
+      syncIndicator.style.pointerEvents = "none";
+      // Failsafe: nunca dejar bloqueada la UI por sincronización lenta
+      setTimeout(hideSyncIndicator, 2500);
     }
+
+    setTimeout(async () => {
+      try {
+        console.log("[initSystem] Sincronizando datos locales pendientes...");
+        const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
+        console.log("[initSystem] Resultado sync pendientes:", pendingSyncResult);
+
+        if (pendingSyncResult.ok) {
+          console.log("[initSystem] Descargando trabajadores de la nube...");
+          await loadWorkersFromCloud();
+          console.log("[initSystem] Purga puntual de datos...");
+          await runOneTimeDataPurge();
+
+          console.log("[initSystem] Descargando historial de la nube (background)...");
+          await loadHistoryFromCloud();
+          console.log("[initSystem] Sincronización completa.");
+        } else {
+          console.error(
+            "[initSystem] Error en sincronización de pendientes:",
+            pendingSyncResult,
+          );
+        }
+      } catch (e) {
+        console.error("[initSystem] Excepción:", e);
+      } finally {
+        hideSyncIndicator();
+        isSyncInProgress = false;
+
+        // Forzar repaint en Electron para evitar congelamiento visual
+        if (window.require) {
+          setTimeout(() => {
+            document.body.style.transform = "scale(1)";
+          }, 10);
+        }
+
+        console.log("[initSystem] Overlay de sincronización oculto.");
+      }
+    }, 0);
   } else {
     console.warn("[initSystem] Sin conexión o sin supabaseClient");
+    hideSyncIndicator();
+    isSyncInProgress = false;
   }
 
   loadLabors();
@@ -1377,12 +1641,14 @@ async function generateLiquidation() {
 
   // ===== PRODUCCIÓN DEL MES =====
 
-  const records = history.filter(
-    (r) => r.rut === worker.rut && r.date.startsWith(month),
+  const recordsRaw = history.filter(
+    (r) => r.rut === worker.rut && isHistoryRecordInMonth(r.date, month),
   );
 
+  const records = dedupeHistoryRecords(recordsRaw);
+
   records.sort((a, b) => new Date(a.date) - new Date(b.date));
-  const uniqueDates = [...new Set(records.map((r) => r.date))];
+  const uniqueDates = [...new Set(records.map((r) => getHistoryDateKey(r.date)))];
   const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
@@ -2286,9 +2552,11 @@ function generateMonthlySummary() {
 
   const worker = workers[workerIndex];
 
-  const records = history.filter(
-    (r) => r.rut === worker.rut && r.date.startsWith(month),
+  const recordsRaw = history.filter(
+    (r) => r.rut === worker.rut && isHistoryRecordInMonth(r.date, month),
   );
+
+  const records = dedupeHistoryRecords(recordsRaw);
 
   const container = document.getElementById("monthlyResult");
 
@@ -2298,7 +2566,7 @@ function generateMonthlySummary() {
   }
 
   // ===== CALCULAR DÍAS TRABAJADOS =====
-  const uniqueDates = [...new Set(records.map((r) => r.date))];
+  const uniqueDates = [...new Set(records.map((r) => getHistoryDateKey(r.date)))];
   const daysWorked = uniqueDates.length;
 
   let total = 0;
@@ -2335,7 +2603,8 @@ function generateMonthlyGeneral() {
     return;
   }
 
-  const records = history.filter((r) => r.date.startsWith(month));
+  const recordsRaw = history.filter((r) => isHistoryRecordInMonth(r.date, month));
+  const records = dedupeHistoryRecords(recordsRaw);
 
   const container = document.getElementById("monthlyGeneralResult");
 
@@ -2373,7 +2642,7 @@ function generateMonthlyGeneral() {
     laborSummary[laborKey].total += r.total;
 
     summary[r.rut].total += r.total;
-    summary[r.rut].dates.add(r.date);
+    summary[r.rut].dates.add(getHistoryDateKey(r.date));
     if (!summary[r.rut].labors[laborKey]) {
       summary[r.rut].labors[laborKey] = {
         labor: laborName,
@@ -2437,12 +2706,21 @@ function generateMonthlyGeneral() {
 // 🔐 SESIÓN
 // =============================
 
-window.onload = async function () {
+window.onload = function () {
   if (localStorage.getItem("sessionActive") === "true") {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    await initSystem();
+    setTimeout(() => {
+      initSystem();
+    }, 0);
+  } else {
+    const syncIndicator = document.getElementById("syncIndicator");
+    if (syncIndicator) {
+      syncIndicator.style.display = "none";
+      syncIndicator.style.visibility = "hidden";
+      syncIndicator.style.pointerEvents = "none";
+    }
   }
 };
 
@@ -2754,15 +3032,22 @@ async function syncToCloud(showAlerts = false) {
 
 // Sincronización automática robusta al detectar conexión a internet o al cargar la app
 window.addEventListener("online", () => {
-  initSystem();
+  if (localStorage.getItem("sessionActive") !== "true") return;
+  setTimeout(() => {
+    initSystem();
+  }, 0);
   console.log(
     "Sincronización automática con la nube ejecutada (evento online).",
   );
 });
 
 window.addEventListener("DOMContentLoaded", () => {
-  initSystem();
-  console.log("Sincronización automática con la nube ejecutada al iniciar.");
+  const syncIndicator = document.getElementById("syncIndicator");
+  if (localStorage.getItem("sessionActive") !== "true" && syncIndicator) {
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+  }
 });
 
 async function syncFromCloud() {
@@ -2825,7 +3110,8 @@ function exportMonthlyGeneralExcel() {
 
   const month = document.getElementById("monthGeneral").value;
 
-  const records = history.filter((r) => r.date.startsWith(month));
+  const recordsRaw = history.filter((r) => isHistoryRecordInMonth(r.date, month));
+  const records = dedupeHistoryRecords(recordsRaw);
 
   // ================================
   // RESUMEN POR TIPO DE LABOR
@@ -3508,7 +3794,9 @@ async function deleteFromWeeklySummary(index) {
     }
   }
 
-  function generatePagosResumen() {
+  async function generatePagosResumen() {
+    await runOneTimeDataPurge();
+
     const selectedWorkerKey =
       document.getElementById("filterPagosWorker")?.value ||
       document.getElementById("filterPaymentsWorker")?.value ||
@@ -4052,6 +4340,8 @@ function printMandanteCobro() {
 }
 
 window.addEventListener("online", () => {
+  if (localStorage.getItem("sessionActive") !== "true") return;
+  if (isSyncInProgress) return;
   console.log("Internet restaurado. Sincronizando datos...");
 
   if (typeof syncToCloud === "function") {

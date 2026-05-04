@@ -15,8 +15,10 @@ function createWindow() {
 
   win.loadFile("index.html");
 
-  // 🔹 limpiar caché para ver cambios
-  win.webContents.session.clearCache();
+  // 🔹 Limpiar caché solo cuando se necesite depurar cambios forzados
+  if (process.env.CLEAR_CACHE_ON_START === "1") {
+    win.webContents.session.clearCache();
+  }
 
   // 🔹 Mostrar y enfocar la ventana cuando esté lista para evitar problemas de foco
   win.once("ready-to-show", () => {

@@ -124,8 +124,10 @@ function registerWork() {
   showProductionConfirmModal(
     { workerName: worker.name, date, labor, quantity, total },
     async () => {
+      const currentEditIndex = editProductionIndex;
+      const previousRecord =
+        currentEditIndex !== null ? history[currentEditIndex] : null;
       const newRecord = {
-        id: crypto.randomUUID(),
         name: worker.name,
         rut: worker.rut,
         date,
@@ -136,8 +138,11 @@ function registerWork() {
         mandante_paid: false,
       };
 
-      if (editProductionIndex !== null) {
-        history[editProductionIndex] = newRecord;
+      if (currentEditIndex !== null) {
+        history[currentEditIndex] = {
+          ...previousRecord,
+          ...newRecord,
+        };
         editProductionIndex = null;
         document.querySelector(
           "#viewProduction button[onclick='registerWork()']",
@@ -146,16 +151,19 @@ function registerWork() {
         history.push(newRecord);
       }
 
-      const cloudSave = await saveProductionToCloud({
-        name: worker.name,
-        rut: worker.rut,
-        date,
-        labor,
-        quantity,
-        total,
-        fundo: fundo || "",
-        mandante_paid: false,
-      });
+      const targetRecord =
+        currentEditIndex !== null
+          ? history[currentEditIndex]
+          : history[history.length - 1];
+
+      const cloudSave =
+        currentEditIndex !== null
+          ? await updateProductionInCloud(previousRecord?.id, targetRecord)
+          : await saveProductionToCloud(targetRecord);
+
+      if (cloudSave?.ok && cloudSave.id && targetRecord) {
+        targetRecord.id = cloudSave.id;
+      }
 
       if (cloudSave?.ok) {
         alert("✅ Guardado en Supabase OK");
