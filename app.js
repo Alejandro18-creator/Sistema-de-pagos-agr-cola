@@ -671,6 +671,7 @@ async function loginUser() {
       syncIndicator.style.display = "none";
       syncIndicator.style.visibility = "hidden";
       syncIndicator.style.pointerEvents = "none";
+      syncIndicator.remove();
     }
 
     // Ejecutar la sincronización en segundo plano, no bloquear la UI
@@ -708,6 +709,7 @@ async function initSystem() {
     syncIndicator.style.display = "none";
     syncIndicator.style.visibility = "hidden";
     syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
   };
 
   if (localStorage.getItem("sessionActive") !== "true") {
@@ -2142,7 +2144,8 @@ async function generateContract() {
   const workerIndex = document.getElementById("workerContract").value;
 
   if (workerIndex === "") {
-    alert("Seleccione un trabajador.");
+    console.warn("Seleccione un trabajador");
+    return;
     return;
   }
 
@@ -2388,7 +2391,8 @@ async function generateFiniquito() {
   const workerIndex = document.getElementById("workerFiniquito").value;
 
   if (workerIndex === "") {
-    alert("Seleccione un trabajador.");
+    console.warn("Seleccione un trabajador");
+    return;
     return;
   }
 
@@ -2736,6 +2740,7 @@ window.onload = function () {
       syncIndicator.style.display = "none";
       syncIndicator.style.visibility = "hidden";
       syncIndicator.style.pointerEvents = "none";
+      syncIndicator.remove();
     }
   }
 };
@@ -2743,7 +2748,12 @@ window.onload = function () {
 function focusFirstFieldInView(viewId) {
   // Asegura que el overlay de sincronización esté oculto antes de enfocar
   const syncIndicator = document.getElementById("syncIndicator");
-  if (syncIndicator) syncIndicator.style.display = "none";
+  if (syncIndicator) {
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
+  }
 
   requestAnimationFrame(() => {
     setTimeout(() => {
@@ -3063,6 +3073,7 @@ window.addEventListener("DOMContentLoaded", () => {
     syncIndicator.style.display = "none";
     syncIndicator.style.visibility = "hidden";
     syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
   }
 });
 

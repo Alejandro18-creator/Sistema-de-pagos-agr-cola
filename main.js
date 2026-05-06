@@ -6,7 +6,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    show: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -20,11 +20,11 @@ function createWindow() {
     win.webContents.session.clearCache();
   }
 
-  // 🔹 Mostrar y enfocar la ventana cuando esté lista para evitar problemas de foco
-  win.once("ready-to-show", () => {
-    win.show();
-    win.focus();
-  });
+  // // 🔹 Mostrar y enfocar la ventana cuando esté lista para evitar problemas de foco
+  // win.once("ready-to-show", () => {
+  //   win.show();
+  //   win.focus();
+  // });
 
   // IPC para exportar contrato a PDF y abrirlo
   ipcMain.handle("export-contract-pdf", async (event, options) => {

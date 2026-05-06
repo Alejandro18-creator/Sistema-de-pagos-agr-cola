@@ -26,7 +26,8 @@ function clearWeeklySearch() {
 // 🗑️ ELIMINAR DESDE RESUMEN SEMANAL
 // =============================
 async function deleteFromWeeklySummary({ id, date, rut, labor }) {
-  if (!confirm("¿Está seguro de eliminar este registro?")) return;
+  const ok = await showCustomConfirm("¿Está seguro de eliminar este registro?");
+  if (!ok) return;
 
   // Buscar el índice del registro en el array local
   let index = -1;
@@ -76,7 +77,7 @@ async function deleteFromWeeklySummary({ id, date, rut, labor }) {
   history.splice(index, 1);
   localStorage.setItem("history", JSON.stringify(history));
 
-  alert("Registro eliminado.");
+  showCustomAlert("Registro eliminado.");
 
   setTimeout(() => {
     document.getElementById("weeklyResult").innerHTML = "";
@@ -526,7 +527,8 @@ function generateWeeklySummary() {
   const workerIndex = document.getElementById("workerWeekly").value;
 
   if (workerIndex === "") {
-    alert("Seleccione un trabajador.");
+    console.warn("Seleccione un trabajador");
+    return;
     return;
   }
 
