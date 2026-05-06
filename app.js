@@ -210,7 +210,8 @@ async function loadHistoryFromCloud() {
         ...record,
         paid: existingRecord.paid === true || record?.paid === true,
         mandante_paid:
-          existingRecord.mandante_paid === true || record?.mandante_paid === true,
+          existingRecord.mandante_paid === true ||
+          record?.mandante_paid === true,
       };
       droppedByBusinessKey += 1;
       return;
@@ -353,7 +354,8 @@ async function purgeWorkerEverywhere({ name = "", rut = "" } = {}) {
     const workerNameKey = getWorkerNameKey(w?.name);
     const workerRutKey = getRutKey(w?.rut);
     const matches =
-      (nameKey && workerNameKey === nameKey) || (rutKey && workerRutKey === rutKey);
+      (nameKey && workerNameKey === nameKey) ||
+      (rutKey && workerRutKey === rutKey);
 
     if (matches) {
       if (w?.rut) workerRutsToDelete.add(w.rut);
@@ -416,7 +418,10 @@ async function purgeWorkerEverywhere({ name = "", rut = "" } = {}) {
 
       if (workersError) {
         cloudErrors += 1;
-        console.error("Error eliminando trabajadores en Supabase:", workersError.message);
+        console.error(
+          "Error eliminando trabajadores en Supabase:",
+          workersError.message,
+        );
       }
     }
   }
@@ -688,7 +693,9 @@ function logout() {
 // =============================
 async function initSystem() {
   if (isSyncInProgress) {
-    console.log("[initSystem] Sincronización ya en curso, se omite llamada duplicada.");
+    console.log(
+      "[initSystem] Sincronización ya en curso, se omite llamada duplicada.",
+    );
     return;
   }
 
@@ -720,8 +727,12 @@ async function initSystem() {
     setTimeout(async () => {
       try {
         console.log("[initSystem] Sincronizando datos locales pendientes...");
-        const pendingSyncResult = await syncPendingLocalDataBeforeCloudDownload();
-        console.log("[initSystem] Resultado sync pendientes:", pendingSyncResult);
+        const pendingSyncResult =
+          await syncPendingLocalDataBeforeCloudDownload();
+        console.log(
+          "[initSystem] Resultado sync pendientes:",
+          pendingSyncResult,
+        );
 
         if (pendingSyncResult.ok) {
           console.log("[initSystem] Descargando trabajadores de la nube...");
@@ -729,7 +740,9 @@ async function initSystem() {
           console.log("[initSystem] Purga puntual de datos...");
           await runOneTimeDataPurge();
 
-          console.log("[initSystem] Descargando historial de la nube (background)...");
+          console.log(
+            "[initSystem] Descargando historial de la nube (background)...",
+          );
           await loadHistoryFromCloud();
           console.log("[initSystem] Sincronización completa.");
         } else {
@@ -1317,6 +1330,20 @@ function filterWorkersMonthly() {
       const index = workers.indexOf(worker);
       hiddenSelect.value = index;
       searchInput.value = worker.name || "";
+      document.getElementById("f_workerName").textContent = worker.name;
+      const workerRecords = history
+        .filter((r) => r.rut === worker.rut)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (workerRecords.length > 0) {
+        const parts = workerRecords[0].date.split("-");
+        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        document.getElementById("f_startDate").textContent = formatted;
+      } else {
+        document.getElementById("f_startDate").textContent =
+          "____ / ____ / ______";
+      }
+      refreshFiniquitoResumen();
       list.style.display = "none";
       list.innerHTML = "";
     });
@@ -1648,7 +1675,9 @@ async function generateLiquidation() {
   const records = dedupeHistoryRecords(recordsRaw);
 
   records.sort((a, b) => new Date(a.date) - new Date(b.date));
-  const uniqueDates = [...new Set(records.map((r) => getHistoryDateKey(r.date)))];
+  const uniqueDates = [
+    ...new Set(records.map((r) => getHistoryDateKey(r.date))),
+  ];
   const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
@@ -2072,56 +2101,38 @@ function printContractScreen() {
       }
       #contractPrint {
         padding: 0;
-        margin: 0;
-        font-size: 15px !important;
-        line-height: 1.3 !important;
+        margin: 0 auto;
+        max-width: 740px;
+        font-family: "Times New Roman", serif;
+        font-size: 15px;
+        line-height: 1.35;
       }
-      #contractPrint {
-  font-family: "Times New Roman", serif;
-  font-size: 15px;
-  line-height: 1.35;
-  color: #000;
-}
-
-#contractPrint p,
-#contractPrint .clausula {
-  margin: 4px 0;
-  text-align: justify;
-}
-
-#contractPrint h1,
-#contractPrint h2 {
-  text-align: center;
-  margin: 10px 0 6px 0;
-  font-weight: bold;
-}
-
-#contractPrint .clausula {
-  text-indent: 20px;
-}
-      #contractPrint h2.titulo-contrato {
-        font-size: 16px !important;
-        margin: 0 0 4px 0 !important;
+      #contractPrint .titulo-contrato {
+        text-align: center;
+        font-size: 16px;
+        margin: 0 0 6px 0;
         text-align: center;
       }
       #contractPrint h3 {
-        font-size: 13px !important;
-        margin: 2px 0 !important;
+        font-size: 13px;
+        margin: 2px 0;
+        text-align: center;
       }
       #contractPrint br {
-        display: none !important;
+        display: none;
       }
       .signatures {
-        margin-top: 60px !important;
+        margin-top: 60px;
       }
       .line {
-        width: 200px !important;
+        width: 200px;
+        margin: 0 auto 10px;
       }
       .sign-name,
       .sign-role,
       .sign-rut {
-        width: 200px !important;
-        font-size: 13px !important;
+        width: 200px;
+        font-size: 13px;
       }
     `,
   });
@@ -2244,6 +2255,7 @@ async function generateContract() {
         text-align: center;
         font-size: 16px;
         margin: 0 0 6px 0;
+        text-align: center;
       }
 
       #contractPrint p,
@@ -2566,7 +2578,9 @@ function generateMonthlySummary() {
   }
 
   // ===== CALCULAR DÍAS TRABAJADOS =====
-  const uniqueDates = [...new Set(records.map((r) => getHistoryDateKey(r.date)))];
+  const uniqueDates = [
+    ...new Set(records.map((r) => getHistoryDateKey(r.date))),
+  ];
   const daysWorked = uniqueDates.length;
 
   let total = 0;
@@ -2603,7 +2617,9 @@ function generateMonthlyGeneral() {
     return;
   }
 
-  const recordsRaw = history.filter((r) => isHistoryRecordInMonth(r.date, month));
+  const recordsRaw = history.filter((r) =>
+    isHistoryRecordInMonth(r.date, month),
+  );
   const records = dedupeHistoryRecords(recordsRaw);
 
   const container = document.getElementById("monthlyGeneralResult");
@@ -3110,7 +3126,9 @@ function exportMonthlyGeneralExcel() {
 
   const month = document.getElementById("monthGeneral").value;
 
-  const recordsRaw = history.filter((r) => isHistoryRecordInMonth(r.date, month));
+  const recordsRaw = history.filter((r) =>
+    isHistoryRecordInMonth(r.date, month),
+  );
   const records = dedupeHistoryRecords(recordsRaw);
 
   // ================================
@@ -3697,481 +3715,43 @@ async function deleteProductionByIndex(index) {
 
 // 🗑️ ELIMINAR DESDE RESUMEN SEMANAL
 // =============================
-async function deleteFromWeeklySummary(index) {
-  // ...existing code...
-  // =============================
-  // RECALCULAR TOTAL SEMANAL
-  // =============================
+async function deleteDailyRecord(id) {
+  if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
-  function updateWeeklyTotal() {
-    const checkboxes = document.querySelectorAll(
-      "#weeklyResult input[type='checkbox']",
-    );
+  const index = history.findIndex((r) => r.id === id);
 
-    let total = 0;
-    let paidDates = new Set();
-
-    checkboxes.forEach((cb) => {
-      if (cb.checked) {
-        total += Number(cb.dataset.total);
-
-        const row = cb.closest("tr");
-        const date = row.children[1].textContent;
-
-        paidDates.add(date);
-      }
-    });
-
-    document.getElementById("weeklyTotal").textContent =
-      "Total Semana: $" + total.toLocaleString("es-CL");
-
-    document.getElementById("paidDays").textContent = paidDates.size;
+  if (index === -1) {
+    console.error("❌ No se encontró el registro con id:", id);
+    return;
   }
 
-  function printWeeklySummary() {
-    const container = document.getElementById("weeklyResult");
+  const record = history[index];
 
-    if (!container) return;
-
-    const rows = container.querySelectorAll("table tr");
-
-    rows.forEach((row, index) => {
-      if (index === 0) return; // encabezado
-
-      const checkbox = row.querySelector("input[type='checkbox']");
-
-      if (checkbox && !checkbox.checked) {
-        row.style.display = "none";
-      }
-    });
-
-    window.print();
-
-    // restaurar vista después de imprimir
-    rows.forEach((row) => {
-      row.style.display = "";
-    });
-  }
-  window.printWeeklySummary = printWeeklySummary;
-  // =============================
-  // MARCAR / DESMARCAR TODA LA SEMANA
-  // =============================
-
-  async function markAllWeeklyPaid(state) {
-    const checkboxes = document.querySelectorAll(
-      "#weeklyResult input[type='checkbox']",
-    );
-
-    let failedUpdates = 0;
-
-    for (const cb of checkboxes) {
-      cb.checked = state;
-
-      const id = cb.dataset.id;
-
-      const { error } = await supabaseClient
-        .from("history")
-        .update({ paid: state })
-        .eq("id", id);
-
-      if (error) {
-        failedUpdates += 1;
-        console.error(
-          "Error actualizando pago masivo en Supabase:",
-          error.message,
-        );
-      }
-    }
-
-    updateWeeklyTotal();
-
-    if (failedUpdates === 0) {
-      alert("✅ Guardado en Supabase OK");
-    } else {
-      alert(
-        "⚠️ No se guardó en nube parte del cambio masivo. Revise conexión/permisos.",
-      );
-    }
-  }
-
-  async function generatePagosResumen() {
-    await runOneTimeDataPurge();
-
-    const selectedWorkerKey =
-      document.getElementById("filterPagosWorker")?.value ||
-      document.getElementById("filterPaymentsWorker")?.value ||
-      document.getElementById("workerResumenSelect")?.value ||
-      "";
-
-    const selectedWorker = workers.find((w) => {
-      const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
-      return workerKey === selectedWorkerKey;
-    });
-    const selectedWorkerNameKey = selectedWorker
-      ? getWorkerNameKey(selectedWorker.name)
-      : "";
-
-    if (history.length === 0) {
-      alert("No hay registros.");
+  if (record.id) {
+    console.log("ELIMINANDO ID:", record.id);
+    const { error } = await supabaseClient
+      .from("history")
+      .delete()
+      .eq("id", record.id);
+    console.log("RESPUESTA DELETE:", error);
+    if (error) {
+      console.error("Error eliminando en Supabase:", error.message);
+      alert("Error al eliminar en la base de datos.");
       return;
     }
-
-    // ===== FASE 1: PRE-ESCANEO de TODO el historial =====
-    // Se construyen los mapas de alias ANTES de agrupar, para que el orden
-    // de los registros no afecte el resultado. "refugio" y "REFUGIO" quedan
-    // con la misma clave canónica sin importar cuál llegue primero.
-    const canonicalByRut = {};
-    const canonicalByName = {};
-
-    history.forEach((r) => {
-      const rutKey = getRutKey(r.rut);
-      const nameKey = getWorkerNameKey(r.name);
-
-      const existing =
-        (rutKey && canonicalByRut[rutKey]) ||
-        (nameKey && canonicalByName[nameKey]);
-
-      const canonical =
-        existing || (rutKey ? "rut:" + rutKey : "name:" + nameKey);
-
-      if (rutKey) canonicalByRut[rutKey] = canonical;
-      if (nameKey) canonicalByName[nameKey] = canonical;
-    });
-
-    // ===== FASE 2: AGRUPACIÓN =====
-    const resumenTrabajador = {};
-    const resumenFundo = {};
-
-    history
-      .filter((r) => {
-        if (!selectedWorkerKey) return true;
-
-        const rutKey = getRutKey(r.rut);
-        const nameKey = getWorkerNameKey(r.name);
-        const recordWorkerKey =
-          (rutKey && canonicalByRut[rutKey]) ||
-          (nameKey && canonicalByName[nameKey]) ||
-          "";
-
-        if (recordWorkerKey === selectedWorkerKey) return true;
-
-        // Fallback por nombre normalizado (cubre variantes de capitalización)
-        if (
-          selectedWorkerNameKey &&
-          getWorkerNameKey(r.name) === selectedWorkerNameKey
-        ) {
-          return true;
-        }
-
-        return false;
-      })
-      .forEach((r) => {
-        const totalValue = Number.isFinite(Number(r.total))
-          ? Number(r.total)
-          : 0;
-        const pagado = Boolean(r.paid);
-        const fundoKey = getFundoKey(r.fundo) || "sin-fundo";
-        const fundoLabel = getFundoDisplay(r.fundo, "Sin fundo");
-        const rutKey = getRutKey(r.rut);
-        const nameKey = getWorkerNameKey(r.name);
-
-        const workerKey =
-          (rutKey && canonicalByRut[rutKey]) ||
-          (nameKey && canonicalByName[nameKey]) ||
-          (rutKey ? "rut:" + rutKey : "name:" + nameKey);
-
-        // ===== POR TRABAJADOR =====
-        if (!resumenTrabajador[workerKey]) {
-          resumenTrabajador[workerKey] = {
-            key: workerKey,
-            rut: r.rut,
-            name: r.name,
-            trabajado: 0,
-            pagado: 0,
-            pendiente: 0,
-            diasPendientes: new Set(),
-            laboresPendientes: {},
-          };
-        }
-
-        if (!resumenTrabajador[workerKey].rut && r.rut) {
-          resumenTrabajador[workerKey].rut = r.rut;
-        }
-
-        if (!resumenTrabajador[workerKey].name && r.name) {
-          resumenTrabajador[workerKey].name = r.name;
-        }
-
-        resumenTrabajador[workerKey].trabajado += totalValue;
-
-        if (pagado) {
-          resumenTrabajador[workerKey].pagado += totalValue;
-        } else {
-          resumenTrabajador[workerKey].pendiente += totalValue;
-          resumenTrabajador[workerKey].diasPendientes.add(r.date);
-
-          if (!resumenTrabajador[workerKey].laboresPendientes[r.labor]) {
-            resumenTrabajador[workerKey].laboresPendientes[r.labor] = 0;
-          }
-          resumenTrabajador[workerKey].laboresPendientes[r.labor] += totalValue;
-        }
-
-        // ===== POR FUNDO =====
-        if (!resumenFundo[fundoKey]) {
-          resumenFundo[fundoKey] = {
-            label: fundoLabel,
-            trabajado: 0,
-            pagado: 0,
-            pendiente: 0,
-          };
-        }
-
-        resumenFundo[fundoKey].trabajado += totalValue;
-
-        if (pagado) {
-          resumenFundo[fundoKey].pagado += totalValue;
-        } else {
-          resumenFundo[fundoKey].pendiente += totalValue;
-        }
-      });
-
-    let html = "<h3>Por Trabajador</h3>";
-
-    html += "<table>";
-    html += "<tr>";
-
-    html += "<th>";
-    html += "<select id='workerResumenSelect'>";
-    html += "<option value=''>-- Todos --</option>";
-
-    const seenWorkers = new Set();
-    workers.forEach((w) => {
-      const workerKey = getRutKey(w.rut) || "name:" + getWorkerNameKey(w.name);
-      if (!workerKey || seenWorkers.has(workerKey)) {
-        return;
-      }
-
-      seenWorkers.add(workerKey);
-
-      const isSelected = workerKey === selectedWorkerKey ? " selected" : "";
-
-      html +=
-        "<option value='" +
-        workerKey +
-        "'" +
-        isSelected +
-        ">" +
-        w.name +
-        "</option>";
-    });
-
-    html += "</select>";
-    html += "</th>";
-
-    html += "<th>Total</th>";
-    html += "<th>Pagado</th>";
-    html += "<th>Pendiente</th>";
-    html += "<th>Días Pendientes</th>";
-    html += "<th>Labor Pendiente</th>";
-
-    html += "</tr>";
-
-    Object.values(resumenTrabajador).forEach((w) => {
-      let laboresTexto = "";
-
-      Object.entries(w.laboresPendientes).forEach(([labor, total]) => {
-        laboresTexto += labor + " ($" + total.toLocaleString("es-CL") + ")<br>";
-      });
-
-      html += "<tr>";
-      html += "<td>" + w.name + "</td>";
-      html += "<td>$" + w.trabajado.toLocaleString("es-CL") + "</td>";
-      html +=
-        "<td style='color:green'>$" +
-        w.pagado.toLocaleString("es-CL") +
-        "</td>";
-      html +=
-        "<td style='color:red'>$" +
-        w.pendiente.toLocaleString("es-CL") +
-        "</td>";
-      if (w.diasPendientes.size > 0) {
-        const pendingDatesJson = JSON.stringify(Array.from(w.diasPendientes));
-        html += `<td>
-          <button type='button' class='btn-pending-days' data-rut='${w.rut}' data-dates='${encodeURIComponent(pendingDatesJson)}' style='background: none; border: none; color: #1a73e8; cursor: pointer; font-weight: 600; text-decoration: underline;'>${w.diasPendientes.size}</button>
-        </td>`;
-      } else {
-        html += "<td>0</td>";
-      }
-      html += "<td>" + (laboresTexto || "-") + "</td>";
-      html += "</tr>";
-    });
-
-    html += "</table>";
-
-    html += "<h3 style='margin-top:30px;'>Por Fundo</h3>";
-    html +=
-      "<table><tr><th>Fundo</th><th>Total</th><th>Pagado</th><th>Pendiente</th></tr>";
-
-    Object.values(resumenFundo).forEach((data) => {
-      html += "<tr>";
-      html += "<td>" + data.label + "</td>";
-      html += "<td>$" + data.trabajado.toLocaleString("es-CL") + "</td>";
-      html +=
-        "<td style='color:green'>$" +
-        data.pagado.toLocaleString("es-CL") +
-        "</td>";
-      html +=
-        "<td style='color:red'>$" +
-        data.pendiente.toLocaleString("es-CL") +
-        "</td>";
-      html += "</tr>";
-    });
-
-    html += "</table>";
-
-    document.getElementById("pagosResult").innerHTML = html;
-
-    // Asignar evento CSP-compliant al select
-    const resumenSelect = document.getElementById("workerResumenSelect");
-    if (resumenSelect) {
-      resumenSelect.addEventListener("change", generatePagosResumen);
-    }
-
-    // Asignar eventos CSP-compliant
-    document.querySelectorAll(".btn-pending-days").forEach((btn) => {
-      btn.addEventListener("click", function () {
-        const rut = this.getAttribute("data-rut");
-        const dates = JSON.parse(
-          decodeURIComponent(this.getAttribute("data-dates")),
-        );
-        showPendingDaysCalendar(rut, dates);
-      });
-    });
-  }
-  window.generatePagosResumen = generatePagosResumen;
-
-  function exitWeeklyToPagos() {
-    pendingCalendarMode = false;
-    selectedDays.clear();
-    const calendar = document.getElementById("calendarContainer");
-    const weeklyResult = document.getElementById("weeklyResult");
-    if (calendar) calendar.innerHTML = "";
-    if (weeklyResult) weeklyResult.innerHTML = "";
-
-    const workerWeekly = document.getElementById("workerWeekly");
-    const searchWeekly = document.getElementById("searchWorkerWeekly");
-    const listWeekly = document.getElementById("workerWeeklyList");
-    if (workerWeekly) workerWeekly.value = "";
-    if (searchWeekly) searchWeekly.value = "";
-    if (listWeekly) {
-      listWeekly.style.display = "none";
-      listWeekly.innerHTML = "";
-    }
-
-    showView("viewPagos");
   }
 
-  const searchInput = document.getElementById("searchWorkerWeekly");
-  const resultsList = document.getElementById("workerWeeklyList");
-  const hiddenSelect = document.getElementById("workerWeekly");
-  const calendar = document.getElementById("calendarContainer");
-  const weeklyResult = document.getElementById("weeklyResult");
+  history.splice(index, 1);
 
-  if (searchInput) searchInput.value = "";
-  if (hiddenSelect) hiddenSelect.value = "";
-  if (resultsList) {
-    resultsList.style.display = "none";
-    resultsList.innerHTML = "";
+  localStorage.setItem("history", JSON.stringify(history));
+  document.getElementById("weeklyResult").innerHTML = "";
+  generateWeeklySummary();
+
+  alert("Registro eliminado.");
+
+  if (typeof window.generatePagosResumen === "function") {
+    window.generatePagosResumen();
   }
-  if (calendar) calendar.innerHTML = "";
-  if (weeklyResult) weeklyResult.innerHTML = "";
-  selectedDays.clear();
-}
-
-function clearLiquidationSearch() {
-  const searchInput = document.getElementById("searchWorkerLiquidation");
-  const resultsList = document.getElementById("workerLiquidationList");
-  const hiddenSelect = document.getElementById("workerLiquidation");
-
-  if (searchInput) searchInput.value = "";
-  if (hiddenSelect) hiddenSelect.value = "";
-  if (resultsList) {
-    resultsList.style.display = "none";
-    resultsList.innerHTML = "";
-  }
-}
-// =============================
-// 📂 HISTORIAL DE PAGOS
-// =============================
-
-async function loadPaymentsHistory() {
-  console.log("ENTRÓ A loadPaymentsHistory");
-
-  const container = document.getElementById("paymentsHistoryTable");
-
-  const { data, error } = await supabaseClient
-    .from("payments")
-    .select("*")
-    .order("payment_date", { ascending: false });
-
-  console.log("DATA PAYMENTS:", data);
-  console.log("ERROR PAYMENTS:", error);
-
-  if (error) {
-    container.innerHTML = "<p>Error cargando pagos.</p>";
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    container.innerHTML = "<p>No hay pagos registrados.</p>";
-    return;
-  }
-
-  let html = `
-    <table>
-      <tr>
-        <th>Fecha</th>
-        <th>Trabajador</th>
-        <th>Total Pagado</th>
-      </tr>
-  `;
-
-  data.forEach((p) => {
-    html += `
-      <tr>
-        <td>${p.payment_date}</td>
-        <td>${p.name}</td>
-        <td>$${Number(p.total_paid).toLocaleString("es-CL")}</td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-
-  // 🔷 RESUMEN SUPERIOR
-  const summaryContainer = document.getElementById("paymentsSummary");
-
-  let totalGeneral = 0;
-  let workersSet = new Set();
-
-  data.forEach((p) => {
-    totalGeneral += Number(p.total_paid);
-    workersSet.add(p.rut);
-  });
-
-  summaryContainer.innerHTML = `
-  <div>
-    <strong>Total Pagado:</strong> $${totalGeneral.toLocaleString("es-CL")}
-  </div>
-  <div>
-    <strong>Cantidad de Pagos:</strong> ${data.length}
-  </div>
-  <div>
-    <strong>Trabajadores Pagados:</strong> ${workersSet.size}
-  </div>
-`;
-
-  container.innerHTML = html;
 }
 
 function openWorkerFolder(rut) {
@@ -4437,3 +4017,91 @@ function formatFechaInput(input) {
     input.value = value;
   }
 }
+
+// Exponer funciones globales para otros scripts
+window.loadPaymentsHistory = loadPaymentsHistory;
+window.clearLiquidationSearch = clearLiquidationSearch;
+
+async function loadPaymentsHistory() {
+  console.log("ENTRÓ A loadPaymentsHistory");
+
+  const container = document.getElementById("paymentsHistoryTable");
+
+  const { data, error } = await supabaseClient
+    .from("payments")
+    .select("*")
+    .order("payment_date", { ascending: false });
+
+  console.log("DATA PAYMENTS:", data);
+  console.log("ERROR PAYMENTS:", error);
+
+  if (error) {
+    container.innerHTML = "<p>Error cargando pagos.</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = "<p>No hay pagos registrados.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Fecha</th>
+        <th>Trabajador</th>
+        <th>Total Pagado</th>
+      </tr>
+  `;
+
+  data.forEach((p) => {
+    html += `
+      <tr>
+        <td>${p.payment_date}</td>
+        <td>${p.name}</td>
+        <td>$${Number(p.total_paid).toLocaleString("es-CL")}</td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+
+  // 🔷 RESUMEN SUPERIOR
+  const summaryContainer = document.getElementById("paymentsSummary");
+
+  let totalGeneral = 0;
+  let workersSet = new Set();
+
+  data.forEach((p) => {
+    totalGeneral += Number(p.total_paid);
+    workersSet.add(p.rut);
+  });
+
+  summaryContainer.innerHTML = `
+  <div>
+    <strong>Total Pagado:</strong> $${totalGeneral.toLocaleString("es-CL")}
+  </div>
+  <div>
+    <strong>Cantidad de Pagos:</strong> ${data.length}
+  </div>
+  <div>
+    <strong>Trabajadores Pagados:</strong> ${workersSet.size}
+  </div>
+`;
+
+  container.innerHTML = html;
+}
+window.loadPaymentsHistory = loadPaymentsHistory;
+function clearLiquidationSearch() {
+  const searchInput = document.getElementById("searchWorkerLiquidation");
+  const resultsList = document.getElementById("workerLiquidationList");
+  const hiddenSelect = document.getElementById("workerLiquidation");
+
+  if (searchInput) searchInput.value = "";
+  if (hiddenSelect) hiddenSelect.value = "";
+  if (resultsList) {
+    resultsList.style.display = "none";
+    resultsList.innerHTML = "";
+  }
+}
+window.clearLiquidationSearch = clearLiquidationSearch;
