@@ -10,10 +10,19 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      backgroundThrottling: false,
     },
   });
 
   win.loadFile("index.html");
+
+  win.on("blur", () => {
+    console.log("VENTANA PERDIÓ FOCO");
+  });
+
+  win.on("focus", () => {
+    console.log("VENTANA RECUPERÓ FOCO");
+  });
 
   // 🔹 Limpiar caché solo cuando se necesite depurar cambios forzados
   if (process.env.CLEAR_CACHE_ON_START === "1") {

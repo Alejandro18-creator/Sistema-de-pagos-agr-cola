@@ -817,10 +817,10 @@ async function addWorker() {
     return;
   }
   // 🔹 VALIDAR RUT DUPLICADO
-  const rutExists = workers.some((w) => w.rut === rut);
-
-  if (rutExists && editIndexWorker === null) {
-    alert("Este RUT ya está registrado.");
+  const rutIndex = workers.findIndex((w) => w.rut === rut);
+  if (rutIndex !== -1 && rutIndex !== editIndexWorker) {
+    // await showCustomAlert("Este trabajador o RUT ya existe.");
+    console.warn("Trabajador duplicado");
     return;
   }
 
@@ -928,14 +928,14 @@ async function addWorker() {
     }
   }
 
-  saveLocalDataDebounced();
+  // saveLocalDataDebounced();
 
-  clearWorkerForm();
-  loadWorkers();
-  renderWorkersTable();
+  // clearWorkerForm();
+  // loadWorkers();
+  // renderWorkersTable();
 
   if (workerCloudSaved) {
-    alert("✅ Guardado en Supabase OK");
+    showCustomAlert("✅ Guardado en Supabase OK");
   } else {
     alert(
       "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
@@ -2306,7 +2306,7 @@ async function generateContract() {
     alert("⚠️ No se guardó en nube el contrato.");
   } else {
     console.log("Contrato guardado en Supabase");
-    alert("✅ Contrato guardado en Supabase OK");
+    showCustomAlert("✅ Contrato guardado en Supabase OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -2503,7 +2503,7 @@ async function generateFiniquito() {
       alert("⚠️ No se guardó en nube el finiquito.");
     } else {
       console.log("Finiquito guardado en Supabase");
-      alert("✅ Finiquito guardado en Supabase OK");
+      showCustomAlert("✅ Finiquito guardado en Supabase OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
@@ -2745,60 +2745,8 @@ window.onload = function () {
   }
 };
 
-function focusFirstFieldInView(viewId) {
-  // Asegura que el overlay de sincronización esté oculto antes de enfocar
-  const syncIndicator = document.getElementById("syncIndicator");
-  if (syncIndicator) {
-    syncIndicator.style.display = "none";
-    syncIndicator.style.visibility = "hidden";
-    syncIndicator.style.pointerEvents = "none";
-    syncIndicator.remove();
-  }
-
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      const view = document.getElementById(viewId);
-      if (!view) return;
-
-      // Si hay overlays visibles, ocultarlos
-      document
-        .querySelectorAll('.hidden, [style*="display: none"]')
-        .forEach((el) => {
-          if (el.id === "syncIndicator") el.style.display = "none";
-        });
-
-      const selectors = [
-        'input:not([type="hidden"]):not([disabled])',
-        "select:not([disabled])",
-        "textarea:not([disabled])",
-        "button:not([disabled])",
-        '[tabindex]:not([tabindex="-1"])',
-      ];
-
-      const focusableElements = Array.from(
-        view.querySelectorAll(selectors.join(",")),
-      ).filter((element) => {
-        const style = window.getComputedStyle(element);
-        return (
-          style.display !== "none" &&
-          style.visibility !== "hidden" &&
-          !element.closest(".hidden")
-        );
-      });
-
-      const target = focusableElements[0];
-      if (!target) return;
-
-      // Forzar el foco dos veces para asegurar que el navegador lo aplique
-      target.focus();
-      setTimeout(() => {
-        target.focus();
-        if (typeof target.select === "function") {
-          target.select();
-        }
-      }, 30);
-    }, 100);
-  });
+function focusFirstFieldInView() {
+  return;
 }
 
 function closeFloatingUi() {
@@ -3439,7 +3387,8 @@ function generateMandanteCobro() {
       resultContainer.innerHTML =
         "<p style='color:#666;'>No hay registros para las fechas seleccionadas.</p>";
     }
-    alert("No hay registros en los días seleccionados.");
+    showCustomAlert("No hay registros en los días seleccionados.");
+    return;
     return;
   }
 

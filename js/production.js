@@ -195,7 +195,7 @@ function registerWork() {
       }
 
       if (cloudSave?.ok) {
-        alert("✅ Guardado en Supabase OK");
+        showCustomAlert("✅ Guardado en Supabase OK");
       } else {
         alert(
           "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
@@ -429,7 +429,7 @@ async function payWeekly() {
   saveLocalDataDebounced();
 
   if (!paymentError && paidUpdateErrors === 0) {
-    alert("✅ Guardado en Supabase OK (pago semanal).");
+    showCustomAlert("✅ Guardado en Supabase OK (pago semanal).");
   } else {
     alert(
       "⚠️ No se guardó completo en nube el pago semanal. Revise conexión/permisos.",
@@ -583,7 +583,8 @@ function generateWeeklySummary() {
   });
 
   if (records.length === 0) {
-    alert("No hay registros en los días seleccionados.");
+    showCustomAlert("No hay registros en los días seleccionados.");
+    return;
     return;
   }
 
