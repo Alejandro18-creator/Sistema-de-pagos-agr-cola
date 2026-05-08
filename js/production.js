@@ -25,20 +25,78 @@ function clearWeeklySearch() {
 }
 // 🗑️ ELIMINAR DESDE RESUMEN SEMANAL
 // =============================
-async function deleteFromWeeklySummary(index) {
-  if (!confirm("¿Está seguro de eliminar este registro?")) return;
+async function deleteFromWeeklySummary({
+  id,
+  date,
+  rut,
+  labor,
+  quantity,
+  total,
+  fundo,
+  historyIndex,
+}) {
+  const ok = await showCustomConfirm("¿Está seguro de eliminar este registro?");
+  if (!ok) return;
 
+  // Buscar el índice del registro en el array local
+  let index = -1;
+  const parsedIndex = Number(historyIndex);
+  if (
+    Number.isInteger(parsedIndex) &&
+    parsedIndex >= 0 &&
+    parsedIndex < history.length
+  ) {
+    index = parsedIndex;
+  }
+  if (id && id !== "undefined" && id !== "") {
+    index = history.findIndex((r) => r.id == id);
+  }
+  if (index === -1) {
+    // Fallback: buscar por todos los datos visibles de la fila
+    index = history.findIndex(
+      (r) =>
+        r.rut === rut &&
+        r.date === date &&
+        r.labor === labor &&
+        Number(r.quantity) === Number(quantity) &&
+        Number(r.total) === Number(total) &&
+        (r.fundo || "") === (fundo || ""),
+    );
+  }
+  if (index === -1 || !history[index]) {
+    alert("No se encontró el registro localmente.");
+    return;
+  }
   const record = history[index];
 
   // Eliminar de Supabase si tiene id
-  if (record.rut && record.date) {
+  if (record.id) {
     const { error } = await supabaseClient
+      .from("history")
+      .delete()
+      .eq("id", record.id);
+
+    if (error) {
+      console.error("Error eliminando en Supabase:", error.message);
+      alert("Error al eliminar en la base de datos.");
+      return;
+    }
+  } else if (record.rut && record.date) {
+    // Fallback: eliminar por datos completos de la fila cuando no hay id
+    let deleteQuery = supabaseClient
       .from("history")
       .delete()
       .eq("rut", record.rut)
       .eq("date", record.date)
-      .eq("labor", record.labor);
+      .eq("labor", record.labor)
+      .eq("quantity", Number(record.quantity))
+      .eq("total", Number(record.total));
 
+    if (record.fundo) {
+      deleteQuery = deleteQuery.eq("fundo", record.fundo);
+    }
+
+    const { error } = await deleteQuery;
     if (error) {
       console.error("Error eliminando en Supabase:", error.message);
       alert("Error al eliminar en la base de datos.");
@@ -50,10 +108,12 @@ async function deleteFromWeeklySummary(index) {
   history.splice(index, 1);
   localStorage.setItem("history", JSON.stringify(history));
 
-  alert("Registro eliminado.");
+  showCustomAlert("Registro eliminado.");
 
-  // Regenerar el resumen
-  generateWeeklySummary();
+  setTimeout(() => {
+    document.getElementById("weeklyResult").innerHTML = "";
+    generateWeeklySummary();
+  }, 50);
 }
 /* PRODUCCIÓN - REGISTRO E HISTORIAL */
 function registerWork() {
@@ -166,7 +226,7 @@ function registerWork() {
       }
 
       if (cloudSave?.ok) {
-        alert("✅ Guardado en Supabase OK");
+        showCustomAlert("✅ Guardado en Supabase OK");
       } else {
         alert(
           "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
@@ -400,7 +460,7 @@ async function payWeekly() {
   saveLocalDataDebounced();
 
   if (!paymentError && paidUpdateErrors === 0) {
-    alert("✅ Guardado en Supabase OK (pago semanal).");
+    showCustomAlert("✅ Guardado en Supabase OK (pago semanal).");
   } else {
     alert(
       "⚠️ No se guardó completo en nube el pago semanal. Revise conexión/permisos.",
@@ -498,7 +558,8 @@ function generateWeeklySummary() {
   const workerIndex = document.getElementById("workerWeekly").value;
 
   if (workerIndex === "") {
-    alert("Seleccione un trabajador.");
+    console.warn("Seleccione un trabajador");
+    return;
     return;
   }
 
@@ -553,7 +614,8 @@ function generateWeeklySummary() {
   });
 
   if (records.length === 0) {
-    alert("No hay registros en los días seleccionados.");
+    showCustomAlert("No hay registros en los días seleccionados.");
+    return;
     return;
   }
 
@@ -603,14 +665,15 @@ function generateWeeklySummary() {
   html += "<table>";
   html +=
     "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acción</th></tr>";
-  records.forEach((r, idx) => {
+  records.forEach((r) => {
+    const historyIndex = history.indexOf(r);
     html += "<tr>";
     html += "<td>" + r.date + "</td>";
     html += "<td>" + (r.fundo || "-") + "</td>";
     html += "<td>" + (r.labor || "-") + "</td>";
     html += "<td>" + (r.quantity || "-") + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-    html += `<td><button type="button" class="btn-delete-weekly" data-index="${history.indexOf(r)}">🗑️</button></td>`;
+    html += `<td><button type="button" class="btn-delete-weekly" data-id="${r.id ?? ""}" data-date="${r.date}" data-rut="${r.rut}" data-labor="${r.labor}" data-quantity="${r.quantity}" data-total="${r.total}" data-fundo="${r.fundo || ""}" data-history-index="${historyIndex}">🗑️</button></td>`;
     html += "</tr>";
     total += r.total;
   });
@@ -661,8 +724,24 @@ function generateWeeklySummary() {
   // Botón eliminar por fila
   document.querySelectorAll(".btn-delete-weekly").forEach((btn) => {
     btn.addEventListener("click", function () {
-      const idx = this.getAttribute("data-index");
-      deleteFromWeeklySummary(Number(idx));
+      const id = this.getAttribute("data-id");
+      const date = this.getAttribute("data-date");
+      const rut = this.getAttribute("data-rut");
+      const labor = this.getAttribute("data-labor");
+      const quantity = this.getAttribute("data-quantity");
+      const total = this.getAttribute("data-total");
+      const fundo = this.getAttribute("data-fundo");
+      const historyIndex = this.getAttribute("data-history-index");
+      deleteFromWeeklySummary({
+        id,
+        date,
+        rut,
+        labor,
+        quantity,
+        total,
+        fundo,
+        historyIndex,
+      });
     });
   });
   // Botón eliminar todos
@@ -679,18 +758,14 @@ function generateWeeklySummary() {
       const worker = workers[workerIndex];
 
       let selectedDates = Array.from(window.selectedDays || []);
-      if (
-        !confirm(
-          "¿Seguro que deseas eliminar TODOS los registros de este trabajador? Esta acción no se puede deshacer.",
-        )
-      )
-        return;
+      const ok = await showCustomConfirm(
+        "¿Seguro que deseas eliminar TODOS los registros de este trabajador? Esta acción no se puede deshacer.",
+      );
+
+      if (!ok) return;
       let deleted = 0;
       for (let i = history.length - 1; i >= 0; i--) {
-        if (
-          history[i].rut === worker.rut &&
-          selectedDates.includes(history[i].date)
-        ) {
+        if (history[i].rut === worker.rut) {
           if (history[i].id && typeof supabaseClient?.from === "function") {
             try {
               await supabaseClient
@@ -704,8 +779,12 @@ function generateWeeklySummary() {
         }
       }
       localStorage.setItem("history", JSON.stringify(history));
-      alert("Registros eliminados: " + deleted);
-      renderWeeklySummary();
+      await showCustomAlert(`Registros eliminados: ${deleted}`);
+
+      document.getElementById("weeklyResult").innerHTML =
+        "<p>No hay registros para mostrar.</p>";
+
+      generateWeeklySummary();
     });
   }
   // Botón pagar

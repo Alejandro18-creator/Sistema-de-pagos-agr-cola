@@ -6,25 +6,34 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    show: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      backgroundThrottling: false,
     },
   });
 
   win.loadFile("index.html");
+
+  win.on("blur", () => {
+    console.log("VENTANA PERDIÓ FOCO");
+  });
+
+  win.on("focus", () => {
+    console.log("VENTANA RECUPERÓ FOCO");
+  });
 
   // 🔹 Limpiar caché solo cuando se necesite depurar cambios forzados
   if (process.env.CLEAR_CACHE_ON_START === "1") {
     win.webContents.session.clearCache();
   }
 
-  // 🔹 Mostrar y enfocar la ventana cuando esté lista para evitar problemas de foco
-  win.once("ready-to-show", () => {
-    win.show();
-    win.focus();
-  });
+  // // 🔹 Mostrar y enfocar la ventana cuando esté lista para evitar problemas de foco
+  // win.once("ready-to-show", () => {
+  //   win.show();
+  //   win.focus();
+  // });
 
   // IPC para exportar contrato a PDF y abrirlo
   ipcMain.handle("export-contract-pdf", async (event, options) => {
