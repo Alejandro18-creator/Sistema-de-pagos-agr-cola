@@ -2777,16 +2777,6 @@ function closeFloatingUi() {
     productionModal.remove();
   }
 
-  // Restaurar el foco al primer input visible en la vista activa
-  const activeView = document.querySelector(".view:not(.hidden)");
-  if (activeView) {
-    const input = activeView.querySelector(
-      'input:not([type="hidden"]):not([disabled])',
-    );
-    if (input && !document.activeElement?.matches("input, textarea, select")) {
-      input.focus();
-    }
-  }
 }
 
 function showView(id) {
@@ -2822,6 +2812,10 @@ document.addEventListener("visibilitychange", () => {
 document.addEventListener("pointerdown", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
+
+  // No intervenir clicks sobre botones para no romper acciones críticas
+  // (ej: inactivar trabajador) ni provocar scroll al inicio.
+  if (target.closest("button")) return;
 
   const clickedInsideFloatingUi = target.closest(
     ".worker-search, .mandante-search, #productionConfirmModal, .custom-modal-overlay, .custom-modal-box",
