@@ -928,11 +928,11 @@ async function addWorker() {
     }
   }
 
-  // saveLocalDataDebounced();
+  saveLocalDataDebounced();
 
-  // clearWorkerForm();
-  // loadWorkers();
-  // renderWorkersTable();
+  clearWorkerForm();
+  loadWorkers();
+  renderWorkersTable();
 
   if (workerCloudSaved) {
     showCustomAlert("✅ Guardado en Supabase OK");
@@ -2746,7 +2746,16 @@ window.onload = function () {
 };
 
 function focusFirstFieldInView() {
-  return;
+  const activeView = document.querySelector(".view:not(.hidden)");
+  if (!activeView) return;
+
+  const firstField = activeView.querySelector(
+    'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])',
+  );
+
+  if (firstField && typeof firstField.focus === "function") {
+    firstField.focus();
+  }
 }
 
 function closeFloatingUi() {
@@ -2887,12 +2896,11 @@ async function deleteWorker() {
 
   const worker = workers[index];
 
-  if (
-    !confirm(
-      `¿Está seguro de inactivar a ${worker.name}? El trabajador quedará inactivo y no aparecerá en las listas.`,
-    )
-  )
-    return;
+  const ok = await showCustomConfirm(
+    `¿Está seguro de inactivar a ${worker.name}? El trabajador quedará inactivo y no aparecerá en las listas.`,
+  );
+
+  if (!ok) return;
 
   // 🔹 1. Marcar inactivo en Supabase
   const { error } = await supabaseClient

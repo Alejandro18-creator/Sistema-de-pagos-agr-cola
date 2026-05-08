@@ -25,19 +25,42 @@ function clearWeeklySearch() {
 }
 // 🗑️ ELIMINAR DESDE RESUMEN SEMANAL
 // =============================
-async function deleteFromWeeklySummary({ id, date, rut, labor }) {
+async function deleteFromWeeklySummary({
+  id,
+  date,
+  rut,
+  labor,
+  quantity,
+  total,
+  fundo,
+  historyIndex,
+}) {
   const ok = await showCustomConfirm("¿Está seguro de eliminar este registro?");
   if (!ok) return;
 
   // Buscar el índice del registro en el array local
   let index = -1;
+  const parsedIndex = Number(historyIndex);
+  if (
+    Number.isInteger(parsedIndex) &&
+    parsedIndex >= 0 &&
+    parsedIndex < history.length
+  ) {
+    index = parsedIndex;
+  }
   if (id && id !== "undefined" && id !== "") {
     index = history.findIndex((r) => r.id == id);
   }
   if (index === -1) {
-    // Fallback: buscar por rut+date+labor
+    // Fallback: buscar por todos los datos visibles de la fila
     index = history.findIndex(
-      (r) => r.rut === rut && r.date === date && r.labor === labor,
+      (r) =>
+        r.rut === rut &&
+        r.date === date &&
+        r.labor === labor &&
+        Number(r.quantity) === Number(quantity) &&
+        Number(r.total) === Number(total) &&
+        (r.fundo || "") === (fundo || ""),
     );
   }
   if (index === -1 || !history[index]) {
@@ -59,13 +82,21 @@ async function deleteFromWeeklySummary({ id, date, rut, labor }) {
       return;
     }
   } else if (record.rut && record.date) {
-    // Fallback: eliminar por rut+date+labor si no hay id
-    const { error } = await supabaseClient
+    // Fallback: eliminar por datos completos de la fila cuando no hay id
+    let deleteQuery = supabaseClient
       .from("history")
       .delete()
       .eq("rut", record.rut)
       .eq("date", record.date)
-      .eq("labor", record.labor);
+      .eq("labor", record.labor)
+      .eq("quantity", Number(record.quantity))
+      .eq("total", Number(record.total));
+
+    if (record.fundo) {
+      deleteQuery = deleteQuery.eq("fundo", record.fundo);
+    }
+
+    const { error } = await deleteQuery;
     if (error) {
       console.error("Error eliminando en Supabase:", error.message);
       alert("Error al eliminar en la base de datos.");
@@ -634,14 +665,15 @@ function generateWeeklySummary() {
   html += "<table>";
   html +=
     "<tr><th>Fecha</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Acción</th></tr>";
-  records.forEach((r, idx) => {
+  records.forEach((r) => {
+    const historyIndex = history.indexOf(r);
     html += "<tr>";
     html += "<td>" + r.date + "</td>";
     html += "<td>" + (r.fundo || "-") + "</td>";
     html += "<td>" + (r.labor || "-") + "</td>";
     html += "<td>" + (r.quantity || "-") + "</td>";
     html += "<td>$" + Number(r.total).toLocaleString("es-CL") + "</td>";
-    html += `<td><button type="button" class="btn-delete-weekly" data-id="${r.id ?? ""}" data-date="${r.date}" data-rut="${r.rut}" data-labor="${r.labor}">🗑️</button></td>`;
+    html += `<td><button type="button" class="btn-delete-weekly" data-id="${r.id ?? ""}" data-date="${r.date}" data-rut="${r.rut}" data-labor="${r.labor}" data-quantity="${r.quantity}" data-total="${r.total}" data-fundo="${r.fundo || ""}" data-history-index="${historyIndex}">🗑️</button></td>`;
     html += "</tr>";
     total += r.total;
   });
@@ -696,7 +728,20 @@ function generateWeeklySummary() {
       const date = this.getAttribute("data-date");
       const rut = this.getAttribute("data-rut");
       const labor = this.getAttribute("data-labor");
-      deleteFromWeeklySummary({ id, date, rut, labor });
+      const quantity = this.getAttribute("data-quantity");
+      const total = this.getAttribute("data-total");
+      const fundo = this.getAttribute("data-fundo");
+      const historyIndex = this.getAttribute("data-history-index");
+      deleteFromWeeklySummary({
+        id,
+        date,
+        rut,
+        labor,
+        quantity,
+        total,
+        fundo,
+        historyIndex,
+      });
     });
   });
   // Botón eliminar todos
@@ -713,18 +758,14 @@ function generateWeeklySummary() {
       const worker = workers[workerIndex];
 
       let selectedDates = Array.from(window.selectedDays || []);
-      if (
-        !confirm(
-          "¿Seguro que deseas eliminar TODOS los registros de este trabajador? Esta acción no se puede deshacer.",
-        )
-      )
-        return;
+      const ok = await showCustomConfirm(
+        "¿Seguro que deseas eliminar TODOS los registros de este trabajador? Esta acción no se puede deshacer.",
+      );
+
+      if (!ok) return;
       let deleted = 0;
       for (let i = history.length - 1; i >= 0; i--) {
-        if (
-          history[i].rut === worker.rut &&
-          selectedDates.includes(history[i].date)
-        ) {
+        if (history[i].rut === worker.rut) {
           if (history[i].id && typeof supabaseClient?.from === "function") {
             try {
               await supabaseClient
@@ -738,8 +779,12 @@ function generateWeeklySummary() {
         }
       }
       localStorage.setItem("history", JSON.stringify(history));
-      alert("Registros eliminados: " + deleted);
-      renderWeeklySummary();
+      await showCustomAlert(`Registros eliminados: ${deleted}`);
+
+      document.getElementById("weeklyResult").innerHTML =
+        "<p>No hay registros para mostrar.</p>";
+
+      generateWeeklySummary();
     });
   }
   // Botón pagar
