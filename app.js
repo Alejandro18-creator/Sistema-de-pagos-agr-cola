@@ -2759,6 +2759,11 @@ function focusFirstFieldInView() {
 }
 
 function closeFloatingUi() {
+  // Si hay un modal personalizado abierto, no robar foco ni forzar scroll.
+  if (document.querySelector(".custom-modal-overlay")) {
+    return;
+  }
+
   // Cierra listas de búsqueda flotantes que pueden quedar sobre inputs.
   document
     .querySelectorAll(".worker-search-list, .mandante-worker-list")
@@ -2819,7 +2824,7 @@ document.addEventListener("pointerdown", (event) => {
   if (!(target instanceof Element)) return;
 
   const clickedInsideFloatingUi = target.closest(
-    ".worker-search, .mandante-search, #productionConfirmModal",
+    ".worker-search, .mandante-search, #productionConfirmModal, .custom-modal-overlay, .custom-modal-box",
   );
 
   if (!clickedInsideFloatingUi) {
@@ -2890,7 +2895,7 @@ async function deleteWorker() {
   const index = document.getElementById("workerEditSelect").value;
 
   if (index === "") {
-    alert("Seleccione un trabajador para inactivar.");
+    await showCustomAlert("Seleccione un trabajador para inactivar.");
     return;
   }
 
@@ -2910,7 +2915,7 @@ async function deleteWorker() {
 
   if (error) {
     console.error("Error actualizando trabajador en Supabase:", error.message);
-    alert("Error al actualizar en la base de datos.");
+    await showCustomAlert("Error al actualizar en la base de datos.");
     return;
   }
 
@@ -2923,7 +2928,7 @@ async function deleteWorker() {
   renderWorkersTable();
   clearWorkerForm();
 
-  alert(`Trabajador ${worker.name} marcado como inactivo.`);
+  await showCustomAlert(`Trabajador ${worker.name} marcado como inactivo.`);
 }
 
 function exportData() {

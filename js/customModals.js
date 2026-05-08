@@ -14,7 +14,7 @@ function showCustomAlert(message, options = {}) {
     `;
     document.body.appendChild(modal);
     const okBtn = modal.querySelector(".custom-modal-ok");
-    okBtn.focus();
+    okBtn.focus({ preventScroll: true });
     okBtn.onclick = () => {
       modal.remove();
       resolve();
@@ -45,7 +45,7 @@ function showCustomConfirm(message, options = {}) {
     document.body.appendChild(modal);
     const okBtn = modal.querySelector(".custom-modal-ok");
     const cancelBtn = modal.querySelector(".custom-modal-cancel");
-    okBtn.focus();
+    okBtn.focus({ preventScroll: true });
     okBtn.onclick = () => {
       modal.remove();
       resolve(true);
@@ -85,7 +85,7 @@ function showCustomPrompt(message, defaultValue = "", options = {}) {
     const input = modal.querySelector(".custom-modal-input");
     const okBtn = modal.querySelector(".custom-modal-ok");
     const cancelBtn = modal.querySelector(".custom-modal-cancel");
-    input.focus();
+    input.focus({ preventScroll: true });
     okBtn.onclick = () => {
       const value = input.value;
       modal.remove();

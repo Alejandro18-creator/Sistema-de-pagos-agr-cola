@@ -286,5 +286,13 @@ window.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("click", clearWorkerForm);
   document
     .getElementById("btnDeleteWorker")
-    ?.addEventListener("click", deleteWorker);
+    ?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const prevX = window.scrollX;
+      const prevY = window.scrollY;
+      await deleteWorker();
+      window.scrollTo(prevX, prevY);
+    });
 });
