@@ -32,10 +32,6 @@ const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
 
 let supabaseClient = null;
 
-if (window.supabase) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
-
 let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
 let labors = JSON.parse(localStorage.getItem("labors")) || [];
@@ -43,6 +39,179 @@ let history = JSON.parse(localStorage.getItem("history")) || [];
 let fundos = JSON.parse(localStorage.getItem("fundos")) || [];
 let isGeneratingFiniquito = false;
 let isSyncInProgress = false;
+let supabaseReachabilityCache = {
+  checkedAt: 0,
+  ok: true,
+  errorMessage: "",
+};
+let cloudUnavailableNoticeShown = false;
+
+function getReadableSupabaseErrorMessage(error, fallbackMessage) {
+  const rawMessage =
+    error?.message || error?.error_description || error?.details || "";
+  const normalizedMessage = String(rawMessage).toLowerCase();
+
+  if (!rawMessage) {
+    return fallbackMessage;
+  }
+
+  if (
+    normalizedMessage.includes("bucket") &&
+    normalizedMessage.includes("not found")
+  ) {
+    return "El bucket worker-files no existe o no está accesible.";
+  }
+
+  if (
+    normalizedMessage.includes("row-level security") ||
+    normalizedMessage.includes("permission") ||
+    normalizedMessage.includes("unauthorized") ||
+    normalizedMessage.includes("forbidden")
+  ) {
+    return "Supabase rechazó la operación por permisos o políticas RLS.";
+  }
+
+  if (
+    normalizedMessage.includes("network") ||
+    normalizedMessage.includes("fetch") ||
+    normalizedMessage.includes("failed to fetch")
+  ) {
+    return "No se pudo conectar con Supabase. Revise internet o CSP.";
+  }
+
+  return rawMessage;
+}
+
+async function ensureSupabaseReachable(force = false) {
+  if (!navigator.onLine) {
+    return {
+      ok: false,
+      errorMessage:
+        "Sin conexión a internet. No se puede contactar a Supabase.",
+    };
+  }
+
+  const now = Date.now();
+  if (!force && now - supabaseReachabilityCache.checkedAt < 15000) {
+    return {
+      ok: supabaseReachabilityCache.ok,
+      errorMessage: supabaseReachabilityCache.errorMessage,
+    };
+  }
+
+  try {
+    await fetch(SUPABASE_URL + "/rest/v1/", {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+      },
+      cache: "no-store",
+    });
+
+    supabaseReachabilityCache = {
+      checkedAt: now,
+      ok: true,
+      errorMessage: "",
+    };
+
+    return { ok: true, errorMessage: "" };
+  } catch (error) {
+    const message = getReadableSupabaseErrorMessage(
+      error,
+      "No se pudo contactar a Supabase.",
+    );
+    const detailedMessage =
+      message === "No se pudo conectar con Supabase. Revise internet o CSP."
+        ? "No se pudo resolver o contactar el dominio de Supabase. Revise DNS, internet o firewall."
+        : message;
+
+    supabaseReachabilityCache = {
+      checkedAt: now,
+      ok: false,
+      errorMessage: detailedMessage,
+    };
+
+    return { ok: false, errorMessage: detailedMessage };
+  }
+}
+
+async function notifyCloudUnavailableOnce(message) {
+  if (cloudUnavailableNoticeShown || !message) return;
+  cloudUnavailableNoticeShown = true;
+
+  const fullMessage =
+    "No se pudo conectar con la nube. La app seguirá funcionando en modo local. " +
+    message;
+
+  if (typeof showCustomAlert === "function") {
+    await showCustomAlert(fullMessage);
+    return;
+  }
+
+  alert(fullMessage);
+}
+
+function getStorageClientOrError() {
+  if (!navigator.onLine) {
+    return {
+      ok: false,
+      errorMessage:
+        "Sin conexión a internet. El archivo quedó solo en esta sesión local.",
+    };
+  }
+
+  if (!supabaseClient?.storage) {
+    return {
+      ok: false,
+      errorMessage: "Supabase Storage no está inicializado en la app.",
+    };
+  }
+
+  return { ok: true, storage: supabaseClient.storage };
+}
+
+async function uploadFileToWorkerStorage(filePath, fileBody, contentType) {
+  const storageState = getStorageClientOrError();
+  if (!storageState.ok) {
+    return { ok: false, errorMessage: storageState.errorMessage };
+  }
+
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    return { ok: false, errorMessage: reachability.errorMessage };
+  }
+
+  try {
+    const { error } = await storageState.storage
+      .from("worker-files")
+      .upload(filePath, fileBody, {
+        upsert: true,
+        ...(contentType ? { contentType } : {}),
+      });
+
+    if (error) {
+      return {
+        ok: false,
+        errorMessage: getReadableSupabaseErrorMessage(
+          error,
+          "No fue posible subir el archivo a Supabase.",
+        ),
+        error,
+      };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      errorMessage: getReadableSupabaseErrorMessage(
+        error,
+        "Ocurrió un error inesperado al subir el archivo.",
+      ),
+      error,
+    };
+  }
+}
 
 // =============================
 // 📊 TABLA INTERNA AFP (COMISIONES)
@@ -66,23 +235,34 @@ const AFP_BASE = 0.1; // 10%
 // =============================
 
 async function saveWorkerToCloud(worker) {
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    return { ok: false, errorMessage: reachability.errorMessage };
+  }
+
   const { error } = await supabaseClient.from("workers").insert([worker]);
 
   if (error) {
     if (error.message.includes("duplicate key")) {
       alert("Este RUT ya está registrado.");
-      return;
+      return { ok: false, errorMessage: error.message };
     }
     console.error("Error guardando en nube:", error.message);
     alert("Error guardando trabajador.");
+    return { ok: false, errorMessage: error.message };
   } else {
     console.log("Trabajador guardado en Supabase");
+    return { ok: true };
   }
 }
 
 async function saveProductionToCloud(record) {
   if (!supabaseClient) {
     return { ok: false, errorMessage: "Sin conexión a Supabase" };
+  }
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    return { ok: false, errorMessage: reachability.errorMessage };
   }
   const { data, error } = await supabaseClient
     .from("history")
@@ -105,6 +285,11 @@ async function saveProductionToCloud(record) {
 async function updateProductionInCloud(recordId, record) {
   if (!supabaseClient) {
     return { ok: false, errorMessage: "Sin conexión a Supabase" };
+  }
+
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    return { ok: false, errorMessage: reachability.errorMessage };
   }
 
   if (!recordId) {
@@ -132,6 +317,11 @@ async function updateProductionInCloud(recordId, record) {
 
 async function loadWorkersFromCloud() {
   if (!supabaseClient) return;
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    console.warn("Error cargando trabajadores:", reachability.errorMessage);
+    return;
+  }
   const { data, error } = await supabaseClient.from("workers").select("*");
   console.log("DATA:", data);
 
@@ -469,6 +659,21 @@ async function syncPendingLocalDataBeforeCloudDownload() {
     return { ok: true, failedHistory: 0, failedWorkers: 0 };
   }
 
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    console.warn(
+      "[syncPendingLocalDataBeforeCloudDownload] Supabase no alcanzable:",
+      reachability.errorMessage,
+    );
+    return {
+      ok: false,
+      failedHistory: 0,
+      failedWorkers: 0,
+      errorMessage: reachability.errorMessage,
+      reason: "supabase_unreachable",
+    };
+  }
+
   const hasPendingWorkers = (workers || []).some(
     (worker) => worker?.pending === true,
   );
@@ -747,6 +952,12 @@ async function initSystem() {
           );
           await loadHistoryFromCloud();
           console.log("[initSystem] Sincronización completa.");
+        } else if (pendingSyncResult.reason === "supabase_unreachable") {
+          console.warn(
+            "[initSystem] Se omite sincronización con nube:",
+            pendingSyncResult.errorMessage,
+          );
+          await notifyCloudUnavailableOnce(pendingSyncResult.errorMessage);
         } else {
           console.error(
             "[initSystem] Error en sincronización de pendientes:",
@@ -831,13 +1042,11 @@ async function addWorker() {
     const fileName = Date.now() + "_" + file.name;
     const filePath = rut + "/" + fileName;
 
-    const { error: uploadError } = await supabaseClient.storage
-      .from("worker-files")
-      .upload(filePath, file);
+    const uploadResult = await uploadFileToWorkerStorage(filePath, file);
 
-    console.log("UPLOAD ERROR:", uploadError);
+    console.log("UPLOAD ERROR:", uploadResult.error);
 
-    if (!uploadError) {
+    if (uploadResult.ok) {
       const publicUrlData = supabaseClient.storage
         .from("worker-files")
         .getPublicUrl(filePath);
@@ -845,7 +1054,8 @@ async function addWorker() {
       photoUrl = publicUrlData.data.publicUrl;
       console.log("PHOTO URL GENERADA:", photoUrl);
     } else {
-      console.error("Error subiendo imagen:", uploadError);
+      console.error("Error subiendo imagen:", uploadResult.error);
+      alert("No se pudo subir la imagen del trabajador. " + uploadResult.errorMessage);
     }
   }
 
@@ -917,11 +1127,11 @@ async function addWorker() {
 
     workers.push(newWorker);
 
-    const { error } = await supabaseClient.from("workers").insert([newWorker]);
+    const cloudSaveResult = await saveWorkerToCloud(newWorker);
 
-    if (error) {
-      console.error("Error guardando en nube:", error.message);
-      workerCloudErrorMessage = error.message || "Error guardando en Supabase.";
+    if (!cloudSaveResult?.ok) {
+      workerCloudErrorMessage =
+        cloudSaveResult?.errorMessage || "Error guardando en Supabase.";
     } else {
       console.log("Trabajador guardado en Supabase");
       workerCloudSaved = true;
@@ -934,16 +1144,7 @@ async function addWorker() {
   loadWorkers();
   renderWorkersTable();
 
-  if (workerCloudSaved) {
-    showCustomAlert("✅ Guardado en Supabase OK");
-  } else {
-    alert(
-      "⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.",
-    );
-    if (workerCloudErrorMessage) {
-      console.error("Detalle Supabase:", workerCloudErrorMessage);
-    }
-  }
+  showCustomAlert("✅ Trabajador guardado correctamente");
 }
 // =============================
 // 📋 SELECTS
@@ -1820,16 +2021,17 @@ async function generateLiquidation() {
 
   // ===== SUBIR A SUPABASE =====
 
-  const { error } = await supabaseClient.storage
-    .from("worker-files")
-    .upload(filePath, pdfBlob, {
-      contentType: "application/pdf",
-      upsert: true,
-    });
+  const uploadResult = await uploadFileToWorkerStorage(
+    filePath,
+    pdfBlob,
+    "application/pdf",
+  );
 
-  if (error) {
-    console.error("Error subiendo liquidación:", error);
-    alert("⚠️ No se guardó en nube la liquidación.");
+  if (!uploadResult.ok) {
+    console.error("Error subiendo liquidación:", uploadResult.error);
+    alert(
+      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
+    );
   } else {
     console.log("Liquidación guardada en Supabase");
     alert("✅ Liquidación guardada en Supabase OK");
@@ -2240,7 +2442,7 @@ async function generateContract() {
   document.getElementById("c_birthDate").textContent =
     worker.birthDate || "____ / ____ / ____";
 
-  alert("Contrato completado correctamente.");
+  await showCustomAlert("Contrato completado correctamente.");
 
   const contractContainer = document.getElementById("contractPrint");
   const pdfBlob = await createPdfBlobFromHtml(contractContainer.outerHTML, {
@@ -2294,16 +2496,17 @@ async function generateContract() {
 
   const filePath = worker.rut + "/" + fileName;
 
-  const { error } = await supabaseClient.storage
-    .from("worker-files")
-    .upload(filePath, pdfBlob, {
-      contentType: "application/pdf",
-      upsert: true,
-    });
+  const uploadResult = await uploadFileToWorkerStorage(
+    filePath,
+    pdfBlob,
+    "application/pdf",
+  );
 
-  if (error) {
-    console.error("Error subiendo contrato:", error);
-    alert("⚠️ No se guardó en nube el contrato.");
+  if (!uploadResult.ok) {
+    console.error("Error subiendo contrato:", uploadResult.error);
+    alert(
+      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
+    );
   } else {
     console.log("Contrato guardado en Supabase");
     showCustomAlert("✅ Contrato guardado en Supabase OK");
@@ -2491,16 +2694,17 @@ async function generateFiniquito() {
 
     const filePath = worker.rut + "/" + fileName;
 
-    const { error } = await supabaseClient.storage
-      .from("worker-files")
-      .upload(filePath, pdfBlob, {
-        contentType: "application/pdf",
-        upsert: true,
-      });
+    const uploadResult = await uploadFileToWorkerStorage(
+      filePath,
+      pdfBlob,
+      "application/pdf",
+    );
 
-    if (error) {
-      console.error("Error subiendo finiquito:", error);
-      alert("⚠️ No se guardó en nube el finiquito.");
+    if (!uploadResult.ok) {
+      console.error("Error subiendo finiquito:", uploadResult.error);
+      alert(
+        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
+      );
     } else {
       console.log("Finiquito guardado en Supabase");
       showCustomAlert("✅ Finiquito guardado en Supabase OK");
@@ -2747,7 +2951,9 @@ window.onload = function () {
 
 function focusFirstFieldInView() {
   const activeView = document.querySelector(".view:not(.hidden)");
-  if (!activeView) return;
+  if (!activeView) {
+    // ...existing code...
+  }
 
   const firstField = activeView.querySelector(
     'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])',
@@ -2776,7 +2982,6 @@ function closeFloatingUi() {
   if (productionModal) {
     productionModal.remove();
   }
-
 }
 
 function showView(id) {
@@ -2910,7 +3115,7 @@ async function deleteWorker() {
   if (error) {
     console.error("Error actualizando trabajador en Supabase:", error.message);
     await showCustomAlert("Error al actualizar en la base de datos.");
-    return;
+    // ...existing code...
   }
 
   // 🔹 2. Marcar inactivo local
@@ -2952,6 +3157,15 @@ function exportData() {
 }
 
 async function syncToCloud(showAlerts = false) {
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    if (showAlerts) alert("Error al sincronizar. " + reachability.errorMessage);
+    return {
+      ok: false,
+      errorMessage: reachability.errorMessage,
+    };
+  }
+
   try {
     let workerSuccess = 0;
     let workerErrors = 0;
@@ -3008,7 +3222,10 @@ async function syncToCloud(showAlerts = false) {
   } catch (err) {
     console.error(err);
     if (showAlerts) alert("Error al sincronizar.");
+    return { ok: false, errorMessage: err?.message || "Error al sincronizar." };
   }
+
+  return { ok: true };
 }
 
 // Sincronización automática robusta al detectar conexión a internet o al cargar la app
@@ -3034,6 +3251,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
 async function syncFromCloud() {
   if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
+
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    alert("Error descargando datos. " + reachability.errorMessage);
+    return;
+  }
 
   try {
     // ===== TRABAJADORES =====
@@ -3747,13 +3970,11 @@ async function uploadWorkerDocument() {
 
   const filePath = rut + "/" + Date.now() + "_" + file.name;
 
-  const { error } = await supabaseClient.storage
-    .from("worker-files")
-    .upload(filePath, file);
+  const uploadResult = await uploadFileToWorkerStorage(filePath, file);
 
-  if (error) {
-    console.error(error);
-    alert("Error subiendo archivo.");
+  if (!uploadResult.ok) {
+    console.error(uploadResult.error);
+    alert("Error subiendo archivo. " + uploadResult.errorMessage);
     return;
   }
 
@@ -3762,11 +3983,21 @@ async function uploadWorkerDocument() {
   loadWorkerDocuments(rut);
 }
 async function loadWorkerDocuments(rut) {
+  const container = document.getElementById("workerDocuments");
+  if (!container) return;
+
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    container.innerHTML =
+      "<p>No se pudieron cargar documentos desde la nube. " +
+      reachability.errorMessage +
+      "</p>";
+    return;
+  }
+
   const { data, error } = await supabaseClient.storage
     .from("worker-files")
     .list(rut);
-
-  const container = document.getElementById("workerDocuments");
 
   if (error) {
     console.error(error);
@@ -3819,7 +4050,16 @@ async function loadWorkerDocuments(rut) {
   });
 }
 async function deleteWorkerDocument(rut, fileName) {
-  if (!confirm("¿Eliminar este documento?")) return;
+  const confirmed = await showCustomConfirm("¿Eliminar este documento?");
+  if (!confirmed) return;
+
+  const reachability = await ensureSupabaseReachable();
+  if (!reachability.ok) {
+    await showCustomAlert(
+      "Error eliminando documento. " + reachability.errorMessage,
+    );
+    return;
+  }
 
   const { error } = await supabaseClient.storage
     .from("worker-files")
@@ -3827,11 +4067,11 @@ async function deleteWorkerDocument(rut, fileName) {
 
   if (error) {
     console.error(error);
-    alert("Error eliminando documento.");
+    await showCustomAlert("Error eliminando documento.");
     return;
   }
 
-  alert("Documento eliminado.");
+  await showCustomAlert("Documento eliminado.");
 
   loadWorkerDocuments(rut);
 }

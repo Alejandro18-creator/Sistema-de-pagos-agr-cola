@@ -1,0 +1,8 @@
+{
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": null,
+  "[javascript]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  }
+}

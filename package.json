@@ -12,7 +12,8 @@
   "type": "commonjs",
   "devDependencies": {
     "electron": "^40.8.0",
-    "electron-builder": "^26.8.1"
+    "electron-builder": "^26.8.1",
+    "prettier": "^3.8.3"
   },
   "build": {
     "appId": "com.sangeronimo.sistemaagricola",
