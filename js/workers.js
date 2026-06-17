@@ -59,19 +59,12 @@ function clearWorkerInputs() {
   document.getElementById("workerPosition").value =
     ""; /*Restablecer el valor del campo de posición del trabajador a vacío.*/
 }
-function loadWorkerToEdit() {
-  const index =
-    document.getElementById(
-      "workerEditSelect",
-    ).value; /*Obtener el valor seleccionado en el select de edición, que corresponde al índice del trabajador a editar.*/
+function loadWorkerToEdit(index) {
+  if (index === undefined || index === null || index === "") return;
 
-  if (index === "")
-    return; /*Si no se ha seleccionado ningún trabajador (índice vacío), salir de la función sin hacer nada.*/
+  const worker = workers[index];
+  if (!worker) return;
 
-  const worker =
-    workers[
-      index
-    ]; /*Obtener el objeto del trabajador correspondiente al índice seleccionado en el array de trabajadores.*/
   const editSearch =
     document.getElementById(
       "searchWorkerEdit",
@@ -433,12 +426,12 @@ function filterWorkersEdit() {
     div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
 
     div.onclick = () => {
-      const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
+      const originalIndex = workers.indexOf(worker);
+      hiddenSelect.value = originalIndex;
       searchInput.value = worker.name || "";
       list.style.display = "none";
       list.innerHTML = "";
-      loadWorkerToEdit();
+      loadWorkerToEdit(originalIndex);
     };
 
     list.appendChild(div);

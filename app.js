@@ -29,8 +29,16 @@ console.log("APP VERSION 2");
 
 const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
 const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
+const USE_SUPABASE = false;
 
 let supabaseClient = null;
+if (
+  USE_SUPABASE &&
+  window.supabase &&
+  typeof window.supabase.createClient === "function"
+) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 let editProductionIndex = null;
 let workers = JSON.parse(localStorage.getItem("workers")) || [];
@@ -235,6 +243,10 @@ const AFP_BASE = 0.1; // 10%
 // =============================
 
 async function saveWorkerToCloud(worker) {
+  if (!USE_SUPABASE || !supabaseClient) {
+    return { ok: false, errorMessage: "Modo local: Supabase deshabilitado." };
+  }
+
   const reachability = await ensureSupabaseReachable();
   if (!reachability.ok) {
     return { ok: false, errorMessage: reachability.errorMessage };
@@ -1020,16 +1032,13 @@ async function addWorker() {
     .replace(/\./g, "");
 
   let photoUrl = null;
-  let workerCloudSaved = false;
-  let workerCloudErrorMessage = "";
-
   if (!name || !rut) {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
   // 🔹 VALIDAR RUT DUPLICADO
   const rutIndex = workers.findIndex((w) => w.rut === rut);
-  if (rutIndex !== -1 && rutIndex !== editIndexWorker) {
+  if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
     // await showCustomAlert("Este trabajador o RUT ya existe.");
     console.warn("Trabajador duplicado");
     return;
@@ -1037,7 +1046,7 @@ async function addWorker() {
 
   // 🔹 Subir imagen si existe
   const fileInput = document.getElementById("workerIdPhoto");
-  if (fileInput && fileInput.files.length > 0) {
+  if (USE_SUPABASE && fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const fileName = Date.now() + "_" + file.name;
     const filePath = rut + "/" + fileName;
@@ -1076,32 +1085,26 @@ async function addWorker() {
       id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
     };
     console.log("VALOR FINAL photoUrl:", photoUrl);
-    const { data, error } = await supabaseClient
-      .from("workers")
+    if (USE_SUPABASE && supabaseClient && workers[editIndexWorker]?.id) {
+      const { data, error } = await supabaseClient
+        .from("workers")
+        .update({
+          name,
+          rut,
+          birthDate,
+          maritalStatus,
+          address,
+          afp,
+          health,
+          position,
+          nationality,
+          account_number: account,
+          id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
+        })
+        .eq("id", workers[editIndexWorker].id);
 
-      .update({
-        name,
-        rut,
-        birthDate,
-        maritalStatus,
-        address,
-        afp,
-        health,
-        position,
-        nationality,
-        account_number: account,
-        id_card_photo: photoUrl || workers[editIndexWorker].id_card_photo,
-      })
-      .eq("id", workers[editIndexWorker].id);
-
-    console.log("UPDATE RESULT:", data);
-    console.log("UPDATE ERROR:", error);
-
-    if (error) {
-      workerCloudErrorMessage =
-        error.message || "Error actualizando en Supabase.";
-    } else {
-      workerCloudSaved = true;
+      console.log("UPDATE RESULT:", data);
+      console.log("UPDATE ERROR:", error);
     }
 
     editIndexWorker = null;
@@ -1127,14 +1130,11 @@ async function addWorker() {
 
     workers.push(newWorker);
 
-    const cloudSaveResult = await saveWorkerToCloud(newWorker);
-
-    if (!cloudSaveResult?.ok) {
-      workerCloudErrorMessage =
-        cloudSaveResult?.errorMessage || "Error guardando en Supabase.";
-    } else {
-      console.log("Trabajador guardado en Supabase");
-      workerCloudSaved = true;
+    if (USE_SUPABASE && supabaseClient) {
+      const cloudSaveResult = await saveWorkerToCloud(newWorker);
+      if (cloudSaveResult?.ok) {
+        console.log("Trabajador guardado en Supabase");
+      }
     }
   }
 
