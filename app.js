@@ -29,7 +29,7 @@ console.log("APP VERSION 2");
 
 const SUPABASE_URL = "https://nvqdctmqyziectwswiop.supabase.co";
 const SUPABASE_KEY = "sb_publishable_z5b3f-BE_D5-T_bDFvafBw_I40wDjHa";
-const USE_SUPABASE = false;
+const USE_SUPABASE = true;
 
 let supabaseClient = null;
 if (
