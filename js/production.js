@@ -133,28 +133,28 @@ async function deleteFromWeeklySummary({
   const record = history[index];
 
   if (record.id || (record.rut && record.date)) {
-    const reachability = await ensureSupabaseReachable();
+    const reachability = await ensureStorageReachable();
     if (!reachability.ok) {
       alert('Error al eliminar en la base de datos. ' + reachability.errorMessage);
       return;
     }
   }
 
-  // Eliminar de Supabase si tiene id
+  // Eliminar de almacenamiento local si tiene id
   if (record.id) {
-    const { error } = await supabaseClient
+    const { error } = await storageClient
       .from('history')
       .delete()
       .eq('id', record.id);
 
     if (error) {
-      console.error('Error eliminando en Supabase:', error.message);
+      console.error('Error eliminando en almacenamiento local:', error.message);
       alert('Error al eliminar en la base de datos.');
       return;
     }
   } else if (record.rut && record.date) {
     // Fallback: eliminar por datos completos de la fila cuando no hay id
-    let deleteQuery = supabaseClient
+    let deleteQuery = storageClient
       .from('history')
       .delete()
       .eq('rut', record.rut)
@@ -169,7 +169,7 @@ async function deleteFromWeeklySummary({
 
     const { error } = await deleteQuery;
     if (error) {
-      console.error('Error eliminando en Supabase:', error.message);
+      console.error('Error eliminando en almacenamiento local:', error.message);
       alert('Error al eliminar en la base de datos.');
       return;
     }
@@ -307,7 +307,7 @@ async function registerWork() {
       }
 
       if (cloudSave?.ok) {
-        showCustomAlert('✅ Guardado en Supabase OK');
+        showCustomAlert('✅ Guardado en almacenamiento local OK');
       } else {
         alert(
           '⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.'
@@ -443,20 +443,20 @@ async function payWeekly() {
     r.paid = true;
   });
 
-  // 🔹 Actualizar en Supabase
+  // 🔹 Actualizar en almacenamiento local
   let paidUpdateErrors = 0;
-  const reachability = await ensureSupabaseReachable();
+  const reachability = await ensureStorageReachable();
   const canSyncCloud = reachability.ok;
   for (const record of recordsToPay) {
     if (record.id && canSyncCloud) {
-      const { error } = await supabaseClient
+      const { error } = await storageClient
         .from('history')
         .update({ paid: true })
         .eq('id', record.id);
 
       if (error) {
         paidUpdateErrors += 1;
-        console.error('Error marcando pago en Supabase:', error.message);
+        console.error('Error marcando pago en almacenamiento local:', error.message);
       }
     }
   }
@@ -472,7 +472,7 @@ async function payWeekly() {
 
   let paymentError = null;
   if (canSyncCloud) {
-    const paymentResult = await supabaseClient.from('payments').insert([paymentRecord]);
+    const paymentResult = await storageClient.from('payments').insert([paymentRecord]);
     paymentError = paymentResult.error;
   } else {
     paymentError = { message: reachability.errorMessage };
@@ -485,7 +485,7 @@ async function payWeekly() {
   saveLocalDataDebounced();
 
   if (!paymentError && paidUpdateErrors === 0) {
-    showCustomAlert('✅ Guardado en Supabase OK (pago semanal).');
+    showCustomAlert('✅ Guardado en almacenamiento local OK (pago semanal).');
   } else {
     alert(
       '⚠️ No se guardó completo en nube el pago semanal. ' +
@@ -790,17 +790,17 @@ function generateWeeklySummary() {
 
       if (!ok) return;
       let deleted = 0;
-      const reachability = await ensureSupabaseReachable();
+      const reachability = await ensureStorageReachable();
       const canSyncCloud = reachability.ok;
       for (let i = history.length - 1; i >= 0; i--) {
         if (history[i].rut === worker.rut) {
           if (
             canSyncCloud &&
             history[i].id &&
-            typeof supabaseClient?.from === 'function'
+            typeof storageClient?.from === 'function'
           ) {
             try {
-              await supabaseClient
+              await storageClient
                 .from('history')
                 .delete()
                 .eq('id', history[i].id);
