@@ -37,53 +37,6 @@ let labors = [];
 let history = [];
 let fundos = [];
 
-// Estado global del calendario semanal (requerido por production.js y app.js)
-let currentCalendarDate = new Date();
-let selectedDays = new Set();
-let pendingCalendarMode = false;
-window.selectedDays = selectedDays;
-
-function toggleDay(dateStr) {
-  if (!dateStr) return;
-  if (selectedDays.has(dateStr)) {
-    selectedDays.delete(dateStr);
-  } else {
-    selectedDays.add(dateStr);
-  }
-
-  if (typeof showCalendar === "function") {
-    showCalendar(
-      currentCalendarDate.getFullYear(),
-      currentCalendarDate.getMonth(),
-    );
-  }
-}
-
-function changeMonth(direction) {
-  const year = currentCalendarDate.getFullYear();
-  const month = currentCalendarDate.getMonth();
-
-  if (typeof showCalendar === "function") {
-    showCalendar(year, month + Number(direction || 0));
-  }
-}
-
-function todayDate() {
-  currentCalendarDate = new Date();
-  if (typeof showCalendar === "function") {
-    showCalendar(
-      currentCalendarDate.getFullYear(),
-      currentCalendarDate.getMonth(),
-    );
-  }
-}
-
-function exitPendingCalendar() {
-  pendingCalendarMode = false;
-  const calendar = document.getElementById("calendarContainer");
-  if (calendar) calendar.innerHTML = "";
-}
-
 // ⚠️ Solo llamar explícitamente para un reset total (por ejemplo, botón de limpiar datos).
 // NO llamar al inicio: borra todos los datos persistidos.
 function initializeFreshLocalState() {
@@ -1205,6 +1158,106 @@ async function loginUser() {
 function logout() {
   localStorage.removeItem("sessionActive");
   location.reload();
+}
+
+// =============================
+// ðŸš€ INIT
+// =============================
+async function initSystem() {
+  if (isSyncInProgress) {
+    console.log(
+      "[initSystem] SincronizaciÃ³n ya en curso, se omite llamada duplicada.",
+    );
+    return;
+  }
+
+  isSyncInProgress = true;
+  const syncIndicator = document.getElementById("syncIndicator");
+  console.log("[initSystem] Iniciando sincronizaciÃ³n...");
+
+  const hideSyncIndicator = () => {
+    if (!syncIndicator) return;
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
+  };
+
+  if (localStorage.getItem("sessionActive") !== "true") {
+    hideSyncIndicator();
+    isSyncInProgress = false;
+    return;
+  }
+
+  if (navigator.onLine && storageClient) {
+    if (syncIndicator) {
+      syncIndicator.style.display = "flex";
+      syncIndicator.style.pointerEvents = "none";
+      // Failsafe: nunca dejar bloqueada la UI por sincronizaciÃ³n lenta
+      setTimeout(hideSyncIndicator, 2500);
+    }
+
+    setTimeout(async () => {
+      try {
+        console.log("[initSystem] Sincronizando datos locales pendientes...");
+        const pendingSyncResult =
+          await syncPendingLocalDataBeforeCloudDownload();
+        console.log(
+          "[initSystem] Resultado sync pendientes:",
+          pendingSyncResult,
+        );
+
+        if (pendingSyncResult.ok) {
+          console.log("[initSystem] Descargando trabajadores de la nube...");
+          await loadWorkersFromCloud();
+          console.log("[initSystem] Purga puntual de datos...");
+          await runOneTimeDataPurge();
+
+          console.log(
+            "[initSystem] Descargando historial de la nube (background)...",
+          );
+          await loadHistoryFromCloud();
+          console.log("[initSystem] SincronizaciÃ³n completa.");
+        } else if (pendingSyncResult.reason === "storage_unreachable") {
+          console.warn(
+            "[initSystem] Se omite sincronizaciÃ³n con nube:",
+            pendingSyncResult.errorMessage,
+          );
+          await notifyCloudUnavailableOnce(pendingSyncResult.errorMessage);
+        } else {
+          console.error(
+            "[initSystem] Error en sincronizaciÃ³n de pendientes:",
+            pendingSyncResult,
+          );
+        }
+      } catch (e) {
+        console.error("[initSystem] ExcepciÃ³n:", e);
+      } finally {
+        hideSyncIndicator();
+        isSyncInProgress = false;
+
+        // Forzar repaint en Electron para evitar congelamiento visual
+        if (window.require) {
+          setTimeout(() => {
+            document.body.style.transform = "scale(1)";
+          }, 10);
+        }
+
+        console.log("[initSystem] Overlay de sincronizaciÃ³n oculto.");
+      }
+    }, 0);
+  } else {
+    console.warn("[initSystem] Sin conexiÃ³n o sin storageClient");
+    hideSyncIndicator();
+    isSyncInProgress = false;
+  }
+
+  loadLabors();
+  loadFundos();
+  renderWorkersTable();
+  loadAFPOptions();
+  loadPagosWorkerFilter();
+
 }
 
 // =============================
@@ -3180,6 +3233,25 @@ function generateMonthlyGeneral() {
 // ðŸ” SESIÃ“N
 // =============================
 
+window.onload = function () {
+  if (localStorage.getItem("sessionActive") === "true") {
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    setTimeout(() => {
+      initSystem();
+    }, 0);
+  } else {
+    const syncIndicator = document.getElementById("syncIndicator");
+    if (syncIndicator) {
+      syncIndicator.style.display = "none";
+      syncIndicator.style.visibility = "hidden";
+      syncIndicator.style.pointerEvents = "none";
+      syncIndicator.remove();
+    }
+  }
+};
+
 function focusFirstFieldInView() {
   const activeView = document.querySelector(".view:not(.hidden)");
   if (!activeView) {
@@ -3463,6 +3535,145 @@ function exportData() {
   a.click();
 
   URL.revokeObjectURL(url);
+}
+
+async function syncToCloud(showAlerts = false) {
+  const reachability = await ensureStorageReachable();
+  if (!reachability.ok) {
+    if (showAlerts) alert("Error al sincronizar. " + reachability.errorMessage);
+    return {
+      ok: false,
+      errorMessage: reachability.errorMessage,
+    };
+  }
+
+  try {
+    let workerSuccess = 0;
+    let workerErrors = 0;
+    let historySuccess = 0;
+    let historyErrors = 0;
+
+    // ===== TRABAJADORES =====
+    for (const worker of workers) {
+      const { error } = await storageClient
+        .from("workers")
+        .upsert(worker, { onConflict: "rut" });
+
+      if (error) {
+        console.error("Error subiendo trabajador:", error);
+        workerErrors += 1;
+      } else {
+        workerSuccess += 1;
+      }
+    }
+
+    // ===== HISTORIAL =====
+    for (const record of history) {
+      const { error } = await storageClient.from("history").insert(record);
+
+      if (error) {
+        console.error("Error subiendo producciÃ³n:", error);
+        historyErrors += 1;
+      } else {
+        historySuccess += 1;
+      }
+    }
+
+    if (showAlerts) {
+      if (workerErrors === 0 && historyErrors === 0) {
+        alert(
+          "âœ… Guardado en almacenamiento local OK. Trabajadores: " +
+            workerSuccess +
+            ", ProducciÃ³n: " +
+            historySuccess,
+        );
+      } else {
+        alert(
+          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
+            workerSuccess +
+            ", Trabajadores con error: " +
+            workerErrors +
+            ", ProducciÃ³n OK: " +
+            historySuccess +
+            ", ProducciÃ³n con error: " +
+            historyErrors,
+        );
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    if (showAlerts) alert("Error al sincronizar.");
+    return { ok: false, errorMessage: err?.message || "Error al sincronizar." };
+  }
+
+  return { ok: true };
+}
+
+// SincronizaciÃ³n automÃ¡tica robusta al detectar conexiÃ³n a internet o al cargar la app
+window.addEventListener("online", () => {
+  if (localStorage.getItem("sessionActive") !== "true") return;
+  setTimeout(() => {
+    initSystem();
+  }, 0);
+  console.log(
+    "SincronizaciÃ³n automÃ¡tica con la nube ejecutada (evento online).",
+  );
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const syncIndicator = document.getElementById("syncIndicator");
+  if (localStorage.getItem("sessionActive") !== "true" && syncIndicator) {
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
+  }
+});
+
+async function syncFromCloud() {
+  if (!confirm("Â¿Descargar datos de la nube y reemplazar los locales?")) return;
+
+  const reachability = await ensureStorageReachable();
+  if (!reachability.ok) {
+    alert("Error descargando datos. " + reachability.errorMessage);
+    return;
+  }
+
+  try {
+    // ===== TRABAJADORES =====
+    const { data: workersData, error: workersError } = await storageClient
+      .from("workers")
+      .select("*");
+
+    if (workersError) {
+      console.error("Error descargando trabajadores:", workersError);
+    } else {
+      workers = workersData || [];
+      localStorage.setItem("workers", JSON.stringify(workers));
+    }
+
+    // ===== HISTORIAL =====
+    const { data: historyData, error: historyError } = await storageClient
+      .from("history")
+      .select("*");
+
+    if (historyError) {
+      console.error("Error descargando producciÃ³n:", historyError);
+    } else {
+      history = historyData || [];
+      localStorage.setItem("history", JSON.stringify(history));
+    }
+
+    // ===== REFRESCAR SISTEMA =====
+    loadWorkers();
+    renderWorkersTable();
+    renderHistory();
+
+    alert("Datos descargados correctamente desde la nube.");
+  } catch (err) {
+    console.error(err);
+    alert("Error descargando datos.");
+  }
 }
 
 function printMonthlyGeneral() {
@@ -3900,6 +4111,106 @@ async function loginUser() {
 function logout() {
   localStorage.removeItem("sessionActive");
   location.reload();
+}
+
+// =============================
+// ðŸš€ INIT
+// =============================
+async function initSystem() {
+  if (isSyncInProgress) {
+    console.log(
+      "[initSystem] SincronizaciÃ³n ya en curso, se omite llamada duplicada.",
+    );
+    return;
+  }
+
+  isSyncInProgress = true;
+  const syncIndicator = document.getElementById("syncIndicator");
+  console.log("[initSystem] Iniciando sincronizaciÃ³n...");
+
+  const hideSyncIndicator = () => {
+    if (!syncIndicator) return;
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
+  };
+
+  if (localStorage.getItem("sessionActive") !== "true") {
+    hideSyncIndicator();
+    isSyncInProgress = false;
+    return;
+  }
+
+  if (navigator.onLine && storageClient) {
+    if (syncIndicator) {
+      syncIndicator.style.display = "flex";
+      syncIndicator.style.pointerEvents = "none";
+      // Failsafe: nunca dejar bloqueada la UI por sincronizaciÃ³n lenta
+      setTimeout(hideSyncIndicator, 2500);
+    }
+
+    setTimeout(async () => {
+      try {
+        console.log("[initSystem] Sincronizando datos locales pendientes...");
+        const pendingSyncResult =
+          await syncPendingLocalDataBeforeCloudDownload();
+        console.log(
+          "[initSystem] Resultado sync pendientes:",
+          pendingSyncResult,
+        );
+
+        if (pendingSyncResult.ok) {
+          console.log("[initSystem] Descargando trabajadores de la nube...");
+          await loadWorkersFromCloud();
+          console.log("[initSystem] Purga puntual de datos...");
+          await runOneTimeDataPurge();
+
+          console.log(
+            "[initSystem] Descargando historial de la nube (background)...",
+          );
+          await loadHistoryFromCloud();
+          console.log("[initSystem] SincronizaciÃ³n completa.");
+        } else if (pendingSyncResult.reason === "storage_unreachable") {
+          console.warn(
+            "[initSystem] Se omite sincronizaciÃ³n con nube:",
+            pendingSyncResult.errorMessage,
+          );
+          await notifyCloudUnavailableOnce(pendingSyncResult.errorMessage);
+        } else {
+          console.error(
+            "[initSystem] Error en sincronizaciÃ³n de pendientes:",
+            pendingSyncResult,
+          );
+        }
+      } catch (e) {
+        console.error("[initSystem] ExcepciÃ³n:", e);
+      } finally {
+        hideSyncIndicator();
+        isSyncInProgress = false;
+
+        // Forzar repaint en Electron para evitar congelamiento visual
+        if (window.require) {
+          setTimeout(() => {
+            document.body.style.transform = "scale(1)";
+          }, 10);
+        }
+
+        console.log("[initSystem] Overlay de sincronizaciÃ³n oculto.");
+      }
+    }, 0);
+  } else {
+    console.warn("[initSystem] Sin conexiÃ³n o sin storageClient");
+    hideSyncIndicator();
+    isSyncInProgress = false;
+  }
+
+  loadLabors();
+  loadFundos();
+  renderWorkersTable();
+  loadAFPOptions();
+  loadPagosWorkerFilter();
+
 }
 
 // =============================
@@ -5875,6 +6186,25 @@ function generateMonthlyGeneral() {
 // ðŸ” SESIÃ“N
 // =============================
 
+window.onload = function () {
+  if (localStorage.getItem("sessionActive") === "true") {
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    setTimeout(() => {
+      initSystem();
+    }, 0);
+  } else {
+    const syncIndicator = document.getElementById("syncIndicator");
+    if (syncIndicator) {
+      syncIndicator.style.display = "none";
+      syncIndicator.style.visibility = "hidden";
+      syncIndicator.style.pointerEvents = "none";
+      syncIndicator.remove();
+    }
+  }
+};
+
 function focusFirstFieldInView() {
   const activeView = document.querySelector(".view:not(.hidden)");
   if (!activeView) {
@@ -6080,6 +6410,145 @@ function exportData() {
   a.click();
 
   URL.revokeObjectURL(url);
+}
+
+async function syncToCloud(showAlerts = false) {
+  const reachability = await ensureStorageReachable();
+  if (!reachability.ok) {
+    if (showAlerts) alert("Error al sincronizar. " + reachability.errorMessage);
+    return {
+      ok: false,
+      errorMessage: reachability.errorMessage,
+    };
+  }
+
+  try {
+    let workerSuccess = 0;
+    let workerErrors = 0;
+    let historySuccess = 0;
+    let historyErrors = 0;
+
+    // ===== TRABAJADORES =====
+    for (const worker of workers) {
+      const { error } = await storageClient
+        .from("workers")
+        .upsert(worker, { onConflict: "rut" });
+
+      if (error) {
+        console.error("Error subiendo trabajador:", error);
+        workerErrors += 1;
+      } else {
+        workerSuccess += 1;
+      }
+    }
+
+    // ===== HISTORIAL =====
+    for (const record of history) {
+      const { error } = await storageClient.from("history").insert(record);
+
+      if (error) {
+        console.error("Error subiendo producciÃ³n:", error);
+        historyErrors += 1;
+      } else {
+        historySuccess += 1;
+      }
+    }
+
+    if (showAlerts) {
+      if (workerErrors === 0 && historyErrors === 0) {
+        alert(
+          "âœ… Guardado en almacenamiento local OK. Trabajadores: " +
+            workerSuccess +
+            ", ProducciÃ³n: " +
+            historySuccess,
+        );
+      } else {
+        alert(
+          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
+            workerSuccess +
+            ", Trabajadores con error: " +
+            workerErrors +
+            ", ProducciÃ³n OK: " +
+            historySuccess +
+            ", ProducciÃ³n con error: " +
+            historyErrors,
+        );
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    if (showAlerts) alert("Error al sincronizar.");
+    return { ok: false, errorMessage: err?.message || "Error al sincronizar." };
+  }
+
+  return { ok: true };
+}
+
+// SincronizaciÃ³n automÃ¡tica robusta al detectar conexiÃ³n a internet o al cargar la app
+window.addEventListener("online", () => {
+  if (localStorage.getItem("sessionActive") !== "true") return;
+  setTimeout(() => {
+    initSystem();
+  }, 0);
+  console.log(
+    "SincronizaciÃ³n automÃ¡tica con la nube ejecutada (evento online).",
+  );
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const syncIndicator = document.getElementById("syncIndicator");
+  if (localStorage.getItem("sessionActive") !== "true" && syncIndicator) {
+    syncIndicator.style.display = "none";
+    syncIndicator.style.visibility = "hidden";
+    syncIndicator.style.pointerEvents = "none";
+    syncIndicator.remove();
+  }
+});
+
+async function syncFromCloud() {
+  if (!confirm("Â¿Descargar datos de la nube y reemplazar los locales?")) return;
+
+  const reachability = await ensureStorageReachable();
+  if (!reachability.ok) {
+    alert("Error descargando datos. " + reachability.errorMessage);
+    return;
+  }
+
+  try {
+    // ===== TRABAJADORES =====
+    const { data: workersData, error: workersError } = await storageClient
+      .from("workers")
+      .select("*");
+
+    if (workersError) {
+      console.error("Error descargando trabajadores:", workersError);
+    } else {
+      workers = workersData || [];
+      localStorage.setItem("workers", JSON.stringify(workers));
+    }
+
+    // ===== HISTORIAL =====
+    const { data: historyData, error: historyError } = await storageClient
+      .from("history")
+      .select("*");
+
+    if (historyError) {
+      console.error("Error descargando producciÃ³n:", historyError);
+    } else {
+      history = historyData || [];
+      localStorage.setItem("history", JSON.stringify(history));
+    }
+
+    // ===== REFRESCAR SISTEMA =====
+    loadWorkers();
+    renderWorkersTable();
+    renderHistory();
+
+    alert("Datos descargados correctamente desde la nube.");
+  } catch (err) {
+    console.error(err);
+    alert("Error descargando datos.");
+  }
 }
 
 function printMonthlyGeneral() {
