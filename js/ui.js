@@ -151,7 +151,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ?.addEventListener('input', () => debounceSearch(filterWorkersLiquidation));
   document
     .getElementById('btnClearLiquidationSearch')
-    ?.addEventListener('click', clearLiquidationSearch);
+    ?.addEventListener('click', clearWorkerLiquidationSearch);
   document
     .getElementById('btnGenerateLiquidation')
     ?.addEventListener('click', generateLiquidation);
@@ -334,3 +334,16 @@ window.addEventListener('DOMContentLoaded', () => {
       window.scrollTo(prevX, prevY);
     });
 });
+
+function clearWorkerLiquidationSearch() {
+  const searchInput = document.getElementById('searchWorkerLiquidation');
+  const list = document.getElementById('workerLiquidationList');
+  const hiddenSelect = document.getElementById('workerLiquidation');
+
+  if (searchInput) searchInput.value = '';
+  if (hiddenSelect) hiddenSelect.value = '';
+  if (list) {
+    list.style.display = 'none';
+    list.innerHTML = '';
+  }
+}

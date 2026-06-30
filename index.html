@@ -11,7 +11,7 @@
       default-src 'self';
       script-src 'self';
       style-src 'self' 'unsafe-inline';
-      img-src 'self' data:';
+      img-src 'self' data:;
       font-src 'self';
       connect-src 'self';
     "
@@ -206,7 +206,7 @@
             <option value="">-- Seleccionar para editar --</option>
           </select>
 
-          <input type="text" id="workerName" placeholder="Nombre" />
+          <input type="text" id="workerName" placeholder="Nombre" autocomplete="off" />
           <input type="text" id="workerRut" placeholder="RUT" />
           <label for="workerBirthDate">Fecha de nacimiento</label>
           <input

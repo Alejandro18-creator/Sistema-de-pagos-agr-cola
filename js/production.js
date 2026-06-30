@@ -24,6 +24,51 @@ function clearWeeklySearch() {
   selectedDays.clear();
 }
 
+function saveMinimumWage() {
+  const input = document.getElementById('minimumWage');
+  if (!input) {
+    alert('No se encontró el campo de sueldo mínimo.');
+    return;
+  }
+
+  const rawValue = String(input.value || '').trim();
+  if (!rawValue) {
+    alert('Ingrese un valor de sueldo mínimo.');
+    return;
+  }
+
+  const normalized = rawValue.replace(/\$/g, '').replace(/\./g, '').replace(/,/g, '.');
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    alert('Ingrese un monto válido mayor a 0.');
+    return;
+  }
+
+  const minimumWageValue = Math.round(parsed);
+  localStorage.setItem('minimumWage', String(minimumWageValue));
+
+  // Mantener el input en formato legible para el usuario.
+  input.value = '$' + minimumWageValue.toLocaleString('es-CL');
+
+  if (typeof showCustomAlert === 'function') {
+    showCustomAlert('✅ Sueldo mínimo guardado localmente.');
+    return;
+  }
+
+  alert('✅ Sueldo mínimo guardado localmente.');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('minimumWage');
+  if (!input) return;
+
+  const saved = Number(localStorage.getItem('minimumWage') || 0);
+  if (Number.isFinite(saved) && saved > 0) {
+    input.value = '$' + saved.toLocaleString('es-CL');
+  }
+});
+
 function setupFundoSuggestions() {
   const fundoInput = document.getElementById('fundoProduction');
   if (!fundoInput || fundoInput.dataset.suggestionsReady === 'true') return;
@@ -357,6 +402,56 @@ function renderHistory() {
 
   c.innerHTML = html;
 }
+
+function loadDailyRecords() {
+  const date = document.getElementById('workDate')?.value;
+  const container = document.getElementById('dailyRecordsResult');
+
+  if (!container) return;
+
+  if (!date) {
+    container.innerHTML = '<p>Seleccione una fecha.</p>';
+    return;
+  }
+
+  const dailyRecords = history
+    .filter((r) => r.date === date)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+
+  if (dailyRecords.length === 0) {
+    container.innerHTML = '<p>No hay registros para ese día.</p>';
+    return;
+  }
+
+  let totalDay = 0;
+  let html = "<div class='table-container'><table>";
+  html +=
+    '<tr><th>Trabajador</th><th>Fundo</th><th>Labor</th><th>Cantidad</th><th>Total</th></tr>';
+
+  dailyRecords.forEach((r) => {
+    totalDay += Number(r.total || 0);
+    html += '<tr>';
+    html += '<td>' + (r.name || '-') + '</td>';
+    html += '<td>' + (r.fundo || '-') + '</td>';
+    html += '<td>' + (r.labor || '-') + '</td>';
+    html += '<td>' + Number(r.quantity || 0) + '</td>';
+    html += '<td>$' + Number(r.total || 0).toLocaleString('es-CL') + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</table>';
+  html +=
+    "<h3 style='margin-top:10px;'>Total del día: $" +
+    totalDay.toLocaleString('es-CL') +
+    '</h3>';
+  html += '</div>';
+
+  container.innerHTML = html;
+
+  // Mantener sincronizada la vista global de historial usando el render existente.
+  renderHistory();
+}
+
 function showProductionConfirmModal(
   { workerName, date, labor, quantity, total },
   onConfirm
@@ -1135,3 +1230,90 @@ function loadFundos() {
 }
 
 window.loadFundos = loadFundos;
+
+// =============================
+// 📂 HISTORIAL DE PAGOS
+// =============================
+function loadPaymentsHistory() {
+  const monthFilter = document.getElementById('filterPaymentsMonth')?.value || '';
+  const workerFilter = document.getElementById('filterPaymentsWorker')?.value || '';
+  
+  // Filtrar historial SOLO CON DATOS LOCALES
+  const filtered = history.filter(r => {
+    if (monthFilter && !r.date.startsWith(monthFilter)) {
+      return false;
+    }
+    if (workerFilter && r.rut !== workerFilter) {
+      return false;
+    }
+    return true;
+  });
+  
+  // Calcular resumen SIN variables globales
+  let totalPaid = 0;
+  let totalPending = 0;
+  let countPaid = 0;
+  let countPending = 0;
+  
+  filtered.forEach(r => {
+    if (r.paid === true) {
+      totalPaid += Number(r.total) || 0;
+      countPaid++;
+    } else {
+      totalPending += Number(r.total) || 0;
+      countPending++;
+    }
+  });
+  
+  // Renderizar resumen en #paymentsSummary
+  const summaryContainer = document.getElementById('paymentsSummary');
+  if (summaryContainer) {
+    const monthText = monthFilter ? ` - ${monthFilter}` : '';
+    const workerText = workerFilter ? ` (${workerFilter})` : '';
+    
+    let summaryHtml = `<h3>Resumen de Pagos${monthText}${workerText}</h3>`;
+    summaryHtml += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">';
+    summaryHtml += `<div style="background: #d4edda; padding: 15px; border-radius: 6px;">
+      <strong>Pagados</strong><br>
+      Registros: ${countPaid}<br>
+      Total: $${totalPaid.toLocaleString('es-CL')}
+    </div>`;
+    summaryHtml += `<div style="background: #fff3cd; padding: 15px; border-radius: 6px;">
+      <strong>Pendientes</strong><br>
+      Registros: ${countPending}<br>
+      Total: $${totalPending.toLocaleString('es-CL')}
+    </div>`;
+    summaryHtml += '</div>';
+    summaryContainer.innerHTML = summaryHtml;
+  }
+  
+  // Renderizar tabla en #paymentsHistoryTable (NO duplica renderHistory)
+  const tableContainer = document.getElementById('paymentsHistoryTable');
+  if (tableContainer) {
+    if (filtered.length === 0) {
+      tableContainer.innerHTML = '<p>No hay registros para los filtros seleccionados.</p>';
+      return;
+    }
+    
+    let html = '<div class="table-container"><table>';
+    html += '<tr><th>Fecha</th><th>Trabajador</th><th>RUT</th><th>Labor</th><th>Cantidad</th><th>Total</th><th>Estado</th></tr>';
+    
+    filtered.forEach(r => {
+      const status = r.paid === true ? '✅ Pagado' : '⏳ Pendiente';
+      const statusColor = r.paid === true ? '#d4edda' : '#fff3cd';
+      
+      html += '<tr>';
+      html += `<td>${r.date}</td>`;
+      html += `<td>${r.name || '-'}</td>`;
+      html += `<td>${r.rut || '-'}</td>`;
+      html += `<td>${r.labor || '-'}</td>`;
+      html += `<td>${r.quantity || 0}</td>`;
+      html += `<td>$${Number(r.total).toLocaleString('es-CL')}</td>`;
+      html += `<td style="background: ${statusColor}; text-align: center;">${status}</td>`;
+      html += '</tr>';
+    });
+    
+    html += '</table></div>';
+    tableContainer.innerHTML = html;
+  }
+}

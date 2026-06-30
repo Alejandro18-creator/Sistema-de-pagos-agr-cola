@@ -1,5 +1,5 @@
-// =============================
-// 💾 GUARDADO DE DATOS DEBOUNCEADO
+﻿// =============================
+// ðŸ’¾ GUARDADO DE DATOS DEBOUNCEADO
 // =============================
 let saveTimer;
 function saveLocalDataDebounced() {
@@ -13,7 +13,7 @@ function saveLocalDataDebounced() {
   }, 500);
 }
 // =============================
-// 🔄 DEBOUNCE PARA BUSCADORES
+// ðŸ”„ DEBOUNCE PARA BUSCADORES
 // =============================
 let debounceTimer;
 function debounceSearch(fn) {
@@ -22,7 +22,7 @@ function debounceSearch(fn) {
 }
 
 // =============================
-// 🌐 MODO LOCAL OFFLINE
+// ðŸŒ MODO LOCAL OFFLINE
 // =============================
 
 console.log("APP VERSION 2");
@@ -32,10 +32,54 @@ const STORAGE_KEY = "local";
 const USE_STORAGE = true; // Backend local integrado, sin almacenamiento local remoto
 
 let editProductionIndex = null;
-let workers = JSON.parse(localStorage.getItem("workers")) || [];
-let labors = JSON.parse(localStorage.getItem("labors")) || [];
-let history = JSON.parse(localStorage.getItem("history")) || [];
-let fundos = JSON.parse(localStorage.getItem("fundos")) || [];
+let workers = [];
+let labors = [];
+let history = [];
+let fundos = [];
+
+// ⚠️ Solo llamar explícitamente para un reset total (por ejemplo, botón de limpiar datos).
+// NO llamar al inicio: borra todos los datos persistidos.
+function initializeFreshLocalState() {
+  const keysToClear = ["workers", "history", "labors", "fundos", "sessionActive"];
+
+  keysToClear.forEach((key) => localStorage.removeItem(key));
+
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith("offline_table:") || key.startsWith("offline_storage:")) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  workers = [];
+  labors = [];
+  history = [];
+  fundos = [];
+  saveLocalDataDebounced();
+}
+
+// ✅ Restaura datos guardados desde localStorage al iniciar.
+// No borra nada — carga lo que haya persistido en recargas/reinicios anteriores.
+function initializeLocalState() {
+  try {
+    workers = JSON.parse(localStorage.getItem("workers") || "[]").map((worker) => ({
+      ...worker,
+      pending: false,
+    }));
+  } catch { workers = []; }
+  try {
+    history = JSON.parse(localStorage.getItem("history") || "[]");
+  } catch { history = []; }
+  try {
+    labors = JSON.parse(localStorage.getItem("labors") || "[]");
+  } catch { labors = []; }
+  try {
+    fundos = JSON.parse(localStorage.getItem("fundos") || "[]");
+  } catch { fundos = []; }
+
+  localStorage.setItem("workers", JSON.stringify(workers));
+}
+
+initializeLocalState();
 
 let isGeneratingFiniquito = false;
 let isSyncInProgress = false;
@@ -59,7 +103,7 @@ function getReadableStorageErrorMessage(error, fallbackMessage) {
     normalizedMessage.includes("bucket") &&
     normalizedMessage.includes("not found")
   ) {
-    return "El bucket worker-files no existe o no está accesible.";
+    return "El bucket worker-files no existe o no estÃ¡ accesible.";
   }
 
   if (
@@ -68,7 +112,7 @@ function getReadableStorageErrorMessage(error, fallbackMessage) {
     normalizedMessage.includes("unauthorized") ||
     normalizedMessage.includes("forbidden")
   ) {
-    return "El almacenamiento local rechazó la operación por permisos o políticas internas.";
+    return "El almacenamiento local rechazÃ³ la operaciÃ³n por permisos o polÃ­ticas internas.";
   }
 
   if (
@@ -326,7 +370,7 @@ async function notifyCloudUnavailableOnce(message) {
   cloudUnavailableNoticeShown = true;
 
   const fullMessage =
-    "La app seguirá funcionando en modo local. " + message;
+    "La app seguirÃ¡ funcionando en modo local. " + message;
 
   if (typeof showCustomAlert === "function") {
     await showCustomAlert(fullMessage);
@@ -340,7 +384,7 @@ function getStorageClientOrError() {
   if (!storageClient?.storage) {
     return {
       ok: false,
-      errorMessage: "El almacenamiento local no está inicializado en la app.",
+      errorMessage: "El almacenamiento local no estÃ¡ inicializado en la app.",
     };
   }
 
@@ -378,7 +422,7 @@ async function uploadFileToWorkerStorage(filePath, fileBody, contentType) {
       ok: false,
       errorMessage: getReadableStorageErrorMessage(
         error,
-        "Ocurrió un error inesperado al guardar el archivo localmente.",
+        "OcurriÃ³ un error inesperado al guardar el archivo localmente.",
       ),
       error,
     };
@@ -386,7 +430,7 @@ async function uploadFileToWorkerStorage(filePath, fileBody, contentType) {
 }
 
 // =============================
-// 📊 TABLA INTERNA AFP (COMISIONES)
+// ðŸ“Š TABLA INTERNA AFP (COMISIONES)
 // Fuente: Superintendencia de Pensiones
 // =============================
 
@@ -400,10 +444,10 @@ const afpRates = {
   Uno: 0.0046,
 };
 
-// Cotización obligatoria base
+// CotizaciÃ³n obligatoria base
 const AFP_BASE = 0.1; // 10%
 
-/*☁️ GUARDAR EN almacenamiento local*/
+/*â˜ï¸ GUARDAR EN almacenamiento local*/
 // =============================
 
 async function saveWorkerToCloud(worker) {
@@ -416,11 +460,15 @@ async function saveWorkerToCloud(worker) {
     return { ok: false, errorMessage: reachability.errorMessage };
   }
 
-  const { error } = await storageClient.from("workers").insert([worker]);
+  const payload = {
+    ...worker,
+    pending: false,
+  };
+  const { error } = await storageClient.from("workers").insert([payload]);
 
   if (error) {
     if (error.message.includes("duplicate key")) {
-      alert("Este RUT ya está registrado.");
+      alert("Este RUT ya estÃ¡ registrado.");
       return { ok: false, errorMessage: error.message };
     }
 
@@ -449,11 +497,11 @@ async function saveProductionToCloud(record) {
     .single();
 
   if (error) {
-    console.error("Error guardando producción localmente:", error.message);
+    console.error("Error guardando producciÃ³n localmente:", error.message);
     return { ok: false, errorMessage: error.message };
   }
 
-  console.log("Producción guardada localmente");
+  console.log("ProducciÃ³n guardada localmente");
   return { ok: true, data, errorMessage: "" };
 }
 
@@ -475,7 +523,7 @@ async function updateProductionInCloud(recordId, payload) {
     .single();
 
   if (error) {
-    console.error("Error actualizando producción localmente:", error.message);
+    console.error("Error actualizando producciÃ³n localmente:", error.message);
     return { ok: false, errorMessage: error.message };
   }
 
@@ -494,7 +542,12 @@ async function loadWorkersFromCloud() {
   }
 
   const localMap = new Map();
-  (data || []).forEach((worker) => localMap.set(worker.id, worker));
+  (data || []).forEach((worker) =>
+    localMap.set(worker.id, {
+      ...worker,
+      pending: false,
+    }),
+  );
   workers = Array.from(localMap.values());
   localStorage.setItem("workers", JSON.stringify(workers));
   console.log("Trabajadores cargados localmente");
@@ -548,7 +601,7 @@ async function pruneHistoryOrphaned() {
 
   if (error) {
     console.error(
-      "Error eliminando historial huérfano en almacenamiento local:",
+      "Error eliminando historial huÃ©rfano en almacenamiento local:",
       error.message,
     );
   }
@@ -793,6 +846,93 @@ async function syncPendingLocalDataBeforeCloudDownload() {
     }
   });
 
+  // Diagnóstico y saneo mínimo: identificar workers pendientes inválidos
+  // y eliminar SOLO esos registros corruptos del arreglo local.
+  const invalidPendingWorkers = [];
+  for (let i = workers.length - 1; i >= 0; i--) {
+    const worker = workers[i];
+    if (worker?.pending !== true) continue;
+
+    const normalizedName = String(
+      worker?.name || worker?.worker_name || worker?.workerFullName || worker?.fullName || "",
+    ).trim();
+    const normalizedRut = String(worker?.rut || worker?.worker_rut || "").trim();
+
+    if (!worker?.name && normalizedName) worker.name = normalizedName;
+    if (!worker?.rut && normalizedRut) worker.rut = normalizedRut;
+
+    const name = String(worker?.name || "").trim();
+    const rut = String(worker?.rut || "").trim();
+    const reason = [];
+
+    if (!name) reason.push("name vacío");
+    if (!rut) reason.push("rut vacío");
+    if (!worker || typeof worker !== "object") reason.push("estructura inválida");
+
+    if (reason.length > 0) {
+      invalidPendingWorkers.push({ index: i, worker, reason });
+      workers.splice(i, 1);
+    }
+  }
+
+  if (invalidPendingWorkers.length > 0) {
+    invalidPendingWorkers.forEach(({ reason, worker }) => {
+      console.error("SYNC ERROR:", "Worker pendiente inválido: " + reason.join(", "));
+      console.error("FAILED WORKER:", worker);
+    });
+    localStorage.setItem("workers", JSON.stringify(workers));
+  }
+
+  // Recalcular pendientes después de limpiar inválidos
+  pendingWorkers.length = 0;
+  localPendingRuts.clear();
+  (workers || []).forEach((worker) => {
+    const rutKey = getRutKey(worker?.rut);
+    if (!rutKey || localPendingRuts.has(rutKey)) {
+      return;
+    }
+
+    if (worker?.pending === true) {
+      localPendingRuts.add(rutKey);
+      pendingWorkers.push(worker);
+    }
+  });
+
+  // Detectar duplicados por RUT dentro de pendientes y mantener solo el primero válido.
+  const duplicatePendingByRut = [];
+  const seenPendingRut = new Set();
+  for (let i = workers.length - 1; i >= 0; i--) {
+    const worker = workers[i];
+    if (worker?.pending !== true) continue;
+    const rutKey = getRutKey(worker?.rut);
+    if (!rutKey) continue;
+    if (seenPendingRut.has(rutKey)) {
+      duplicatePendingByRut.push({ index: i, worker, reason: "rut duplicado en pendientes" });
+      workers.splice(i, 1);
+      continue;
+    }
+    seenPendingRut.add(rutKey);
+  }
+
+  if (duplicatePendingByRut.length > 0) {
+    duplicatePendingByRut.forEach(({ worker, reason }) => {
+      console.error("SYNC ERROR:", reason);
+      console.error("FAILED WORKER:", worker);
+    });
+    localStorage.setItem("workers", JSON.stringify(workers));
+
+    pendingWorkers.length = 0;
+    localPendingRuts.clear();
+    (workers || []).forEach((worker) => {
+      const rutKey = getRutKey(worker?.rut);
+      if (!rutKey || localPendingRuts.has(rutKey)) return;
+      if (worker?.pending === true) {
+        localPendingRuts.add(rutKey);
+        pendingWorkers.push(worker);
+      }
+    });
+  }
+
   const pendingHistoryIndexes = [];
   (history || []).forEach((record, index) => {
     const localId = record?.id;
@@ -809,40 +949,79 @@ async function syncPendingLocalDataBeforeCloudDownload() {
     "history:",
     pendingHistoryIndexes.length,
   );
+  console.log("PENDING WORKERS:", pendingWorkers);
 
   let failedWorkers = 0;
   if (pendingWorkers.length > 0) {
-    // Insertar en lote (batch) para optimizar
-    const batchPayload = pendingWorkers.map((w) => {
-      const payload = { ...w };
-      delete payload.id;
-      return payload;
+    // En la arquitectura local, estos pendientes solo deben persistirse en SQLite/localStorage.
+    // No deben quedar marcados como pending ni alimentar una cola cloud.
+    pendingWorkers.forEach((worker) => {
+      console.log("SYNC WORKER:", worker);
     });
+
     try {
-      const { data, error } = await storageClient
-        .from("workers")
-        .upsert(batchPayload, { onConflict: "rut" })
-        .select("id, rut");
-      if (error) {
-        failedWorkers = pendingWorkers.length;
-        console.error("Error batch insert workers:", error.message);
-      } else {
-        // Marcar como sincronizados los que se insertaron
-        (data || []).forEach((inserted) => {
-          const idx = pendingWorkers.findIndex(
-            (w) => getRutKey(w.rut) === getRutKey(inserted.rut),
-          );
-          if (idx !== -1) {
-            pendingWorkers[idx].id = inserted.id;
-            pendingWorkers[idx].pending = false;
+      for (const worker of pendingWorkers) {
+        try {
+          const payload = {
+            name: String(worker?.name || "").trim(),
+            rut: String(worker?.rut || "").trim(),
+            birthDate: worker?.birthDate || "",
+            maritalStatus: worker?.maritalStatus || "",
+            address: worker?.address || "",
+            afp: worker?.afp || "",
+            health: worker?.health || "",
+            position: worker?.position || "",
+            nationality: worker?.nationality || "",
+            baseSalary: worker?.baseSalary || "",
+            account_number: worker?.account_number || "",
+            id_card_photo: worker?.id_card_photo || null,
+            active: worker?.active !== false,
+            pending: false,
+          };
+
+          if (!payload.name || !payload.rut) {
+            failedWorkers += 1;
+            console.error("SYNC ERROR:", "payload inválido (name/rut vacío)");
+            console.error("FAILED WORKER:", worker);
+            continue;
           }
-        });
+
+          const { data: oneData, error: oneError } = await storageClient
+            .from("workers")
+            .insert([payload])
+            .select("id, rut");
+
+          if (oneError) {
+            failedWorkers += 1;
+            console.error("SYNC ERROR:", oneError);
+            console.error("FAILED WORKER:", worker);
+            continue;
+          }
+
+          const inserted = oneData?.[0];
+          worker.id = inserted?.id || worker.id;
+          worker.pending = false;
+        } catch (oneEx) {
+          failedWorkers += 1;
+          console.error("SYNC ERROR:", oneEx);
+          console.error("FAILED WORKER:", worker);
+        }
       }
     } catch (e) {
       failedWorkers = pendingWorkers.length;
-      console.error("Excepción en batch insert workers:", e);
+      console.error("SYNC ERROR:", e);
+      pendingWorkers.forEach((worker) => {
+        console.error("FAILED WORKER:", worker);
+      });
     }
   }
+
+  // Persistir estado limpio: nada debe quedar marcado como pending en una app local.
+  workers = (workers || []).map((worker) => ({
+    ...worker,
+    pending: false,
+  }));
+  localStorage.setItem("workers", JSON.stringify(workers));
 
   let failedHistory = 0;
   if (pendingHistoryIndexes.length > 0) {
@@ -871,7 +1050,7 @@ async function syncPendingLocalDataBeforeCloudDownload() {
       }
     } catch (e) {
       failedHistory = pendingHistoryIndexes.length;
-      console.error("Excepción en batch insert history:", e);
+      console.error("ExcepciÃ³n en batch insert history:", e);
     }
   }
 
@@ -886,7 +1065,7 @@ async function syncPendingLocalDataBeforeCloudDownload() {
 }
 
 // =============================
-// 🔐 PASSWORD
+// ðŸ” PASSWORD
 // =============================
 
 const LOGIN_PASSWORD = "1234";
@@ -894,9 +1073,9 @@ const LOGIN_PASSWORD = "1234";
 let editIndexWorker = null;
 
 // =============================
-// 🔄 CARGAR RESPALDO SI NO HAY DATOS
+// ðŸ”„ CARGAR RESPALDO SI NO HAY DATOS
 // =============================
-/* Bloque antigu si es que no hay internet o no se pudo conectar a almacenamiento local, para no perder la funcionalidad básica del sistema.*/
+/* Bloque antigu si es que no hay internet o no se pudo conectar a almacenamiento local, para no perder la funcionalidad bÃ¡sica del sistema.*/
 /*if (workers.length === 0) {
 
     fetch("data/respaldo.json")
@@ -922,12 +1101,12 @@ let editIndexWorker = null;
                 JSON.stringify(labors)
             );
 
-            console.log("Respaldo cargado automáticamente");
+            console.log("Respaldo cargado automÃ¡ticamente");
         });
 }*/
 
 // =============================
-// 🪪 FORMATO RUT
+// ðŸªª FORMATO RUT
 // =============================
 
 function formatRutInput(input) {
@@ -947,7 +1126,7 @@ function formatRutInput(input) {
 }
 
 // =============================
-// 🔐 LOGIN
+// ðŸ” LOGIN
 // =============================
 
 async function loginUser() {
@@ -967,14 +1146,13 @@ async function loginUser() {
       syncIndicator.remove();
     }
 
-    // Ejecutar la sincronización en segundo plano, no bloquear la UI
+    // Ejecutar la sincronizaciÃ³n en segundo plano, no bloquear la UI
     setTimeout(() => {
       initSystem();
     }, 0);
   } else {
-    alert("Contraseña incorrecta");
+    alert("ContraseÃ±a incorrecta");
   }
-  loadMinimumWage();
 }
 
 function logout() {
@@ -983,19 +1161,19 @@ function logout() {
 }
 
 // =============================
-// 🚀 INIT
+// ðŸš€ INIT
 // =============================
 async function initSystem() {
   if (isSyncInProgress) {
     console.log(
-      "[initSystem] Sincronización ya en curso, se omite llamada duplicada.",
+      "[initSystem] SincronizaciÃ³n ya en curso, se omite llamada duplicada.",
     );
     return;
   }
 
   isSyncInProgress = true;
   const syncIndicator = document.getElementById("syncIndicator");
-  console.log("[initSystem] Iniciando sincronización...");
+  console.log("[initSystem] Iniciando sincronizaciÃ³n...");
 
   const hideSyncIndicator = () => {
     if (!syncIndicator) return;
@@ -1015,7 +1193,7 @@ async function initSystem() {
     if (syncIndicator) {
       syncIndicator.style.display = "flex";
       syncIndicator.style.pointerEvents = "none";
-      // Failsafe: nunca dejar bloqueada la UI por sincronización lenta
+      // Failsafe: nunca dejar bloqueada la UI por sincronizaciÃ³n lenta
       setTimeout(hideSyncIndicator, 2500);
     }
 
@@ -1039,21 +1217,21 @@ async function initSystem() {
             "[initSystem] Descargando historial de la nube (background)...",
           );
           await loadHistoryFromCloud();
-          console.log("[initSystem] Sincronización completa.");
+          console.log("[initSystem] SincronizaciÃ³n completa.");
         } else if (pendingSyncResult.reason === "storage_unreachable") {
           console.warn(
-            "[initSystem] Se omite sincronización con nube:",
+            "[initSystem] Se omite sincronizaciÃ³n con nube:",
             pendingSyncResult.errorMessage,
           );
           await notifyCloudUnavailableOnce(pendingSyncResult.errorMessage);
         } else {
           console.error(
-            "[initSystem] Error en sincronización de pendientes:",
+            "[initSystem] Error en sincronizaciÃ³n de pendientes:",
             pendingSyncResult,
           );
         }
       } catch (e) {
-        console.error("[initSystem] Excepción:", e);
+        console.error("[initSystem] ExcepciÃ³n:", e);
       } finally {
         hideSyncIndicator();
         isSyncInProgress = false;
@@ -1065,11 +1243,11 @@ async function initSystem() {
           }, 10);
         }
 
-        console.log("[initSystem] Overlay de sincronización oculto.");
+        console.log("[initSystem] Overlay de sincronizaciÃ³n oculto.");
       }
     }, 0);
   } else {
-    console.warn("[initSystem] Sin conexión o sin storageClient");
+    console.warn("[initSystem] Sin conexiÃ³n o sin storageClient");
     hideSyncIndicator();
     isSyncInProgress = false;
   }
@@ -1080,52 +1258,52 @@ async function initSystem() {
   loadAFPOptions();
   loadPagosWorkerFilter();
 
-  loadMinimumWage();
 }
 
 // =============================
-// 👨‍🌾 TRABAJADORES
+//  TRABAJADORES
 // =============================
 
 async function addWorker() {
   console.log("editIndexWorker:", editIndexWorker);
 
-  const name = document.getElementById("workerName").value.trim();
-  const rut = document.getElementById("workerRut").value.trim();
-  const account = document.getElementById("workerAccount").value;
-  const birthDate = document.getElementById("workerBirthDate").value.trim();
-  const maritalStatus = document
-    .getElementById("workerMaritalStatus")
-    .value.trim();
-  const address = document.getElementById("workerAddress").value.trim();
-  const afp = document.getElementById("workerAFP").value.trim();
-  const health = document.getElementById("workerHealth").value.trim();
-  const position = document.getElementById("workerPosition").value.trim();
-  const nationality = document.getElementById("workerNationality").value.trim();
-  const baseSalary = document
-    .getElementById("workerBaseSalary")
-    .value.replace(/\$/g, "")
+  // Leer directamente por ID real del formulario
+  const workerName = (document.getElementById("workerName")?.value || "").trim();
+  const workerRut = (document.getElementById("workerRut")?.value || "").trim();
+  const account = document.getElementById("workerAccount")?.value || "";
+  const birthDate = document.getElementById("workerBirthDate")?.value.trim() || "";
+  const maritalStatus = document.getElementById("workerMaritalStatus")?.value.trim() || "";
+  const address = document.getElementById("workerAddress")?.value.trim() || "";
+  const afp = document.getElementById("workerAFP")?.value.trim() || "";
+  const health = document.getElementById("workerHealth")?.value.trim() || "";
+  const position = document.getElementById("workerPosition")?.value.trim() || "";
+  const nationality = document.getElementById("workerNationality")?.value.trim() || "";
+  const baseSalary = (document.getElementById("workerBaseSalary")?.value || "")
+    .replace(/\$/g, "")
     .replace(/\./g, "");
 
   let photoUrl = null;
-  if (!name || !rut) {
+  console.log("NAME:", workerName);
+  console.log("RUT:", workerRut);
+
+  if (!workerName || !workerRut) {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
-  // 🔹 VALIDAR RUT DUPLICADO
-  const rutIndex = workers.findIndex((w) => w.rut === rut);
+  // ðŸ”¹ VALIDAR RUT DUPLICADO
+  const rutIndex = workers.findIndex((w) => w.rut === workerRut);
   if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
     // await showCustomAlert("Este trabajador o RUT ya existe.");
     console.warn("Trabajador duplicado");
     return;
   }
 
-  // 🔹 Subir imagen si existe
+  // ðŸ”¹ Subir imagen si existe
   const fileInput = document.getElementById("workerIdPhoto");
   if (USE_STORAGE && fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const fileName = Date.now() + "_" + file.name;
-    const filePath = rut + "/" + fileName;
+    const filePath = workerRut + "/" + fileName;
 
     const uploadResult = await uploadFileToWorkerStorage(filePath, file);
 
@@ -1144,12 +1322,12 @@ async function addWorker() {
     }
   }
 
-  // 🔹 EDICIÓN
+  // ðŸ”¹ EDICIÃ“N
   if (editIndexWorker !== null) {
     workers[editIndexWorker] = {
       ...workers[editIndexWorker],
-      name,
-      rut,
+      name: workerName,
+      rut: workerRut,
       birthDate,
       maritalStatus,
       address,
@@ -1165,8 +1343,8 @@ async function addWorker() {
       const { data, error } = await storageClient
         .from("workers")
         .update({
-          name,
-          rut,
+          name: workerName,
+          rut: workerRut,
           birthDate,
           maritalStatus,
           address,
@@ -1186,11 +1364,11 @@ async function addWorker() {
     editIndexWorker = null;
   }
 
-  // 🔹 NUEVO TRABAJADOR
+  // ðŸ”¹ NUEVO TRABAJADOR
   else {
     const newWorker = {
-      name,
-      rut,
+      name: workerName,
+      rut: workerRut,
       birthDate,
       maritalStatus,
       address,
@@ -1201,7 +1379,6 @@ async function addWorker() {
       baseSalary,
       account_number: account,
       id_card_photo: photoUrl,
-      pending: true,
     };
 
     workers.push(newWorker);
@@ -1220,7 +1397,7 @@ async function addWorker() {
   loadWorkers();
   renderWorkersTable();
 
-  showCustomAlert("✅ Trabajador guardado correctamente");
+  showCustomAlert("Trabajador guardado correctamente");
 }
 // =============================
 // 📋 SELECTS
@@ -1266,7 +1443,7 @@ function filterWorkersPagos() {
   }
 }
 // =============================
-// 🏦 CARGAR AFP EN SELECT
+// ðŸ¦ CARGAR AFP EN SELECT
 // =============================
 
 function loadAFPOptions() {
@@ -1317,7 +1494,7 @@ function loadMandanteFundoFilter() {
 }
 
 // =============================
-// 🧩 AUXILIARES
+// ðŸ§© AUXILIARES
 // =============================
 
 function formatCurrency(input) {
@@ -1346,7 +1523,7 @@ function filterWorkersWeekly() {
 
   hiddenSelect.value = "";
 
-  // Si está vacío, ocultar lista y limpiar selección
+  // Si estÃ¡ vacÃ­o, ocultar lista y limpiar selecciÃ³n
   if (search === "") {
     resultsList.style.display = "none";
     resultsList.innerHTML = "";
@@ -1560,7 +1737,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo será _______________________________.";
+      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
   }
 }
 
@@ -1924,13 +2101,13 @@ function selectWorkerWeekly(index, name) {
   document.getElementById("workerWeeklyList").style.display = "none";
   document.getElementById("workerWeeklyList").innerHTML = "";
 
-  // Limpiar días seleccionados del trabajador anterior
+  // Limpiar dÃ­as seleccionados del trabajador anterior
   selectedDays.clear();
 
-  // Limpiar el resumen si había uno generado
+  // Limpiar el resumen si habÃ­a uno generado
   document.getElementById("weeklyResult").innerHTML = "";
 
-  // Mostrar calendario automáticamente
+  // Mostrar calendario automÃ¡ticamente
   showCalendar();
 }
 
@@ -1945,7 +2122,7 @@ async function generateLiquidation() {
 
   const worker = workers[workerIndex];
 
-  // ===== PRODUCCIÓN DEL MES =====
+  // ===== PRODUCCIÃ“N DEL MES =====
 
   const recordsRaw = history.filter(
     (r) => r.rut === worker.rut && isHistoryRecordInMonth(r.date, month),
@@ -1961,7 +2138,7 @@ async function generateLiquidation() {
 
   if (records.length === 0) {
     generateLiquidation();
-    alert("No hay producción ese mes.");
+    alert("No hay producciÃ³n ese mes.");
     return;
   }
 
@@ -2005,7 +2182,7 @@ async function generateLiquidation() {
   const html = `
 <div class="liq-doc">
 
-<h1>LIQUIDACIÓN DE SUELDO</h1>
+<h1>LIQUIDACIÃ“N DE SUELDO</h1>
 <h3>${month}</h3>
 
 <p><strong>Nombre:</strong> ${worker.name}</p>
@@ -2013,7 +2190,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>Días trabajados:</strong> ${daysWorked}</p>
+<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -2027,7 +2204,7 @@ async function generateLiquidation() {
 </tr>
 
 <tr>
-<td>Bono Producción</td>
+<td>Bono ProducciÃ³n</td>
 <td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
@@ -2061,7 +2238,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -2104,13 +2281,13 @@ async function generateLiquidation() {
   );
 
   if (!uploadResult.ok) {
-    console.error("Error subiendo liquidación:", uploadResult.error);
+    console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
     alert(
-      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
     );
   } else {
-    console.log("Liquidación guardada en almacenamiento local");
-    alert("✅ Liquidación guardada en almacenamiento local OK");
+    console.log("LiquidaciÃ³n guardada en almacenamiento local");
+    alert("âœ… LiquidaciÃ³n guardada en almacenamiento local OK");
   }
 }
 
@@ -2316,7 +2493,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
 
   if (!printWindow) {
     alert(
-      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
+      "No se pudo abrir la ventana de impresiÃ³n. Verifique bloqueadores de ventanas emergentes.",
     );
     return;
   }
@@ -2349,17 +2526,66 @@ function printLiquidationScreen() {
   const container = document.getElementById("liquidationPrint");
 
   if (!container || !container.innerHTML.trim()) {
-    alert("Primero genere la liquidación para imprimir.");
+    alert("Primero genere la liquidaciÃ³n para imprimir.");
     return;
   }
 
   openScreenPrintWindow({
-    title: "Liquidación de Sueldo",
+    title: "LiquidaciÃ³n de Sueldo",
     contentHtml: container.outerHTML,
   });
 }
 
-function printContractScreen() {
+
+function printMandanteCobro() {
+  const resultContainer = document.getElementById("mandanteResult");
+
+  if (!resultContainer || !resultContainer.innerHTML.trim()) {
+    generateMandanteCobro();
+  }
+
+  const content = resultContainer?.innerHTML?.trim();
+
+  if (!content) {
+    alert("Primero genere el cobro mandante para imprimir.");
+    return;
+  }
+
+  const printHtml = `
+    <div style="max-width: 900px; margin: 0 auto; font-family: Arial, sans-serif;">
+      ${content}
+    </div>
+  `;
+
+  openScreenPrintWindow({
+    title: "Cobro Mandante",
+    contentHtml: printHtml,
+    extraStyles: `
+      @page {
+        size: letter;
+        margin: 1cm;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: left;
+      }
+      th {
+        background: #f5f5f5;
+      }
+    `,
+  });
+}function printContractScreen() {
   const container = document.getElementById("contractPrint");
 
   if (!container || !container.innerHTML.trim()) {
@@ -2445,7 +2671,7 @@ async function generateContract() {
     if (fundoSelect) fundoSelect.value = newFundo;
   }
 
-  // 🔹 COMPLETAR NOMBRE Y RUT
+  // ðŸ”¹ COMPLETAR NOMBRE Y RUT
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
@@ -2456,7 +2682,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo será ";
+    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
@@ -2465,7 +2691,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // 🔹 AQUÍ VA EL PASO 2 👇
+  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -2580,11 +2806,11 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
-    showCustomAlert("✅ Contrato guardado en almacenamiento local OK");
+    showCustomAlert("âœ… Contrato guardado en almacenamiento local OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -2664,7 +2890,7 @@ function refreshFiniquitoResumen() {
 
 async function generateFiniquito() {
   if (isGeneratingFiniquito) {
-    alert("Ya se está generando un finiquito. Espere un momento.");
+    alert("Ya se estÃ¡ generando un finiquito. Espere un momento.");
     return;
   }
 
@@ -2678,7 +2904,7 @@ async function generateFiniquito() {
 
   const rawWorker = workers[workerIndex];
   if (!rawWorker || typeof rawWorker !== "object") {
-    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
+    alert("El trabajador seleccionado no es vÃ¡lido. Vuelva a seleccionarlo.");
     return;
   }
 
@@ -2715,19 +2941,19 @@ async function generateFiniquito() {
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
 
-  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
+  <p>En conformidad a lo dispuesto en la legislaciÃ³n laboral vigente, se deja constancia que:</p>
 
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
   <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
-  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
+  <p><strong>Fecha de terminaciÃ³n:</strong> ${endDate || "__________"}</p>
 
   <br>
 
-  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -2780,15 +3006,15 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
+        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
-      showCustomAlert("✅ Finiquito guardado en almacenamiento local OK");
+      showCustomAlert("âœ… Finiquito guardado en almacenamiento local OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
+    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -2858,11 +3084,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producción ese mes.</p>";
+    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÍAS TRABAJADOS =====
+  // ===== CALCULAR DÃAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -2888,7 +3114,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -2910,7 +3136,7 @@ function generateMonthlyGeneral() {
   const container = document.getElementById("monthlyGeneralResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producción ese mes.</p>";
+    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
     return;
   }
 
@@ -2971,7 +3197,7 @@ function generateMonthlyGeneral() {
   html += "</table></div>";
 
   html += "<table>";
-  html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
+  html += "<tr><th>Trabajador</th><th>DÃ­as</th><th>Total</th></tr>";
 
   let totalGeneral = 0;
 
@@ -3004,7 +3230,7 @@ function generateMonthlyGeneral() {
   container.innerHTML = html;
 }
 // =============================
-// 🔐 SESIÓN
+// ðŸ” SESIÃ“N
 // =============================
 
 window.onload = function () {
@@ -3047,14 +3273,14 @@ function closeFloatingUi() {
     return;
   }
 
-  // Cierra listas de búsqueda flotantes que pueden quedar sobre inputs.
+  // Cierra listas de bÃºsqueda flotantes que pueden quedar sobre inputs.
   document
     .querySelectorAll(".worker-search-list, .mandante-worker-list")
     .forEach((list) => {
       list.style.display = "none";
     });
 
-  // Si un modal quedó abierto por error, lo removemos para recuperar interacción.
+  // Si un modal quedÃ³ abierto por error, lo removemos para recuperar interacciÃ³n.
   const productionModal = document.getElementById("productionConfirmModal");
   if (productionModal) {
     productionModal.remove();
@@ -3095,7 +3321,7 @@ document.addEventListener("pointerdown", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
 
-  // No intervenir clicks sobre botones para no romper acciones críticas
+  // No intervenir clicks sobre botones para no romper acciones crÃ­ticas
   // (ej: inactivar trabajador) ni provocar scroll al inicio.
   if (target.closest("button")) return;
 
@@ -3109,7 +3335,7 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 // =============================
-// 📂 TOGGLE SUBMENU
+// ðŸ“‚ TOGGLE SUBMENU
 // =============================
 function toggleSubmenu(id) {
   const submenu = document.getElementById(id);
@@ -3123,7 +3349,7 @@ function toggleSubmenu(id) {
 }
 
 // =============================
-// 💾 EXPORTAR RESPALDO
+// ðŸ’¾ EXPORTAR RESPALDO
 // =============================
 function importData(event) {
   const file = event.target.files[0];
@@ -3164,7 +3390,7 @@ function importData(event) {
   reader.readAsText(file);
 }
 // =============================
-// 🗑️ ELIMINAR TRABAJADOR
+// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
 // =============================
 
 async function deleteWorker() {
@@ -3178,12 +3404,12 @@ async function deleteWorker() {
   const worker = workers[index];
 
   const ok = await showCustomConfirm(
-    `¿Está seguro de inactivar a ${worker.name}? El trabajador quedará inactivo y no aparecerá en las listas.`,
+    `Â¿EstÃ¡ seguro de inactivar a ${worker.name}? El trabajador quedarÃ¡ inactivo y no aparecerÃ¡ en las listas.`,
   );
 
   if (!ok) return;
 
-  // 🔹 1. Marcar inactivo en almacenamiento local
+  // ðŸ”¹ 1. Marcar inactivo en almacenamiento local
   const { error } = await storageClient
     .from("workers")
     .update({ active: false })
@@ -3195,16 +3421,94 @@ async function deleteWorker() {
     // ...existing code...
   }
 
-  // 🔹 2. Marcar inactivo local
+  // ðŸ”¹ 2. Marcar inactivo local
   workers[index].active = false;
   saveLocalDataDebounced();
 
-  // 🔹 3. Actualizar sistema
+  // ðŸ”¹ 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
 
   await showCustomAlert(`Trabajador ${worker.name} marcado como inactivo.`);
+}
+
+// =============================
+// 📂 CARPETA DEL TRABAJADOR
+// =============================
+
+function openWorkerFolder(rut) {
+  const worker = workers.find(w => w.rut === rut);
+  
+  if (!worker) {
+    alert('Trabajador no encontrado.');
+    return;
+  }
+  
+  // Actualizar datos en la vista
+  document.getElementById('folderWorkerName').textContent = worker.name || '-';
+  document.getElementById('folderWorkerRut').textContent = worker.rut || '-';
+  
+  // Limpiar lista anterior
+  const docContainer = document.getElementById('workerDocuments');
+  if (docContainer) {
+    docContainer.innerHTML = '<p>No hay documentos aún.</p>';
+  }
+  
+  // Mostrar la vista
+  showView('viewWorkerFolder');
+}
+
+async function uploadWorkerDocument() {
+  const fileInput = document.getElementById('workerFileUpload');
+  const rutElement = document.getElementById('folderWorkerRut');
+  
+  if (!fileInput || !fileInput.files.length) {
+    alert('Seleccione un archivo para subir.');
+    return;
+  }
+  
+  if (!rutElement || !rutElement.textContent.trim()) {
+    alert('RUT del trabajador no disponible.');
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  const rut = rutElement.textContent.trim();
+  const fileName = Date.now() + '_' + file.name;
+  const filePath = rut + '/documentos/' + fileName;
+  
+  try {
+    const uploadResult = await uploadFileToWorkerStorage(filePath, file);
+    
+    if (uploadResult.ok) {
+      alert('Documento cargado correctamente.');
+      fileInput.value = '';
+      
+      // Actualizar lista de documentos
+      const docContainer = document.getElementById('workerDocuments');
+      if (docContainer) {
+        let html = '<ul style="list-style: none; padding: 0;">';
+        html += `<li style="padding: 8px; border-bottom: 1px solid #eee;">
+          <strong>${file.name}</strong><br>
+          <small style="color: #666;">Subido: ${new Date().toLocaleString('es-CL')}</small>
+        </li>`;
+        html += '</ul>';
+        
+        const currentContent = docContainer.innerHTML;
+        if (currentContent.includes('No hay documentos')) {
+          docContainer.innerHTML = html;
+        } else {
+          docContainer.innerHTML = html + currentContent;
+        }
+      }
+    } else {
+      alert('Error al subir el documento: ' + (uploadResult.errorMessage || 'Error desconocido'));
+    }
+  } catch (error) {
+    console.error('Error subiendo documento:', error);
+    alert('Ocurrió un error al subir el documento.');
+  }
 }
 
 function exportData() {
@@ -3268,7 +3572,7 @@ async function syncToCloud(showAlerts = false) {
       const { error } = await storageClient.from("history").insert(record);
 
       if (error) {
-        console.error("Error subiendo producción:", error);
+        console.error("Error subiendo producciÃ³n:", error);
         historyErrors += 1;
       } else {
         historySuccess += 1;
@@ -3278,20 +3582,20 @@ async function syncToCloud(showAlerts = false) {
     if (showAlerts) {
       if (workerErrors === 0 && historyErrors === 0) {
         alert(
-          "✅ Guardado en almacenamiento local OK. Trabajadores: " +
+          "âœ… Guardado en almacenamiento local OK. Trabajadores: " +
             workerSuccess +
-            ", Producción: " +
+            ", ProducciÃ³n: " +
             historySuccess,
         );
       } else {
         alert(
-          "⚠️ Subida parcial a almacenamiento local. Trabajadores OK: " +
+          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
             workerSuccess +
             ", Trabajadores con error: " +
             workerErrors +
-            ", Producción OK: " +
+            ", ProducciÃ³n OK: " +
             historySuccess +
-            ", Producción con error: " +
+            ", ProducciÃ³n con error: " +
             historyErrors,
         );
       }
@@ -3305,14 +3609,14 @@ async function syncToCloud(showAlerts = false) {
   return { ok: true };
 }
 
-// Sincronización automática robusta al detectar conexión a internet o al cargar la app
+// SincronizaciÃ³n automÃ¡tica robusta al detectar conexiÃ³n a internet o al cargar la app
 window.addEventListener("online", () => {
   if (localStorage.getItem("sessionActive") !== "true") return;
   setTimeout(() => {
     initSystem();
   }, 0);
   console.log(
-    "Sincronización automática con la nube ejecutada (evento online).",
+    "SincronizaciÃ³n automÃ¡tica con la nube ejecutada (evento online).",
   );
 });
 
@@ -3327,7 +3631,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 async function syncFromCloud() {
-  if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
+  if (!confirm("Â¿Descargar datos de la nube y reemplazar los locales?")) return;
 
   const reachability = await ensureStorageReachable();
   if (!reachability.ok) {
@@ -3354,7 +3658,7 @@ async function syncFromCloud() {
       .select("*");
 
     if (historyError) {
-      console.error("Error descargando producción:", historyError);
+      console.error("Error descargando producciÃ³n:", historyError);
     } else {
       history = historyData || [];
       localStorage.setItem("history", JSON.stringify(history));
@@ -3448,10 +3752,10 @@ function exportMonthlyGeneralExcel() {
   const responsable = "Contratista"; // puedes cambiarlo luego
 
   // ENCABEZADO EMPRESA
-  csv += "SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA\n";
+  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
   csv += "RESUMEN MENSUAL GENERAL\n";
   csv += "Mes: " + month + "\n";
-  csv += "Fecha de generación: " + fechaGeneracion + "\n";
+  csv += "Fecha de generaciÃ³n: " + fechaGeneracion + "\n";
   csv += "Responsable: " + responsable + "\n\n";
 
   // ================================
@@ -3483,7 +3787,7 @@ function exportMonthlyGeneralExcel() {
     csv += data.labor + ";" + data.cantidad + ";" + data.total + "\n";
   });
 
-  // Línea total general
+  // LÃ­nea total general
   csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
 
   // Crear archivo
@@ -3499,7 +3803,7 @@ function exportMonthlyGeneralExcel() {
 }
 
 // =============================
-// � COBROS MANDANTES - CALENDARIO
+// ï¿½ COBROS MANDANTES - CALENDARIO
 // =============================
 var currentCalendarDateMandante = new Date();
 var selectedDaysMandante = new Set();
@@ -3530,7 +3834,7 @@ function showCalendarMandante(year = null, month = null) {
     "noviembre",
     "diciembre",
   ];
-  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sá"];
+  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sÃ¡"];
 
   let html =
     "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
@@ -3538,7 +3842,7 @@ function showCalendarMandante(year = null, month = null) {
   html +=
     "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
   html +=
-    "<button type='button' class='btn-month-mandante' data-dir='-1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+    "<button type='button' class='btn-month-mandante' data-dir='-1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>â—€</button>";
   html +=
     "<span style='font-weight: bold; text-transform: capitalize;'>" +
     monthNames[monthNum] +
@@ -3546,7 +3850,7 @@ function showCalendarMandante(year = null, month = null) {
     year +
     "</span>";
   html +=
-    "<button type='button' class='btn-month-mandante' data-dir='1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+    "<button type='button' class='btn-month-mandante' data-dir='1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>â–¶</button>";
   html += "</div>";
 
   html +=
@@ -3672,7 +3976,7 @@ function generateMandanteCobro() {
   selectedDates.sort();
 
   if (selectedDates.length === 0) {
-    alert("Seleccione al menos un día del calendario.");
+    alert("Seleccione al menos un dÃ­a del calendario.");
     return;
   }
 
@@ -3695,7 +3999,7 @@ function generateMandanteCobro() {
       resultContainer.innerHTML =
         "<p style='color:#666;'>No hay registros para las fechas seleccionadas.</p>";
     }
-    showCustomAlert("No hay registros en los días seleccionados.");
+    showCustomAlert("No hay registros en los dÃ­as seleccionados.");
     return;
     return;
   }
@@ -3721,7 +4025,7 @@ function generateMandanteCobro() {
 
   let html = "<h3>Cobro Mandante</h3>";
   html +=
-    "<p><strong>Período:</strong> " +
+    "<p><strong>PerÃ­odo:</strong> " +
     selectedDates[0] +
     " al " +
     selectedDates[selectedDates.length - 1] +
@@ -3755,7 +4059,7 @@ function generateMandanteCobro() {
 }
 
 // =============================
-// 🪪 FORMATO RUT
+// ðŸªª FORMATO RUT
 // =============================
 
 function formatRutInput(input) {
@@ -3775,7 +4079,7 @@ function formatRutInput(input) {
 }
 
 // =============================
-// 🔐 LOGIN
+// ðŸ” LOGIN
 // =============================
 
 async function loginUser() {
@@ -3795,14 +4099,13 @@ async function loginUser() {
       syncIndicator.remove();
     }
 
-    // Ejecutar la sincronización en segundo plano, no bloquear la UI
+    // Ejecutar la sincronizaciÃ³n en segundo plano, no bloquear la UI
     setTimeout(() => {
       initSystem();
     }, 0);
   } else {
-    alert("Contraseña incorrecta");
+    alert("ContraseÃ±a incorrecta");
   }
-  loadMinimumWage();
 }
 
 function logout() {
@@ -3811,19 +4114,19 @@ function logout() {
 }
 
 // =============================
-// 🚀 INIT
+// ðŸš€ INIT
 // =============================
 async function initSystem() {
   if (isSyncInProgress) {
     console.log(
-      "[initSystem] Sincronización ya en curso, se omite llamada duplicada.",
+      "[initSystem] SincronizaciÃ³n ya en curso, se omite llamada duplicada.",
     );
     return;
   }
 
   isSyncInProgress = true;
   const syncIndicator = document.getElementById("syncIndicator");
-  console.log("[initSystem] Iniciando sincronización...");
+  console.log("[initSystem] Iniciando sincronizaciÃ³n...");
 
   const hideSyncIndicator = () => {
     if (!syncIndicator) return;
@@ -3843,7 +4146,7 @@ async function initSystem() {
     if (syncIndicator) {
       syncIndicator.style.display = "flex";
       syncIndicator.style.pointerEvents = "none";
-      // Failsafe: nunca dejar bloqueada la UI por sincronización lenta
+      // Failsafe: nunca dejar bloqueada la UI por sincronizaciÃ³n lenta
       setTimeout(hideSyncIndicator, 2500);
     }
 
@@ -3867,21 +4170,21 @@ async function initSystem() {
             "[initSystem] Descargando historial de la nube (background)...",
           );
           await loadHistoryFromCloud();
-          console.log("[initSystem] Sincronización completa.");
+          console.log("[initSystem] SincronizaciÃ³n completa.");
         } else if (pendingSyncResult.reason === "storage_unreachable") {
           console.warn(
-            "[initSystem] Se omite sincronización con nube:",
+            "[initSystem] Se omite sincronizaciÃ³n con nube:",
             pendingSyncResult.errorMessage,
           );
           await notifyCloudUnavailableOnce(pendingSyncResult.errorMessage);
         } else {
           console.error(
-            "[initSystem] Error en sincronización de pendientes:",
+            "[initSystem] Error en sincronizaciÃ³n de pendientes:",
             pendingSyncResult,
           );
         }
       } catch (e) {
-        console.error("[initSystem] Excepción:", e);
+        console.error("[initSystem] ExcepciÃ³n:", e);
       } finally {
         hideSyncIndicator();
         isSyncInProgress = false;
@@ -3893,11 +4196,11 @@ async function initSystem() {
           }, 10);
         }
 
-        console.log("[initSystem] Overlay de sincronización oculto.");
+        console.log("[initSystem] Overlay de sincronizaciÃ³n oculto.");
       }
     }, 0);
   } else {
-    console.warn("[initSystem] Sin conexión o sin storageClient");
+    console.warn("[initSystem] Sin conexiÃ³n o sin storageClient");
     hideSyncIndicator();
     isSyncInProgress = false;
   }
@@ -3908,52 +4211,52 @@ async function initSystem() {
   loadAFPOptions();
   loadPagosWorkerFilter();
 
-  loadMinimumWage();
 }
 
 // =============================
-// 👨‍🌾 TRABAJADORES
+// TRABAJADORES
 // =============================
 
 async function addWorker() {
   console.log("editIndexWorker:", editIndexWorker);
 
-  const name = document.getElementById("workerName").value.trim();
-  const rut = document.getElementById("workerRut").value.trim();
-  const account = document.getElementById("workerAccount").value;
-  const birthDate = document.getElementById("workerBirthDate").value.trim();
-  const maritalStatus = document
-    .getElementById("workerMaritalStatus")
-    .value.trim();
-  const address = document.getElementById("workerAddress").value.trim();
-  const afp = document.getElementById("workerAFP").value.trim();
-  const health = document.getElementById("workerHealth").value.trim();
-  const position = document.getElementById("workerPosition").value.trim();
-  const nationality = document.getElementById("workerNationality").value.trim();
-  const baseSalary = document
-    .getElementById("workerBaseSalary")
-    .value.replace(/\$/g, "")
+  // Leer directamente por ID real del formulario
+  const workerName = (document.getElementById("workerName")?.value || "").trim();
+  const workerRut = (document.getElementById("workerRut")?.value || "").trim();
+  const account = document.getElementById("workerAccount")?.value || "";
+  const birthDate = document.getElementById("workerBirthDate")?.value.trim() || "";
+  const maritalStatus = document.getElementById("workerMaritalStatus")?.value.trim() || "";
+  const address = document.getElementById("workerAddress")?.value.trim() || "";
+  const afp = document.getElementById("workerAFP")?.value.trim() || "";
+  const health = document.getElementById("workerHealth")?.value.trim() || "";
+  const position = document.getElementById("workerPosition")?.value.trim() || "";
+  const nationality = document.getElementById("workerNationality")?.value.trim() || "";
+  const baseSalary = (document.getElementById("workerBaseSalary")?.value || "")
+    .replace(/\$/g, "")
     .replace(/\./g, "");
 
   let photoUrl = null;
-  if (!name || !rut) {
+  console.log("NAME:", workerName);
+  console.log("RUT:", workerRut);
+
+  if (!workerName || !workerRut) {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
-  // 🔹 VALIDAR RUT DUPLICADO
-  const rutIndex = workers.findIndex((w) => w.rut === rut);
+  // ðŸ”¹ VALIDAR RUT DUPLICADO
+  const rutIndex = workers.findIndex((w) => w.rut === workerRut);
   if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
     // await showCustomAlert("Este trabajador o RUT ya existe.");
     console.warn("Trabajador duplicado");
     return;
   }
 
-  // 🔹 Subir imagen si existe
+  // ðŸ”¹ Subir imagen si existe
   const fileInput = document.getElementById("workerIdPhoto");
   if (USE_STORAGE && fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const fileName = Date.now() + "_" + file.name;
-    const filePath = rut + "/" + fileName;
+    const filePath = workerRut + "/" + fileName;
 
     const uploadResult = await uploadFileToWorkerStorage(filePath, file);
 
@@ -3972,12 +4275,12 @@ async function addWorker() {
     }
   }
 
-  // 🔹 EDICIÓN
+  // ðŸ”¹ EDICIÃ“N
   if (editIndexWorker !== null) {
     workers[editIndexWorker] = {
       ...workers[editIndexWorker],
-      name,
-      rut,
+      name: workerName,
+      rut: workerRut,
       birthDate,
       maritalStatus,
       address,
@@ -3993,8 +4296,8 @@ async function addWorker() {
       const { data, error } = await storageClient
         .from("workers")
         .update({
-          name,
-          rut,
+          name: workerName,
+          rut: workerRut,
           birthDate,
           maritalStatus,
           address,
@@ -4014,11 +4317,11 @@ async function addWorker() {
     editIndexWorker = null;
   }
 
-  // 🔹 NUEVO TRABAJADOR
+  // ðŸ”¹ NUEVO TRABAJADOR
   else {
     const newWorker = {
-      name,
-      rut,
+      name: workerName,
+      rut: workerRut,
       birthDate,
       maritalStatus,
       address,
@@ -4029,7 +4332,6 @@ async function addWorker() {
       baseSalary,
       account_number: account,
       id_card_photo: photoUrl,
-      pending: true,
     };
 
     workers.push(newWorker);
@@ -4048,7 +4350,7 @@ async function addWorker() {
   loadWorkers();
   renderWorkersTable();
 
-  showCustomAlert("✅ Trabajador guardado correctamente");
+  showCustomAlert("Trabajador guardado correctamente");
 }
 // =============================
 // 📋 SELECTS
@@ -4094,7 +4396,7 @@ function filterWorkersPagos() {
   }
 }
 // =============================
-// 🏦 CARGAR AFP EN SELECT
+// ðŸ¦ CARGAR AFP EN SELECT
 // =============================
 
 function loadAFPOptions() {
@@ -4145,7 +4447,7 @@ function loadMandanteFundoFilter() {
 }
 
 // =============================
-// 🧩 AUXILIARES
+// ðŸ§© AUXILIARES
 // =============================
 
 function formatCurrency(input) {
@@ -4174,7 +4476,7 @@ function filterWorkersWeekly() {
 
   hiddenSelect.value = "";
 
-  // Si está vacío, ocultar lista y limpiar selección
+  // Si estÃ¡ vacÃ­o, ocultar lista y limpiar selecciÃ³n
   if (search === "") {
     resultsList.style.display = "none";
     resultsList.innerHTML = "";
@@ -4388,7 +4690,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo será _______________________________.";
+      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
   }
 }
 
@@ -4752,13 +5054,13 @@ function selectWorkerWeekly(index, name) {
   document.getElementById("workerWeeklyList").style.display = "none";
   document.getElementById("workerWeeklyList").innerHTML = "";
 
-  // Limpiar días seleccionados del trabajador anterior
+  // Limpiar dÃ­as seleccionados del trabajador anterior
   selectedDays.clear();
 
-  // Limpiar el resumen si había uno generado
+  // Limpiar el resumen si habÃ­a uno generado
   document.getElementById("weeklyResult").innerHTML = "";
 
-  // Mostrar calendario automáticamente
+  // Mostrar calendario automÃ¡ticamente
   showCalendar();
 }
 
@@ -4773,7 +5075,7 @@ async function generateLiquidation() {
 
   const worker = workers[workerIndex];
 
-  // ===== PRODUCCIÓN DEL MES =====
+  // ===== PRODUCCIÃ“N DEL MES =====
 
   const recordsRaw = history.filter(
     (r) => r.rut === worker.rut && isHistoryRecordInMonth(r.date, month),
@@ -4789,7 +5091,7 @@ async function generateLiquidation() {
 
   if (records.length === 0) {
     generateLiquidation();
-    alert("No hay producción ese mes.");
+    alert("No hay producciÃ³n ese mes.");
     return;
   }
 
@@ -4833,7 +5135,7 @@ async function generateLiquidation() {
   const html = `
 <div class="liq-doc">
 
-<h1>LIQUIDACIÓN DE SUELDO</h1>
+<h1>LIQUIDACIÃ“N DE SUELDO</h1>
 <h3>${month}</h3>
 
 <p><strong>Nombre:</strong> ${worker.name}</p>
@@ -4841,7 +5143,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>Días trabajados:</strong> ${daysWorked}</p>
+<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -4855,7 +5157,7 @@ async function generateLiquidation() {
 </tr>
 
 <tr>
-<td>Bono Producción</td>
+<td>Bono ProducciÃ³n</td>
 <td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
@@ -4889,7 +5191,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -4932,13 +5234,13 @@ async function generateLiquidation() {
   );
 
   if (!uploadResult.ok) {
-    console.error("Error subiendo liquidación:", uploadResult.error);
+    console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
     alert(
-      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
     );
   } else {
-    console.log("Liquidación guardada en almacenamiento local");
-    alert("✅ Liquidación guardada en almacenamiento local OK");
+    console.log("LiquidaciÃ³n guardada en almacenamiento local");
+    alert("âœ… LiquidaciÃ³n guardada en almacenamiento local OK");
   }
 }
 
@@ -5144,7 +5446,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
 
   if (!printWindow) {
     alert(
-      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
+      "No se pudo abrir la ventana de impresiÃ³n. Verifique bloqueadores de ventanas emergentes.",
     );
     return;
   }
@@ -5177,17 +5479,66 @@ function printLiquidationScreen() {
   const container = document.getElementById("liquidationPrint");
 
   if (!container || !container.innerHTML.trim()) {
-    alert("Primero genere la liquidación para imprimir.");
+    alert("Primero genere la liquidaciÃ³n para imprimir.");
     return;
   }
 
   openScreenPrintWindow({
-    title: "Liquidación de Sueldo",
+    title: "LiquidaciÃ³n de Sueldo",
     contentHtml: container.outerHTML,
   });
 }
 
-function printContractScreen() {
+
+function printMandanteCobro() {
+  const resultContainer = document.getElementById("mandanteResult");
+
+  if (!resultContainer || !resultContainer.innerHTML.trim()) {
+    generateMandanteCobro();
+  }
+
+  const content = resultContainer?.innerHTML?.trim();
+
+  if (!content) {
+    alert("Primero genere el cobro mandante para imprimir.");
+    return;
+  }
+
+  const printHtml = `
+    <div style="max-width: 900px; margin: 0 auto; font-family: Arial, sans-serif;">
+      ${content}
+    </div>
+  `;
+
+  openScreenPrintWindow({
+    title: "Cobro Mandante",
+    contentHtml: printHtml,
+    extraStyles: `
+      @page {
+        size: letter;
+        margin: 1cm;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: left;
+      }
+      th {
+        background: #f5f5f5;
+      }
+    `,
+  });
+}function printContractScreen() {
   const container = document.getElementById("contractPrint");
 
   if (!container || !container.innerHTML.trim()) {
@@ -5273,7 +5624,7 @@ async function generateContract() {
     if (fundoSelect) fundoSelect.value = newFundo;
   }
 
-  // 🔹 COMPLETAR NOMBRE Y RUT
+  // ðŸ”¹ COMPLETAR NOMBRE Y RUT
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
@@ -5284,7 +5635,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo será ";
+    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
@@ -5293,7 +5644,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // 🔹 AQUÍ VA EL PASO 2 👇
+  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -5408,11 +5759,11 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
-    showCustomAlert("✅ Contrato guardado en almacenamiento local OK");
+    showCustomAlert("âœ… Contrato guardado en almacenamiento local OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -5492,7 +5843,7 @@ function refreshFiniquitoResumen() {
 
 async function generateFiniquito() {
   if (isGeneratingFiniquito) {
-    alert("Ya se está generando un finiquito. Espere un momento.");
+    alert("Ya se estÃ¡ generando un finiquito. Espere un momento.");
     return;
   }
 
@@ -5506,7 +5857,7 @@ async function generateFiniquito() {
 
   const rawWorker = workers[workerIndex];
   if (!rawWorker || typeof rawWorker !== "object") {
-    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
+    alert("El trabajador seleccionado no es vÃ¡lido. Vuelva a seleccionarlo.");
     return;
   }
 
@@ -5543,19 +5894,19 @@ async function generateFiniquito() {
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
 
-  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
+  <p>En conformidad a lo dispuesto en la legislaciÃ³n laboral vigente, se deja constancia que:</p>
 
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
   <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
-  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
+  <p><strong>Fecha de terminaciÃ³n:</strong> ${endDate || "__________"}</p>
 
   <br>
 
-  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -5608,15 +5959,15 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
+        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
-      showCustomAlert("✅ Finiquito guardado en almacenamiento local OK");
+      showCustomAlert("âœ… Finiquito guardado en almacenamiento local OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
+    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -5686,11 +6037,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producción ese mes.</p>";
+    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÍAS TRABAJADOS =====
+  // ===== CALCULAR DÃAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -5716,7 +6067,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -5738,7 +6089,7 @@ function generateMonthlyGeneral() {
   const container = document.getElementById("monthlyGeneralResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producción ese mes.</p>";
+    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
     return;
   }
 
@@ -5799,7 +6150,7 @@ function generateMonthlyGeneral() {
   html += "</table></div>";
 
   html += "<table>";
-  html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
+  html += "<tr><th>Trabajador</th><th>DÃ­as</th><th>Total</th></tr>";
 
   let totalGeneral = 0;
 
@@ -5832,7 +6183,7 @@ function generateMonthlyGeneral() {
   container.innerHTML = html;
 }
 // =============================
-// 🔐 SESIÓN
+// ðŸ” SESIÃ“N
 // =============================
 
 window.onload = function () {
@@ -5875,14 +6226,14 @@ function closeFloatingUi() {
     return;
   }
 
-  // Cierra listas de búsqueda flotantes que pueden quedar sobre inputs.
+  // Cierra listas de bÃºsqueda flotantes que pueden quedar sobre inputs.
   document
     .querySelectorAll(".worker-search-list, .mandante-worker-list")
     .forEach((list) => {
       list.style.display = "none";
     });
 
-  // Si un modal quedó abierto por error, lo removemos para recuperar interacción.
+  // Si un modal quedÃ³ abierto por error, lo removemos para recuperar interacciÃ³n.
   const productionModal = document.getElementById("productionConfirmModal");
   if (productionModal) {
     productionModal.remove();
@@ -5923,7 +6274,7 @@ document.addEventListener("pointerdown", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
 
-  // No intervenir clicks sobre botones para no romper acciones críticas
+  // No intervenir clicks sobre botones para no romper acciones crÃ­ticas
   // (ej: inactivar trabajador) ni provocar scroll al inicio.
   if (target.closest("button")) return;
 
@@ -5937,7 +6288,7 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 // =============================
-// 📂 TOGGLE SUBMENU
+// ðŸ“‚ TOGGLE SUBMENU
 // =============================
 function toggleSubmenu(id) {
   const submenu = document.getElementById(id);
@@ -5951,7 +6302,7 @@ function toggleSubmenu(id) {
 }
 
 // =============================
-// 💾 EXPORTAR RESPALDO
+// ðŸ’¾ EXPORTAR RESPALDO
 // =============================
 function importData(event) {
   const file = event.target.files[0];
@@ -5992,7 +6343,7 @@ function importData(event) {
   reader.readAsText(file);
 }
 // =============================
-// 🗑️ ELIMINAR TRABAJADOR
+// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
 // =============================
 
 async function deleteWorker() {
@@ -6006,12 +6357,12 @@ async function deleteWorker() {
   const worker = workers[index];
 
   const ok = await showCustomConfirm(
-    `¿Está seguro de inactivar a ${worker.name}? El trabajador quedará inactivo y no aparecerá en las listas.`,
+    `Â¿EstÃ¡ seguro de inactivar a ${worker.name}? El trabajador quedarÃ¡ inactivo y no aparecerÃ¡ en las listas.`,
   );
 
   if (!ok) return;
 
-  // 🔹 1. Marcar inactivo en almacenamiento local
+  // ðŸ”¹ 1. Marcar inactivo en almacenamiento local
   const { error } = await storageClient
     .from("workers")
     .update({ active: false })
@@ -6023,11 +6374,11 @@ async function deleteWorker() {
     // ...existing code...
   }
 
-  // 🔹 2. Marcar inactivo local
+  // ðŸ”¹ 2. Marcar inactivo local
   workers[index].active = false;
   saveLocalDataDebounced();
 
-  // 🔹 3. Actualizar sistema
+  // ðŸ”¹ 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
@@ -6096,7 +6447,7 @@ async function syncToCloud(showAlerts = false) {
       const { error } = await storageClient.from("history").insert(record);
 
       if (error) {
-        console.error("Error subiendo producción:", error);
+        console.error("Error subiendo producciÃ³n:", error);
         historyErrors += 1;
       } else {
         historySuccess += 1;
@@ -6106,20 +6457,20 @@ async function syncToCloud(showAlerts = false) {
     if (showAlerts) {
       if (workerErrors === 0 && historyErrors === 0) {
         alert(
-          "✅ Guardado en almacenamiento local OK. Trabajadores: " +
+          "âœ… Guardado en almacenamiento local OK. Trabajadores: " +
             workerSuccess +
-            ", Producción: " +
+            ", ProducciÃ³n: " +
             historySuccess,
         );
       } else {
         alert(
-          "⚠️ Subida parcial a almacenamiento local. Trabajadores OK: " +
+          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
             workerSuccess +
             ", Trabajadores con error: " +
             workerErrors +
-            ", Producción OK: " +
+            ", ProducciÃ³n OK: " +
             historySuccess +
-            ", Producción con error: " +
+            ", ProducciÃ³n con error: " +
             historyErrors,
         );
       }
@@ -6133,14 +6484,14 @@ async function syncToCloud(showAlerts = false) {
   return { ok: true };
 }
 
-// Sincronización automática robusta al detectar conexión a internet o al cargar la app
+// SincronizaciÃ³n automÃ¡tica robusta al detectar conexiÃ³n a internet o al cargar la app
 window.addEventListener("online", () => {
   if (localStorage.getItem("sessionActive") !== "true") return;
   setTimeout(() => {
     initSystem();
   }, 0);
   console.log(
-    "Sincronización automática con la nube ejecutada (evento online).",
+    "SincronizaciÃ³n automÃ¡tica con la nube ejecutada (evento online).",
   );
 });
 
@@ -6155,7 +6506,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 async function syncFromCloud() {
-  if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
+  if (!confirm("Â¿Descargar datos de la nube y reemplazar los locales?")) return;
 
   const reachability = await ensureStorageReachable();
   if (!reachability.ok) {
@@ -6182,7 +6533,7 @@ async function syncFromCloud() {
       .select("*");
 
     if (historyError) {
-      console.error("Error descargando producción:", historyError);
+      console.error("Error descargando producciÃ³n:", historyError);
     } else {
       history = historyData || [];
       localStorage.setItem("history", JSON.stringify(history));
@@ -6276,10 +6627,10 @@ function exportMonthlyGeneralExcel() {
   const responsable = "Contratista"; // puedes cambiarlo luego
 
   // ENCABEZADO EMPRESA
-  csv += "SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA\n";
+  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
   csv += "RESUMEN MENSUAL GENERAL\n";
   csv += "Mes: " + month + "\n";
-  csv += "Fecha de generación: " + fechaGeneracion + "\n";
+  csv += "Fecha de generaciÃ³n: " + fechaGeneracion + "\n";
   csv += "Responsable: " + responsable + "\n\n";
 
   // ================================
@@ -6311,7 +6662,7 @@ function exportMonthlyGeneralExcel() {
     csv += data.labor + ";" + data.cantidad + ";" + data.total + "\n";
   });
 
-  // Línea total general
+  // LÃ­nea total general
   csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
 
   // Crear archivo
@@ -6327,7 +6678,7 @@ function exportMonthlyGeneralExcel() {
 }
 
 // =============================
-// � COBROS MANDANTES - CALENDARIO
+// ï¿½ COBROS MANDANTES - CALENDARIO
 // =============================
 var currentCalendarDateMandante = new Date();
 var selectedDaysMandante = new Set();
@@ -6358,7 +6709,7 @@ function showCalendarMandante(year = null, month = null) {
     "noviembre",
     "diciembre",
   ];
-  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sá"];
+  const dayNames = ["do", "lu", "ma", "mi", "ju", "vi", "sÃ¡"];
 
   let html =
     "<div style='width: 350px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>";
@@ -6366,7 +6717,7 @@ function showCalendarMandante(year = null, month = null) {
   html +=
     "<div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;'>";
   html +=
-    "<button type='button' class='btn-month-mandante' data-dir='-1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>◀</button>";
+    "<button type='button' class='btn-month-mandante' data-dir='-1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>â—€</button>";
   html +=
     "<span style='font-weight: bold; text-transform: capitalize;'>" +
     monthNames[monthNum] +
@@ -6374,7 +6725,7 @@ function showCalendarMandante(year = null, month = null) {
     year +
     "</span>";
   html +=
-    "<button type='button' class='btn-month-mandante' data-dir='1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>▶</button>";
+    "<button type='button' class='btn-month-mandante' data-dir='1' style='border: none; background: none; cursor: pointer; font-size: 20px; padding: 5px 10px; color: #333;'>â–¶</button>";
   html += "</div>";
 
   html +=
@@ -6500,7 +6851,7 @@ function generateMandanteCobro() {
   selectedDates.sort();
 
   if (selectedDates.length === 0) {
-    alert("Seleccione al menos un día del calendario.");
+    alert("Seleccione al menos un dÃ­a del calendario.");
     return;
   }
 
@@ -6523,7 +6874,7 @@ function generateMandanteCobro() {
       resultContainer.innerHTML =
         "<p style='color:#666;'>No hay registros para las fechas seleccionadas.</p>";
     }
-    showCustomAlert("No hay registros en los días seleccionados.");
+    showCustomAlert("No hay registros en los dÃ­as seleccionados.");
     return;
     return;
   }
@@ -6549,7 +6900,7 @@ function generateMandanteCobro() {
 
   let html = "<h3>Cobro Mandante</h3>";
   html +=
-    "<p><strong>Período:</strong> " +
+    "<p><strong>PerÃ­odo:</strong> " +
     selectedDates[0] +
     " al " +
     selectedDates[selectedDates.length - 1] +
@@ -6583,7 +6934,7 @@ function generateMandanteCobro() {
 }
 
 // =============================
-// 🪪 FORMATO RUT
+// ðŸªª FORMATO RUT
 // =============================
 
 function formatRutInput(input) {
@@ -6603,7 +6954,7 @@ function formatRutInput(input) {
 }
 
 // =============================
-// 🔐 LOGIN
+// ðŸ” LOGIN
 // =============================
 
 async function loginUser() {
@@ -6630,7 +6981,7 @@ async function loginUser() {
   } else {
     alert("Contraseña incorrecta");
   }
-  loadMinimumWage();
+  
 }
 
 function logout() {
@@ -6639,7 +6990,7 @@ function logout() {
 }
 
 // =============================
-// 🚀 INIT
+// ðŸš€ INIT
 // =============================
 async function initSystem() {
   if (isSyncInProgress) {
@@ -6671,7 +7022,7 @@ async function initSystem() {
     if (syncIndicator) {
       syncIndicator.style.display = "flex";
       syncIndicator.style.pointerEvents = "none";
-      // Failsafe: nunca dejar bloqueada la UI por sincronización lenta
+      // Failsafe: nunca dejar bloqueada la UI por sincronizaciÃ³n lenta
       setTimeout(hideSyncIndicator, 2500);
     }
 
@@ -6704,12 +7055,12 @@ async function initSystem() {
           await notifyCloudUnavailableOnce(pendingSyncResult.errorMessage);
         } else {
           console.error(
-            "[initSystem] Error en sincronización de pendientes:",
+            "[initSystem] Error en sincronizaciÃ³n de pendientes:",
             pendingSyncResult,
           );
         }
       } catch (e) {
-        console.error("[initSystem] Excepción:", e);
+        console.error("[initSystem] ExcepciÃ³n:", e);
       } finally {
         hideSyncIndicator();
         isSyncInProgress = false;
@@ -6721,7 +7072,7 @@ async function initSystem() {
           }, 10);
         }
 
-        console.log("[initSystem] Overlay de sincronización oculto.");
+        console.log("[initSystem] Overlay de sincronizaciÃ³n oculto.");
       }
     }, 0);
   } else {
@@ -6736,52 +7087,57 @@ async function initSystem() {
   loadAFPOptions();
   loadPagosWorkerFilter();
 
-  loadMinimumWage();
 }
 
 // =============================
-// 👨‍🌾 TRABAJADORES
+// ðŸ‘¨â€ðŸŒ¾ TRABAJADORES
 // =============================
 
 async function addWorker() {
   console.log("editIndexWorker:", editIndexWorker);
 
-  const name = document.getElementById("workerName").value.trim();
-  const rut = document.getElementById("workerRut").value.trim();
-  const account = document.getElementById("workerAccount").value;
-  const birthDate = document.getElementById("workerBirthDate").value.trim();
-  const maritalStatus = document
-    .getElementById("workerMaritalStatus")
-    .value.trim();
-  const address = document.getElementById("workerAddress").value.trim();
-  const afp = document.getElementById("workerAFP").value.trim();
-  const health = document.getElementById("workerHealth").value.trim();
-  const position = document.getElementById("workerPosition").value.trim();
-  const nationality = document.getElementById("workerNationality").value.trim();
-  const baseSalary = document
-    .getElementById("workerBaseSalary")
-    .value.replace(/\$/g, "")
+  // Diagnostico: verificar elemento nombre antes de leer
+  const _nameEl = document.getElementById("workerName");
+  console.log("INPUT NAME ELEMENT:", _nameEl);
+  console.log("INPUT VALUE:", _nameEl?.value);
+
+  // Leer directamente por ID real del formulario
+  const workerName = (_nameEl?.value || "").trim();
+  const workerRut = (document.getElementById("workerRut")?.value || "").trim();
+  const account = document.getElementById("workerAccount")?.value || "";
+  const birthDate = document.getElementById("workerBirthDate")?.value.trim() || "";
+  const maritalStatus = document.getElementById("workerMaritalStatus")?.value.trim() || "";
+  const address = document.getElementById("workerAddress")?.value.trim() || "";
+  const afp = document.getElementById("workerAFP")?.value.trim() || "";
+  const health = document.getElementById("workerHealth")?.value.trim() || "";
+  const position = document.getElementById("workerPosition")?.value.trim() || "";
+  const nationality = document.getElementById("workerNationality")?.value.trim() || "";
+  const baseSalary = (document.getElementById("workerBaseSalary")?.value || "")
+    .replace(/\$/g, "")
     .replace(/\./g, "");
 
   let photoUrl = null;
-  if (!name || !rut) {
+  console.log("NAME:", workerName);
+  console.log("RUT:", workerRut);
+
+  if (!workerName || !workerRut) {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
-  // 🔹 VALIDAR RUT DUPLICADO
-  const rutIndex = workers.findIndex((w) => w.rut === rut);
+  // ðŸ”¹ VALIDAR RUT DUPLICADO
+  const rutIndex = workers.findIndex((w) => w.rut === workerRut);
   if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
     // await showCustomAlert("Este trabajador o RUT ya existe.");
     console.warn("Trabajador duplicado");
     return;
   }
 
-  // 🔹 Subir imagen si existe
+  // ðŸ”¹ Subir imagen si existe
   const fileInput = document.getElementById("workerIdPhoto");
   if (USE_STORAGE && fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const fileName = Date.now() + "_" + file.name;
-    const filePath = rut + "/" + fileName;
+    const filePath = workerRut + "/" + fileName;
 
     const uploadResult = await uploadFileToWorkerStorage(filePath, file);
 
@@ -6800,12 +7156,12 @@ async function addWorker() {
     }
   }
 
-  // 🔹 EDICIÓN
+  // ðŸ”¹ EDICIÃ“N
   if (editIndexWorker !== null) {
     workers[editIndexWorker] = {
       ...workers[editIndexWorker],
-      name,
-      rut,
+      name: workerName,
+      rut: workerRut,
       birthDate,
       maritalStatus,
       address,
@@ -6821,8 +7177,8 @@ async function addWorker() {
       const { data, error } = await storageClient
         .from("workers")
         .update({
-          name,
-          rut,
+          name: workerName,
+          rut: workerRut,
           birthDate,
           maritalStatus,
           address,
@@ -6842,11 +7198,11 @@ async function addWorker() {
     editIndexWorker = null;
   }
 
-  // 🔹 NUEVO TRABAJADOR
+  // ðŸ”¹ NUEVO TRABAJADOR
   else {
     const newWorker = {
-      name,
-      rut,
+      name: workerName,
+      rut: workerRut,
       birthDate,
       maritalStatus,
       address,
@@ -6857,7 +7213,6 @@ async function addWorker() {
       baseSalary,
       account_number: account,
       id_card_photo: photoUrl,
-      pending: true,
     };
 
     workers.push(newWorker);
@@ -6876,7 +7231,7 @@ async function addWorker() {
   loadWorkers();
   renderWorkersTable();
 
-  showCustomAlert("✅ Trabajador guardado correctamente");
+  showCustomAlert("Trabajador guardado correctamente");
 }
 // =============================
 // 📋 SELECTS
@@ -6973,7 +7328,7 @@ function loadMandanteFundoFilter() {
 }
 
 // =============================
-// 🧩 AUXILIARES
+// 🛠️ AUXILIARES
 // =============================
 
 function formatCurrency(input) {
@@ -7002,7 +7357,7 @@ function filterWorkersWeekly() {
 
   hiddenSelect.value = "";
 
-  // Si está vacío, ocultar lista y limpiar selección
+  // Si estÃ¡ vacÃ­o, ocultar lista y limpiar selecciÃ³n
   if (search === "") {
     resultsList.style.display = "none";
     resultsList.innerHTML = "";
@@ -7216,7 +7571,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo será _______________________________.";
+      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
   }
 }
 
@@ -7580,13 +7935,13 @@ function selectWorkerWeekly(index, name) {
   document.getElementById("workerWeeklyList").style.display = "none";
   document.getElementById("workerWeeklyList").innerHTML = "";
 
-  // Limpiar días seleccionados del trabajador anterior
+  // Limpiar dÃ­as seleccionados del trabajador anterior
   selectedDays.clear();
 
-  // Limpiar el resumen si había uno generado
+  // Limpiar el resumen si habÃ­a uno generado
   document.getElementById("weeklyResult").innerHTML = "";
 
-  // Mostrar calendario automáticamente
+  // Mostrar calendario automÃ¡ticamente
   showCalendar();
 }
 
@@ -7601,7 +7956,7 @@ async function generateLiquidation() {
 
   const worker = workers[workerIndex];
 
-  // ===== PRODUCCIÓN DEL MES =====
+  // ===== PRODUCCIÃ“N DEL MES =====
 
   const recordsRaw = history.filter(
     (r) => r.rut === worker.rut && isHistoryRecordInMonth(r.date, month),
@@ -7617,7 +7972,7 @@ async function generateLiquidation() {
 
   if (records.length === 0) {
     generateLiquidation();
-    alert("No hay producción ese mes.");
+    alert("No hay producciÃ³n ese mes.");
     return;
   }
 
@@ -7661,7 +8016,7 @@ async function generateLiquidation() {
   const html = `
 <div class="liq-doc">
 
-<h1>LIQUIDACIÓN DE SUELDO</h1>
+<h1>LIQUIDACIÃ“N DE SUELDO</h1>
 <h3>${month}</h3>
 
 <p><strong>Nombre:</strong> ${worker.name}</p>
@@ -7669,7 +8024,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>Días trabajados:</strong> ${daysWorked}</p>
+<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -7683,7 +8038,7 @@ async function generateLiquidation() {
 </tr>
 
 <tr>
-<td>Bono Producción</td>
+<td>Bono ProducciÃ³n</td>
 <td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
@@ -7717,7 +8072,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -7760,13 +8115,13 @@ async function generateLiquidation() {
   );
 
   if (!uploadResult.ok) {
-    console.error("Error subiendo liquidación:", uploadResult.error);
+    console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
     alert(
-      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
     );
   } else {
-    console.log("Liquidación guardada en almacenamiento local");
-    alert("✅ Liquidación guardada en almacenamiento local OK");
+    console.log("LiquidaciÃ³n guardada en almacenamiento local");
+    alert("âœ… LiquidaciÃ³n guardada en almacenamiento local OK");
   }
 }
 
@@ -7972,7 +8327,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
 
   if (!printWindow) {
     alert(
-      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
+      "No se pudo abrir la ventana de impresiÃ³n. Verifique bloqueadores de ventanas emergentes.",
     );
     return;
   }
@@ -8005,17 +8360,66 @@ function printLiquidationScreen() {
   const container = document.getElementById("liquidationPrint");
 
   if (!container || !container.innerHTML.trim()) {
-    alert("Primero genere la liquidación para imprimir.");
+    alert("Primero genere la liquidaciÃ³n para imprimir.");
     return;
   }
 
   openScreenPrintWindow({
-    title: "Liquidación de Sueldo",
+    title: "LiquidaciÃ³n de Sueldo",
     contentHtml: container.outerHTML,
   });
 }
 
-function printContractScreen() {
+
+function printMandanteCobro() {
+  const resultContainer = document.getElementById("mandanteResult");
+
+  if (!resultContainer || !resultContainer.innerHTML.trim()) {
+    generateMandanteCobro();
+  }
+
+  const content = resultContainer?.innerHTML?.trim();
+
+  if (!content) {
+    alert("Primero genere el cobro mandante para imprimir.");
+    return;
+  }
+
+  const printHtml = `
+    <div style="max-width: 900px; margin: 0 auto; font-family: Arial, sans-serif;">
+      ${content}
+    </div>
+  `;
+
+  openScreenPrintWindow({
+    title: "Cobro Mandante",
+    contentHtml: printHtml,
+    extraStyles: `
+      @page {
+        size: letter;
+        margin: 1cm;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: left;
+      }
+      th {
+        background: #f5f5f5;
+      }
+    `,
+  });
+}function printContractScreen() {
   const container = document.getElementById("contractPrint");
 
   if (!container || !container.innerHTML.trim()) {
@@ -8101,7 +8505,7 @@ async function generateContract() {
     if (fundoSelect) fundoSelect.value = newFundo;
   }
 
-  // 🔹 COMPLETAR NOMBRE Y RUT
+  // ðŸ”¹ COMPLETAR NOMBRE Y RUT
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
@@ -8112,7 +8516,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo será ";
+    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
@@ -8121,7 +8525,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // 🔹 AQUÍ VA EL PASO 2 👇
+  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -8236,11 +8640,11 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
-    showCustomAlert("✅ Contrato guardado en almacenamiento local OK");
+    showCustomAlert("âœ… Contrato guardado en almacenamiento local OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -8320,7 +8724,7 @@ function refreshFiniquitoResumen() {
 
 async function generateFiniquito() {
   if (isGeneratingFiniquito) {
-    alert("Ya se está generando un finiquito. Espere un momento.");
+    alert("Ya se estÃ¡ generando un finiquito. Espere un momento.");
     return;
   }
 
@@ -8334,7 +8738,7 @@ async function generateFiniquito() {
 
   const rawWorker = workers[workerIndex];
   if (!rawWorker || typeof rawWorker !== "object") {
-    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
+    alert("El trabajador seleccionado no es vÃ¡lido. Vuelva a seleccionarlo.");
     return;
   }
 
@@ -8371,19 +8775,19 @@ async function generateFiniquito() {
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
 
-  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
+  <p>En conformidad a lo dispuesto en la legislaciÃ³n laboral vigente, se deja constancia que:</p>
 
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
   <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
-  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
+  <p><strong>Fecha de terminaciÃ³n:</strong> ${endDate || "__________"}</p>
 
   <br>
 
-  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -8436,15 +8840,15 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
+        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
-      showCustomAlert("✅ Finiquito guardado en almacenamiento local OK");
+      showCustomAlert("âœ… Finiquito guardado en almacenamiento local OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
+    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -8514,11 +8918,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producción ese mes.</p>";
+    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÍAS TRABAJADOS =====
+  // ===== CALCULAR DÃAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -8544,7 +8948,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -8566,7 +8970,7 @@ function generateMonthlyGeneral() {
   const container = document.getElementById("monthlyGeneralResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producción ese mes.</p>";
+    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
     return;
   }
 
@@ -8627,7 +9031,7 @@ function generateMonthlyGeneral() {
   html += "</table></div>";
 
   html += "<table>";
-  html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
+  html += "<tr><th>Trabajador</th><th>DÃ­as</th><th>Total</th></tr>";
 
   let totalGeneral = 0;
 
@@ -8660,7 +9064,7 @@ function generateMonthlyGeneral() {
   container.innerHTML = html;
 }
 // =============================
-// 🔐 SESIÓN
+// ðŸ” SESIÃ“N
 // =============================
 
 window.onload = function () {
@@ -8703,14 +9107,14 @@ function closeFloatingUi() {
     return;
   }
 
-  // Cierra listas de búsqueda flotantes que pueden quedar sobre inputs.
+  // Cierra listas de bÃºsqueda flotantes que pueden quedar sobre inputs.
   document
     .querySelectorAll(".worker-search-list, .mandante-worker-list")
     .forEach((list) => {
       list.style.display = "none";
     });
 
-  // Si un modal quedó abierto por error, lo removemos para recuperar interacción.
+  // Si un modal quedÃ³ abierto por error, lo removemos para recuperar interacciÃ³n.
   const productionModal = document.getElementById("productionConfirmModal");
   if (productionModal) {
     productionModal.remove();
@@ -8751,7 +9155,7 @@ document.addEventListener("pointerdown", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
 
-  // No intervenir clicks sobre botones para no romper acciones críticas
+  // No intervenir clicks sobre botones para no romper acciones crÃ­ticas
   // (ej: inactivar trabajador) ni provocar scroll al inicio.
   if (target.closest("button")) return;
 
@@ -8765,7 +9169,7 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 // =============================
-// 📂 TOGGLE SUBMENU
+// ðŸ“‚ TOGGLE SUBMENU
 // =============================
 function toggleSubmenu(id) {
   const submenu = document.getElementById(id);
@@ -8779,7 +9183,7 @@ function toggleSubmenu(id) {
 }
 
 // =============================
-// 💾 EXPORTAR RESPALDO
+// ðŸ’¾ EXPORTAR RESPALDO
 // =============================
 function importData(event) {
   const file = event.target.files[0];
@@ -8820,7 +9224,7 @@ function importData(event) {
   reader.readAsText(file);
 }
 // =============================
-// 🗑️ ELIMINAR TRABAJADOR
+// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
 // =============================
 
 async function deleteWorker() {
@@ -8834,12 +9238,12 @@ async function deleteWorker() {
   const worker = workers[index];
 
   const ok = await showCustomConfirm(
-    `¿Está seguro de inactivar a ${worker.name}? El trabajador quedará inactivo y no aparecerá en las listas.`,
+    `Â¿EstÃ¡ seguro de inactivar a ${worker.name}? El trabajador quedarÃ¡ inactivo y no aparecerÃ¡ en las listas.`,
   );
 
   if (!ok) return;
 
-  // 🔹 1. Marcar inactivo en almacenamiento local
+  // ðŸ”¹ 1. Marcar inactivo en almacenamiento local
   const { error } = await storageClient
     .from("workers")
     .update({ active: false })
@@ -8851,11 +9255,11 @@ async function deleteWorker() {
     // ...existing code...
   }
 
-  // 🔹 2. Marcar inactivo local
+  // ðŸ”¹ 2. Marcar inactivo local
   workers[index].active = false;
   saveLocalDataDebounced();
 
-  // 🔹 3. Actualizar sistema
+  // ðŸ”¹ 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
@@ -8924,7 +9328,7 @@ async function syncToCloud(showAlerts = false) {
       const { error } = await storageClient.from("history").insert(record);
 
       if (error) {
-        console.error("Error subiendo producción:", error);
+        console.error("Error subiendo producciÃ³n:", error);
         historyErrors += 1;
       } else {
         historySuccess += 1;
@@ -8934,20 +9338,20 @@ async function syncToCloud(showAlerts = false) {
     if (showAlerts) {
       if (workerErrors === 0 && historyErrors === 0) {
         alert(
-          "✅ Guardado en almacenamiento local OK. Trabajadores: " +
+          "âœ… Guardado en almacenamiento local OK. Trabajadores: " +
             workerSuccess +
-            ", Producción: " +
+            ", ProducciÃ³n: " +
             historySuccess,
         );
       } else {
         alert(
-          "⚠️ Subida parcial a almacenamiento local. Trabajadores OK: " +
+          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
             workerSuccess +
             ", Trabajadores con error: " +
             workerErrors +
-            ", Producción OK: " +
+            ", ProducciÃ³n OK: " +
             historySuccess +
-            ", Producción con error: " +
+            ", ProducciÃ³n con error: " +
             historyErrors,
         );
       }
@@ -8961,14 +9365,14 @@ async function syncToCloud(showAlerts = false) {
   return { ok: true };
 }
 
-// Sincronización automática robusta al detectar conexión a internet o al cargar la app
+// SincronizaciÃ³n automÃ¡tica robusta al detectar conexiÃ³n a internet o al cargar la app
 window.addEventListener("online", () => {
   if (localStorage.getItem("sessionActive") !== "true") return;
   setTimeout(() => {
     initSystem();
   }, 0);
   console.log(
-    "Sincronización automática con la nube ejecutada (evento online).",
+    "SincronizaciÃ³n automÃ¡tica con la nube ejecutada (evento online).",
   );
 });
 
@@ -8983,7 +9387,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 async function syncFromCloud() {
-  if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
+  if (!confirm("Â¿Descargar datos de la nube y reemplazar los locales?")) return;
 
   const reachability = await ensureStorageReachable();
   if (!reachability.ok) {
@@ -9010,7 +9414,7 @@ async function syncFromCloud() {
       .select("*");
 
     if (historyError) {
-      console.error("Error descargando producción:", historyError);
+      console.error("Error descargando producciÃ³n:", historyError);
     } else {
       history = historyData || [];
       localStorage.setItem("history", JSON.stringify(history));
@@ -9104,10 +9508,10 @@ function exportMonthlyGeneralExcel() {
   const responsable = "Contratista"; // puedes cambiarlo luego
 
   // ENCABEZADO EMPRESA
-  csv += "SERVICIOS AGRÍCOLAS SAN GERÓNIMO SPA\n";
+  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
   csv += "RESUMEN MENSUAL GENERAL\n";
     csv += "Mes: " + month + "\n";
-    csv += "Fecha de generación: " + fechaGeneracion + "\n";
+    csv += "Fecha de generaciÃ³n: " + fechaGeneracion + "\n";
     csv += "Responsable: " + responsable + "\n\n";
   
     // ================================
@@ -9139,7 +9543,7 @@ function exportMonthlyGeneralExcel() {
       csv += data.labor + ";" + data.cantidad + ";" + data.total + "\n";
     });
   
-    // Línea total general
+    // LÃ­nea total general
     csv += "\nTotal General del Mes;;" + totalGeneral + "\n";
   
     // Crear archivo
@@ -9155,6 +9559,7 @@ function exportMonthlyGeneralExcel() {
   }
   
   // =============================
-  // � COBROS MANDANTES - CALENDARIO
+  // ï¿½ COBROS MANDANTES - CALENDARIO
   // =============================
   // Se reutiliza el calendario global definido arriba.
+
