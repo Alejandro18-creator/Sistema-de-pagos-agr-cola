@@ -351,8 +351,16 @@ function clearWorkerLiquidationSearch() {
   const list = document.getElementById('workerLiquidationList');
   const hiddenSelect = document.getElementById('workerLiquidation');
   const liquidationPrint = document.getElementById('liquidationPrint');
+  const liquidationView = document.getElementById('viewLiquidation');
   const monthInput = document.getElementById('monthLiquidation');
   const advanceInput = document.getElementById('advanceAmount');
+
+  // Logs temporales para identificar qué contenedor queda visualmente activo.
+  console.log('LIQUIDATION PRINT:', liquidationPrint);
+  console.log('INNER HTML:', liquidationPrint ? liquidationPrint.innerHTML : null);
+  console.log('VISIBLE:', liquidationPrint ? liquidationPrint.classList : null);
+  console.log('LIQUIDATION VIEW:', liquidationView);
+  console.log('VIEW CLASSLIST:', liquidationView ? liquidationView.classList : null);
 
   if (searchInput) searchInput.value = '';
   if (hiddenSelect) hiddenSelect.value = '';
@@ -364,6 +372,18 @@ function clearWorkerLiquidationSearch() {
     liquidationPrint.innerHTML = '';
     liquidationPrint.classList.add('hidden');
   }
+  if (liquidationView) liquidationView.classList.add('hidden');
   if (monthInput) monthInput.value = '';
   if (advanceInput) advanceInput.value = '';
+
+  console.log('LIQUIDATION PRINT AFTER CLEAR:', liquidationPrint);
+  console.log(
+    'INNER HTML AFTER CLEAR:',
+    liquidationPrint ? liquidationPrint.innerHTML : null
+  );
+  console.log(
+    'VISIBLE AFTER CLEAR:',
+    liquidationPrint ? liquidationPrint.classList : null
+  );
+  console.log('VIEW CLASSLIST AFTER CLEAR:', liquidationView ? liquidationView.classList : null);
 }

@@ -2138,7 +2138,7 @@ async function generateLiquidation() {
 
   if (records.length === 0) {
     generateLiquidation();
-    alert("No hay producciÃ³n ese mes.");
+    alert("No hay producción ese mes.");
     return;
   }
 
@@ -2190,7 +2190,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
+<p><strong>Dí­as trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -2204,7 +2204,7 @@ async function generateLiquidation() {
 </tr>
 
 <tr>
-<td>Bono ProducciÃ³n</td>
+<td>Bono Producción</td>
 <td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
@@ -3084,11 +3084,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -5091,7 +5091,7 @@ async function generateLiquidation() {
 
   if (records.length === 0) {
     generateLiquidation();
-    alert("No hay producciÃ³n ese mes.");
+    alert("No hay producción ese mes.");
     return;
   }
 
@@ -5143,7 +5143,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
+<p><strong>Días trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -5157,7 +5157,7 @@ async function generateLiquidation() {
 </tr>
 
 <tr>
-<td>Bono ProducciÃ³n</td>
+<td>Bono Producción</td>
 <td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
@@ -6037,11 +6037,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -6067,7 +6067,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -7986,7 +7986,7 @@ async function generateLiquidation() {
 
   if (records.length === 0) {
     generateLiquidation();
-    alert("No hay producciÃ³n ese mes.");
+    alert("No hay producción ese mes.");
     return;
   }
 
@@ -8038,7 +8038,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
+<p><strong>Días trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -8052,7 +8052,7 @@ async function generateLiquidation() {
 </tr>
 
 <tr>
-<td>Bono ProducciÃ³n</td>
+<td>Bono Producción</td>
 <td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
@@ -8932,11 +8932,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -8962,7 +8962,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;

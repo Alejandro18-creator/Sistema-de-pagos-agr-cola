@@ -24,16 +24,16 @@ function clearWeeklySearch() {
   selectedDays.clear();
 }
 
-function saveMinimumWage() {
+async function saveMinimumWage() {
   const input = document.getElementById('minimumWage');
   if (!input) {
-    alert('No se encontró el campo de sueldo mínimo.');
+    await showCustomAlert('No se encontró el campo de sueldo mínimo.');
     return;
   }
 
   const rawValue = String(input.value || '').trim();
   if (!rawValue) {
-    alert('Ingrese un valor de sueldo mínimo.');
+    await showCustomAlert('Ingrese un valor de sueldo mínimo.');
     return;
   }
 
@@ -41,7 +41,7 @@ function saveMinimumWage() {
   const parsed = Number(normalized);
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    alert('Ingrese un monto válido mayor a 0.');
+    await showCustomAlert('Ingrese un monto válido mayor a 0.');
     return;
   }
 
@@ -51,12 +51,7 @@ function saveMinimumWage() {
   // Mantener el input en formato legible para el usuario.
   input.value = '$' + minimumWageValue.toLocaleString('es-CL');
 
-  if (typeof showCustomAlert === 'function') {
-    showCustomAlert('✅ Sueldo mínimo guardado localmente.');
-    return;
-  }
-
-  alert('✅ Sueldo mínimo guardado localmente.');
+  await showCustomAlert('✅ Sueldo mínimo guardado localmente.');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -209,7 +204,7 @@ async function deleteFromWeeklySummary({
     );
   }
   if (index === -1 || !history[index]) {
-    alert('No se encontró el registro localmente.');
+    await showCustomAlert('No se encontró el registro localmente.');
     return;
   }
   const record = history[index];
@@ -217,7 +212,7 @@ async function deleteFromWeeklySummary({
   if (record.id || (record.rut && record.date)) {
     const reachability = await ensureStorageReachable();
     if (!reachability.ok) {
-      alert('Error al eliminar en la base de datos. ' + reachability.errorMessage);
+      await showCustomAlert('Error al eliminar en la base de datos. ' + reachability.errorMessage);
       return;
     }
   }
@@ -231,7 +226,7 @@ async function deleteFromWeeklySummary({
 
     if (error) {
       console.error('Error eliminando en almacenamiento local:', error.message);
-      alert('Error al eliminar en la base de datos.');
+      await showCustomAlert('Error al eliminar en la base de datos.');
       return;
     }
   } else if (record.rut && record.date) {
@@ -252,7 +247,7 @@ async function deleteFromWeeklySummary({
     const { error } = await deleteQuery;
     if (error) {
       console.error('Error eliminando en almacenamiento local:', error.message);
-      alert('Error al eliminar en la base de datos.');
+      await showCustomAlert('Error al eliminar en la base de datos.');
       return;
     }
   }
@@ -272,7 +267,7 @@ async function deleteFromWeeklySummary({
 async function registerWork() {
   const worker = workers[document.getElementById('workerSelect').value];
   if (!worker) {
-    alert('Seleccione un trabajador válido.');
+    await showCustomAlert('Seleccione un trabajador válido.');
     return;
   }
   if (worker.active === false) {
@@ -327,7 +322,7 @@ async function registerWork() {
   }
 
   if (!worker || !date || !labor || quantity <= 0) {
-    alert('Datos incompletos.');
+    await showCustomAlert('Datos incompletos.');
     return;
   }
 
@@ -336,7 +331,7 @@ async function registerWork() {
     (r) => r.rut === worker.rut && r.date === date
   );
   if (existeMismoDia && editProductionIndex === null) {
-    const continuar = confirm(
+    const continuar = await showCustomConfirm(
       'Ya existe un registro de producción para este trabajador en este día.\n¿Deseas agregar igualmente este nuevo registro?\n(Si no, presiona Cancelar para deshacer la información)'
     );
     if (!continuar) return;
@@ -391,7 +386,7 @@ async function registerWork() {
       if (cloudSave?.ok) {
         showCustomAlert('✅ Guardado en almacenamiento local OK');
       } else {
-        alert(
+        await showCustomAlert(
           '⚠️ No se guardó en nube. Revise conexión/permisos y sincronice luego.'
         );
       }
@@ -532,7 +527,7 @@ async function payWeekly() {
   const workerIndex = document.getElementById('workerWeekly').value;
 
   if (workerIndex === '') {
-    alert('No hay trabajador seleccionado.');
+    await showCustomAlert('No hay trabajador seleccionado.');
     return;
   }
 
@@ -541,7 +536,7 @@ async function payWeekly() {
   const selectedDates = Array.from(selectedDays);
 
   if (selectedDates.length === 0) {
-    alert('No hay días seleccionados.');
+    await showCustomAlert('No hay días seleccionados.');
     return;
   }
 
@@ -552,7 +547,7 @@ async function payWeekly() {
   );
 
   if (recordsToPay.length === 0) {
-    alert('No hay registros para pagar.');
+    await showCustomAlert('No hay registros para pagar.');
     return;
   }
 
@@ -560,7 +555,7 @@ async function payWeekly() {
   let totalToPay = 0;
   recordsToPay.forEach((r) => (totalToPay += r.total));
 
-  const confirmPayment = confirm(
+  const confirmPayment = await showCustomConfirm(
     'Se pagarán ' +
       recordsToPay.length +
       ' registros.\nTotal: $' +
@@ -619,7 +614,7 @@ async function payWeekly() {
   if (!paymentError && paidUpdateErrors === 0) {
     showCustomAlert('✅ Guardado en almacenamiento local OK (pago semanal).');
   } else {
-    alert(
+    await showCustomAlert(
       '⚠️ No se guardó completo en nube el pago semanal. ' +
         (paymentError?.message || 'Revise conexión/permisos.')
     );
@@ -751,7 +746,7 @@ function generateWeeklySummary() {
     ].sort();
 
     if (paidDates.length === 0) {
-      alert(
+      showCustomAlert(
         'No hay días pagados este mes. Seleccione los días en el calendario.'
       );
       return;
@@ -909,7 +904,7 @@ function generateWeeklySummary() {
       const workerIndex = Number(document.getElementById('workerWeekly').value);
 
       if (isNaN(workerIndex) || !workers[workerIndex]) {
-        alert('No hay trabajador seleccionado.');
+        await showCustomAlert('No hay trabajador seleccionado.');
         return;
       }
 

@@ -6,6 +6,14 @@ function showCustomAlert(message, options = {}) {
     removeExistingCustomModal();
     const modal = document.createElement("div");
     modal.className = "custom-modal-overlay";
+    let settled = false;
+    const closeModal = () => {
+      if (settled) return;
+      settled = true;
+      modal.remove();
+      resolve();
+    };
+    modal._forceClose = closeModal;
     modal.innerHTML = `
       <div class="custom-modal-box">
         <div class="custom-modal-message">${message}</div>
@@ -15,14 +23,13 @@ function showCustomAlert(message, options = {}) {
     document.body.appendChild(modal);
     const okBtn = modal.querySelector(".custom-modal-ok");
     okBtn.focus({ preventScroll: true });
-    okBtn.onclick = () => {
-      modal.remove();
-      resolve();
-    };
+    okBtn.onclick = closeModal;
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
     modal.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === "Escape") {
-        modal.remove();
-        resolve();
+        closeModal();
       }
     });
   });
@@ -33,6 +40,14 @@ function showCustomConfirm(message, options = {}) {
     removeExistingCustomModal();
     const modal = document.createElement("div");
     modal.className = "custom-modal-overlay";
+    let settled = false;
+    const closeModal = (value) => {
+      if (settled) return;
+      settled = true;
+      modal.remove();
+      resolve(value);
+    };
+    modal._forceClose = () => closeModal(false);
     modal.innerHTML = `
       <div class="custom-modal-box">
         <div class="custom-modal-message">${message}</div>
@@ -46,21 +61,16 @@ function showCustomConfirm(message, options = {}) {
     const okBtn = modal.querySelector(".custom-modal-ok");
     const cancelBtn = modal.querySelector(".custom-modal-cancel");
     okBtn.focus({ preventScroll: true });
-    okBtn.onclick = () => {
-      modal.remove();
-      resolve(true);
-    };
-    cancelBtn.onclick = () => {
-      modal.remove();
-      resolve(false);
-    };
+    okBtn.onclick = () => closeModal(true);
+    cancelBtn.onclick = () => closeModal(false);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal(false);
+    });
     modal.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        modal.remove();
-        resolve(true);
+        closeModal(true);
       } else if (e.key === "Escape") {
-        modal.remove();
-        resolve(false);
+        closeModal(false);
       }
     });
   });
@@ -71,6 +81,14 @@ function showCustomPrompt(message, defaultValue = "", options = {}) {
     removeExistingCustomModal();
     const modal = document.createElement("div");
     modal.className = "custom-modal-overlay";
+    let settled = false;
+    const closeModal = (value) => {
+      if (settled) return;
+      settled = true;
+      modal.remove();
+      resolve(value);
+    };
+    modal._forceClose = () => closeModal(null);
     modal.innerHTML = `
       <div class="custom-modal-box">
         <div class="custom-modal-message">${message}</div>
@@ -86,22 +104,16 @@ function showCustomPrompt(message, defaultValue = "", options = {}) {
     const okBtn = modal.querySelector(".custom-modal-ok");
     const cancelBtn = modal.querySelector(".custom-modal-cancel");
     input.focus({ preventScroll: true });
-    okBtn.onclick = () => {
-      const value = input.value;
-      modal.remove();
-      resolve(value);
-    };
-    cancelBtn.onclick = () => {
-      modal.remove();
-      resolve(null);
-    };
+    okBtn.onclick = () => closeModal(input.value);
+    cancelBtn.onclick = () => closeModal(null);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal(null);
+    });
     modal.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        modal.remove();
-        resolve(input.value);
+        closeModal(input.value);
       } else if (e.key === "Escape") {
-        modal.remove();
-        resolve(null);
+        closeModal(null);
       }
     });
   });
@@ -109,7 +121,12 @@ function showCustomPrompt(message, defaultValue = "", options = {}) {
 
 function removeExistingCustomModal() {
   const existing = document.querySelector(".custom-modal-overlay");
-  if (existing) existing.remove();
+  if (!existing) return;
+  if (typeof existing._forceClose === "function") {
+    existing._forceClose();
+    return;
+  }
+  existing.remove();
 }
 
 // Estilos básicos para los modales personalizados

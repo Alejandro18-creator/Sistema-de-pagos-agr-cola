@@ -202,6 +202,34 @@ function fileToDataUrl(fileBody) {
   });
 }
 
+function getOfflineFileMetadata(filePath, fileBody, contentType) {
+  const normalizedContentType =
+    contentType || fileBody?.type || "application/octet-stream";
+  const nameFromPath = String(filePath || "").split("/").pop() || "archivo";
+  const extension = nameFromPath.includes(".")
+    ? nameFromPath.split(".").pop().toLowerCase()
+    : "";
+
+  let size = 0;
+  if (typeof fileBody === "string") {
+    size = fileBody.length;
+  } else if (typeof fileBody?.size === "number") {
+    size = fileBody.size;
+  }
+
+  return {
+    kind: "file-metadata",
+    storageMode: "metadata-only",
+    filePath,
+    fileName: nameFromPath,
+    extension,
+    contentType: normalizedContentType,
+    workerRut: String(filePath || "").split("/")[0] || "",
+    size,
+    uploadedAt: new Date().toISOString(),
+  };
+}
+
 function createOfflineStorageClient() {
   const TABLE_PREFIX = "offline_table:";
   const FILE_PREFIX = "offline_storage:";
@@ -391,11 +419,27 @@ function createOfflineStorageClient() {
     storage: {
       from(bucketName) {
         return {
-          async upload(filePath, fileBody) {
-            const dataUrl = await fileToDataUrl(fileBody);
+          async upload(filePath, fileBody, options = {}) {
+            const normalizedPath = String(filePath || "");
+            const normalizedContentType =
+              options?.contentType || fileBody?.type || "";
+            const isPdfUpload =
+              normalizedContentType.toLowerCase().includes("application/pdf") ||
+              normalizedPath.toLowerCase().endsWith(".pdf");
+
+            const valueToStore = isPdfUpload
+              ? JSON.stringify(
+                  getOfflineFileMetadata(
+                    normalizedPath,
+                    fileBody,
+                    normalizedContentType,
+                  ),
+                )
+              : await fileToDataUrl(fileBody);
+
             localStorage.setItem(
               FILE_PREFIX + bucketName + ":" + filePath,
-              dataUrl,
+              valueToStore,
             );
             return { data: { path: filePath }, error: null };
           },
@@ -1145,9 +1189,9 @@ const LOGIN_PASSWORD = "1234";
 let editIndexWorker = null;
 
 // =============================
-// ðŸ”„ CARGAR RESPALDO SI NO HAY DATOS
+// CARGAR RESPALDO SI NO HAY DATOS
 // =============================
-/* Bloque antigu si es que no hay internet o no se pudo conectar a almacenamiento local, para no perder la funcionalidad bÃ¡sica del sistema.*/
+/* Bloque antigu si es que no hay internet o no se pudo conectar a almacenamiento local, para no perder la funcionalidad básica del sistema.*/
 /*if (workers.length === 0) {
 
     fetch("data/respaldo.json")
@@ -1223,7 +1267,7 @@ async function loginUser() {
       initSystem();
     }, 0);
   } else {
-    alert("ContraseÃ±a incorrecta");
+    alert("Contraseña incorrecta");
   }
 }
 
@@ -2110,7 +2154,7 @@ async function generateLiquidation() {
   const month = document.getElementById("monthLiquidation").value;
 
   if (workerIndex === "" || !month) {
-    alert("Seleccione trabajador y mes.");
+    await showCustomAlert("Seleccione trabajador y mes.");
     return;
   }
 
@@ -2131,28 +2175,40 @@ async function generateLiquidation() {
   const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
-    generateLiquidation();
-    alert("No hay producciÃ³n ese mes.");
+    await showCustomAlert("No hay producción ese mes.");
     return;
   }
 
-  const sueldoImponible = records.reduce((sum, r) => sum + r.total, 0);
+  const produccionReal = records.reduce((sum, r) => sum + r.total, 0);
 
-  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
-
-  let sueldoBase = 0;
-  let bonoProduccion = 0;
-
-  if (sueldoImponible <= sueldoMinimo) {
-    sueldoBase = sueldoImponible;
-    bonoProduccion = 0;
-  } else {
-    sueldoBase = sueldoMinimo;
-    bonoProduccion = sueldoImponible - sueldoMinimo;
-  }
-
-  const totalHaberes = sueldoBase + bonoProduccion;
-  const baseImponible = Math.min(totalHaberes, sueldoMinimo);
+  const minimumWageInput = document.getElementById("minimumWage");
+  console.log("MINIMUM WAGE INPUT:", minimumWageInput?.value);
+  const sueldoMinimoInputValue = Number(
+    String(minimumWageInput?.value || "")
+      .replace(/\$/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, "."),
+  );
+  const sueldoMinimoMensual =
+    Number.isFinite(sueldoMinimoInputValue) && sueldoMinimoInputValue > 0
+      ? Math.round(sueldoMinimoInputValue)
+      : Number(localStorage.getItem("minimumWage") || 0);
+  const [yearPart, monthPart] = month.split("-").map(Number);
+  const diasDelMes =
+    Number.isFinite(yearPart) && Number.isFinite(monthPart)
+      ? new Date(yearPart, monthPart, 0).getDate()
+      : 30;
+  console.log({
+    sueldoMinimoMensual,
+    diasTrabajados: daysWorked,
+    diasDelMes,
+  });
+  const sueldoBaseProporcional =
+    sueldoMinimoMensual > 0 && diasDelMes > 0
+      ? Math.round((sueldoMinimoMensual / diasDelMes) * daysWorked)
+      : 0;
+  const totalPagar = Math.min(produccionReal, sueldoBaseProporcional || produccionReal);
+  const baseImponible = Math.min(totalPagar, sueldoMinimoMensual || totalPagar);
 
   // ===== DESCUENTOS =====
 
@@ -2169,14 +2225,20 @@ async function generateLiquidation() {
 
   const totalDescuentos = afp + salud + anticipos;
 
-  const liquido = totalHaberes - totalDescuentos;
+  const liquido = totalPagar - totalDescuentos;
+
+  console.log({
+    sueldoBaseProporcional,
+    produccionReal,
+    totalPagar,
+  });
 
   // ===== DOCUMENTO HTML =====
 
   const html = `
 <div class="liq-doc">
 
-<h1>LIQUIDACIÃ“N DE SUELDO</h1>
+<h1>LIQUIDACIÓN DE SUELDO</h1>
 <h3>${month}</h3>
 
 <p><strong>Nombre:</strong> ${worker.name}</p>
@@ -2184,7 +2246,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
+<p><strong>Días trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -2193,18 +2255,18 @@ async function generateLiquidation() {
 <table>
 
 <tr>
-<td>Sueldo Base</td>
-<td>$${sueldoBase.toLocaleString("es-CL")}</td>
+<td>SUELDO BASE</td>
+<td>$${sueldoBaseProporcional.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<td>Bono ProducciÃ³n</td>
-<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
+<td>BONO DE PRODUCCIÓN</td>
+<td>$${produccionReal.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<th>Total Haberes</th>
-<th>$${totalHaberes.toLocaleString("es-CL")}</th>
+<th>Total Final a Pagar</th>
+<th>$${totalPagar.toLocaleString("es-CL")}</th>
 </tr>
 </table>
 
@@ -2232,7 +2294,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -2275,13 +2337,13 @@ async function generateLiquidation() {
   );
 
   if (!uploadResult.ok) {
-    console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
-    alert(
-      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
+    console.error("Error subiendo liquidación:", uploadResult.error);
+    await showCustomAlert(
+      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
     );
   } else {
-    console.log("LiquidaciÃ³n guardada en almacenamiento local");
-    alert("âœ… LiquidaciÃ³n guardada en almacenamiento local OK");
+    console.log("Liquidación guardada en almacenamiento local");
+    await showCustomAlert("✅ Liquidación guardada en almacenamiento local OK");
   }
 }
 
@@ -2487,7 +2549,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
 
   if (!printWindow) {
     alert(
-      "No se pudo abrir la ventana de impresiÃ³n. Verifique bloqueadores de ventanas emergentes.",
+      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
     );
     return;
   }
@@ -2520,12 +2582,12 @@ function printLiquidationScreen() {
   const container = document.getElementById("liquidationPrint");
 
   if (!container || !container.innerHTML.trim()) {
-    alert("Primero genere la liquidaciÃ³n para imprimir.");
+    alert("Primero genere la liquidación para imprimir.");
     return;
   }
 
   openScreenPrintWindow({
-    title: "LiquidaciÃ³n de Sueldo",
+    title: "Liquidación de Sueldo",
     contentHtml: container.outerHTML,
   });
 }
@@ -2800,11 +2862,11 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
+      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
-    showCustomAlert("âœ… Contrato guardado en almacenamiento local OK");
+    showCustomAlert("✅ Contrato guardado en almacenamiento local OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -2884,7 +2946,7 @@ function refreshFiniquitoResumen() {
 
 async function generateFiniquito() {
   if (isGeneratingFiniquito) {
-    alert("Ya se estÃ¡ generando un finiquito. Espere un momento.");
+    alert("Ya se está generando un finiquito. Espere un momento.");
     return;
   }
 
@@ -2898,7 +2960,7 @@ async function generateFiniquito() {
 
   const rawWorker = workers[workerIndex];
   if (!rawWorker || typeof rawWorker !== "object") {
-    alert("El trabajador seleccionado no es vÃ¡lido. Vuelva a seleccionarlo.");
+    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
     return;
   }
 
@@ -2935,19 +2997,19 @@ async function generateFiniquito() {
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
 
-  <p>En conformidad a lo dispuesto en la legislaciÃ³n laboral vigente, se deja constancia que:</p>
+  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
 
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
   <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
-  <p><strong>Fecha de terminaciÃ³n:</strong> ${endDate || "__________"}</p>
+  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
 
   <br>
 
-  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -3000,15 +3062,15 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
+        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
-      showCustomAlert("âœ… Finiquito guardado en almacenamiento local OK");
+      showCustomAlert("✅ Finiquito guardado en almacenamiento local OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
+    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -3063,7 +3125,7 @@ function generateMonthlySummary() {
   const month = document.getElementById("monthMonthly").value;
 
   if (workerIndex === "" || !month) {
-    alert("Seleccione trabajador y mes.");
+    showCustomAlert("Seleccione trabajador y mes.");
     return;
   }
 
@@ -3078,11 +3140,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -3108,7 +3170,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -3130,7 +3192,7 @@ function generateMonthlyGeneral() {
   const container = document.getElementById("monthlyGeneralResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
@@ -3191,7 +3253,7 @@ function generateMonthlyGeneral() {
   html += "</table></div>";
 
   html += "<table>";
-  html += "<tr><th>Trabajador</th><th>DÃ­as</th><th>Total</th></tr>";
+  html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
 
   let totalGeneral = 0;
 
@@ -3897,7 +3959,7 @@ function generateMandanteCobro() {
   selectedDates.sort();
 
   if (selectedDates.length === 0) {
-    alert("Seleccione al menos un dÃ­a del calendario.");
+    alert("Seleccione al menos un día del calendario.");
     return;
   }
 
@@ -3920,7 +3982,7 @@ function generateMandanteCobro() {
       resultContainer.innerHTML =
         "<p style='color:#666;'>No hay registros para las fechas seleccionadas.</p>";
     }
-    showCustomAlert("No hay registros en los dÃ­as seleccionados.");
+    showCustomAlert("No hay registros en los días seleccionados.");
     return;
     return;
   }
@@ -3946,7 +4008,7 @@ function generateMandanteCobro() {
 
   let html = "<h3>Cobro Mandante</h3>";
   html +=
-    "<p><strong>PerÃ­odo:</strong> " +
+    "<p><strong>Período:</strong> " +
     selectedDates[0] +
     " al " +
     selectedDates[selectedDates.length - 1] +
@@ -4025,7 +4087,7 @@ async function loginUser() {
       initSystem();
     }, 0);
   } else {
-    alert("ContraseÃ±a incorrecta");
+    alert("Contraseña incorrecta");
   }
 }
 
@@ -4933,28 +4995,40 @@ async function generateLiquidation() {
   const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
-    generateLiquidation();
-    alert("No hay producciÃ³n ese mes.");
+    await showCustomAlert("No hay producción ese mes.");
     return;
   }
 
-  const sueldoImponible = records.reduce((sum, r) => sum + r.total, 0);
+  const produccionReal = records.reduce((sum, r) => sum + r.total, 0);
 
-  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
-
-  let sueldoBase = 0;
-  let bonoProduccion = 0;
-
-  if (sueldoImponible <= sueldoMinimo) {
-    sueldoBase = sueldoImponible;
-    bonoProduccion = 0;
-  } else {
-    sueldoBase = sueldoMinimo;
-    bonoProduccion = sueldoImponible - sueldoMinimo;
-  }
-
-  const totalHaberes = sueldoBase + bonoProduccion;
-  const baseImponible = Math.min(totalHaberes, sueldoMinimo);
+  const minimumWageInput = document.getElementById("minimumWage");
+  console.log("MINIMUM WAGE INPUT:", minimumWageInput?.value);
+  const sueldoMinimoInputValue = Number(
+    String(minimumWageInput?.value || "")
+      .replace(/\$/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, "."),
+  );
+  const sueldoMinimoMensual =
+    Number.isFinite(sueldoMinimoInputValue) && sueldoMinimoInputValue > 0
+      ? Math.round(sueldoMinimoInputValue)
+      : Number(localStorage.getItem("minimumWage") || 0);
+  const [yearPart, monthPart] = month.split("-").map(Number);
+  const diasDelMes =
+    Number.isFinite(yearPart) && Number.isFinite(monthPart)
+      ? new Date(yearPart, monthPart, 0).getDate()
+      : 30;
+  console.log({
+    sueldoMinimoMensual,
+    diasTrabajados: daysWorked,
+    diasDelMes,
+  });
+  const sueldoBaseProporcional =
+    sueldoMinimoMensual > 0 && diasDelMes > 0
+      ? Math.round((sueldoMinimoMensual / diasDelMes) * daysWorked)
+      : 0;
+  const totalPagar = Math.min(produccionReal, sueldoBaseProporcional || produccionReal);
+  const baseImponible = Math.min(totalPagar, sueldoMinimoMensual || totalPagar);
 
   // ===== DESCUENTOS =====
 
@@ -4971,14 +5045,20 @@ async function generateLiquidation() {
 
   const totalDescuentos = afp + salud + anticipos;
 
-  const liquido = totalHaberes - totalDescuentos;
+  const liquido = totalPagar - totalDescuentos;
+
+  console.log({
+    sueldoBaseProporcional,
+    produccionReal,
+    totalPagar,
+  });
 
   // ===== DOCUMENTO HTML =====
 
   const html = `
 <div class="liq-doc">
 
-<h1>LIQUIDACIÃ“N DE SUELDO</h1>
+<h1>LIQUIDACIÓN DE SUELDO</h1>
 <h3>${month}</h3>
 
 <p><strong>Nombre:</strong> ${worker.name}</p>
@@ -4986,7 +5066,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
+<p><strong>Días trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -4995,18 +5075,18 @@ async function generateLiquidation() {
 <table>
 
 <tr>
-<td>Sueldo Base</td>
-<td>$${sueldoBase.toLocaleString("es-CL")}</td>
+<td>SUELDO BASE</td>
+<td>$${sueldoBaseProporcional.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<td>Bono ProducciÃ³n</td>
-<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
+<td>BONO DE PRODUCCIÓN</td>
+<td>$${produccionReal.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<th>Total Haberes</th>
-<th>$${totalHaberes.toLocaleString("es-CL")}</th>
+<th>Total Final a Pagar</th>
+<th>$${totalPagar.toLocaleString("es-CL")}</th>
 </tr>
 </table>
 
@@ -5034,7 +5114,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -5077,13 +5157,13 @@ async function generateLiquidation() {
   );
 
   if (!uploadResult.ok) {
-    console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
-    alert(
-      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
+    console.error("Error subiendo liquidación:", uploadResult.error);
+    await showCustomAlert(
+      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
     );
   } else {
-    console.log("LiquidaciÃ³n guardada en almacenamiento local");
-    alert("âœ… LiquidaciÃ³n guardada en almacenamiento local OK");
+    console.log("Liquidación guardada en almacenamiento local");
+    await showCustomAlert("✅ Liquidación guardada en almacenamiento local OK");
   }
 }
 
@@ -5289,7 +5369,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
 
   if (!printWindow) {
     alert(
-      "No se pudo abrir la ventana de impresiÃ³n. Verifique bloqueadores de ventanas emergentes.",
+      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
     );
     return;
   }
@@ -5322,12 +5402,12 @@ function printLiquidationScreen() {
   const container = document.getElementById("liquidationPrint");
 
   if (!container || !container.innerHTML.trim()) {
-    alert("Primero genere la liquidaciÃ³n para imprimir.");
+    alert("Primero genere la liquidación para imprimir.");
     return;
   }
 
   openScreenPrintWindow({
-    title: "LiquidaciÃ³n de Sueldo",
+    title: "Liquidación de Sueldo",
     contentHtml: container.outerHTML,
   });
 }
@@ -5602,11 +5682,11 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
+      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
-    showCustomAlert("âœ… Contrato guardado en almacenamiento local OK");
+    showCustomAlert("✅ Contrato guardado en almacenamiento local OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -5686,7 +5766,7 @@ function refreshFiniquitoResumen() {
 
 async function generateFiniquito() {
   if (isGeneratingFiniquito) {
-    alert("Ya se estÃ¡ generando un finiquito. Espere un momento.");
+    alert("Ya se está generando un finiquito. Espere un momento.");
     return;
   }
 
@@ -5700,7 +5780,7 @@ async function generateFiniquito() {
 
   const rawWorker = workers[workerIndex];
   if (!rawWorker || typeof rawWorker !== "object") {
-    alert("El trabajador seleccionado no es vÃ¡lido. Vuelva a seleccionarlo.");
+    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
     return;
   }
 
@@ -5737,19 +5817,19 @@ async function generateFiniquito() {
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
 
-  <p>En conformidad a lo dispuesto en la legislaciÃ³n laboral vigente, se deja constancia que:</p>
+  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
 
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
   <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
-  <p><strong>Fecha de terminaciÃ³n:</strong> ${endDate || "__________"}</p>
+  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
 
   <br>
 
-  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -5802,15 +5882,15 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
+        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
-      showCustomAlert("âœ… Finiquito guardado en almacenamiento local OK");
+      showCustomAlert("✅ Finiquito guardado en almacenamiento local OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
+    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -5865,7 +5945,7 @@ function generateMonthlySummary() {
   const month = document.getElementById("monthMonthly").value;
 
   if (workerIndex === "" || !month) {
-    alert("Seleccione trabajador y mes.");
+    showCustomAlert("Seleccione trabajador y mes.");
     return;
   }
 
@@ -5880,11 +5960,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -5910,7 +5990,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -5932,7 +6012,7 @@ function generateMonthlyGeneral() {
   const container = document.getElementById("monthlyGeneralResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
@@ -5993,7 +6073,7 @@ function generateMonthlyGeneral() {
   html += "</table></div>";
 
   html += "<table>";
-  html += "<tr><th>Trabajador</th><th>DÃ­as</th><th>Total</th></tr>";
+  html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
 
   let totalGeneral = 0;
 
@@ -6553,7 +6633,7 @@ function generateMandanteCobro() {
   selectedDates.sort();
 
   if (selectedDates.length === 0) {
-    alert("Seleccione al menos un dÃ­a del calendario.");
+    alert("Seleccione al menos un día del calendario.");
     return;
   }
 
@@ -6576,7 +6656,7 @@ function generateMandanteCobro() {
       resultContainer.innerHTML =
         "<p style='color:#666;'>No hay registros para las fechas seleccionadas.</p>";
     }
-    showCustomAlert("No hay registros en los dÃ­as seleccionados.");
+    showCustomAlert("No hay registros en los días seleccionados.");
     return;
     return;
   }
@@ -6602,7 +6682,7 @@ function generateMandanteCobro() {
 
   let html = "<h3>Cobro Mandante</h3>";
   html +=
-    "<p><strong>PerÃ­odo:</strong> " +
+    "<p><strong>Período:</strong> " +
     selectedDates[0] +
     " al " +
     selectedDates[selectedDates.length - 1] +
@@ -7709,28 +7789,40 @@ async function generateLiquidation() {
   const daysWorked = uniqueDates.length;
 
   if (records.length === 0) {
-    generateLiquidation();
-    alert("No hay producciÃ³n ese mes.");
+    await showCustomAlert("No hay producción ese mes.");
     return;
   }
 
-  const sueldoImponible = records.reduce((sum, r) => sum + r.total, 0);
+  const produccionReal = records.reduce((sum, r) => sum + r.total, 0);
 
-  const sueldoMinimo = Number(localStorage.getItem("minimumWage") || 0);
-
-  let sueldoBase = 0;
-  let bonoProduccion = 0;
-
-  if (sueldoImponible <= sueldoMinimo) {
-    sueldoBase = sueldoImponible;
-    bonoProduccion = 0;
-  } else {
-    sueldoBase = sueldoMinimo;
-    bonoProduccion = sueldoImponible - sueldoMinimo;
-  }
-
-  const totalHaberes = sueldoBase + bonoProduccion;
-  const baseImponible = Math.min(totalHaberes, sueldoMinimo);
+  const minimumWageInput = document.getElementById("minimumWage");
+  console.log("MINIMUM WAGE INPUT:", minimumWageInput?.value);
+  const sueldoMinimoInputValue = Number(
+    String(minimumWageInput?.value || "")
+      .replace(/\$/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, "."),
+  );
+  const sueldoMinimoMensual =
+    Number.isFinite(sueldoMinimoInputValue) && sueldoMinimoInputValue > 0
+      ? Math.round(sueldoMinimoInputValue)
+      : Number(localStorage.getItem("minimumWage") || 0);
+  const [yearPart, monthPart] = month.split("-").map(Number);
+  const diasDelMes =
+    Number.isFinite(yearPart) && Number.isFinite(monthPart)
+      ? new Date(yearPart, monthPart, 0).getDate()
+      : 30;
+  console.log({
+    sueldoMinimoMensual,
+    diasTrabajados: daysWorked,
+    diasDelMes,
+  });
+  const sueldoBaseProporcional =
+    sueldoMinimoMensual > 0 && diasDelMes > 0
+      ? Math.round((sueldoMinimoMensual / diasDelMes) * daysWorked)
+      : 0;
+  const totalPagar = Math.min(produccionReal, sueldoBaseProporcional || produccionReal);
+  const baseImponible = Math.min(totalPagar, sueldoMinimoMensual || totalPagar);
 
   // ===== DESCUENTOS =====
 
@@ -7747,14 +7839,20 @@ async function generateLiquidation() {
 
   const totalDescuentos = afp + salud + anticipos;
 
-  const liquido = totalHaberes - totalDescuentos;
+  const liquido = totalPagar - totalDescuentos;
+
+  console.log({
+    sueldoBaseProporcional,
+    produccionReal,
+    totalPagar,
+  });
 
   // ===== DOCUMENTO HTML =====
 
   const html = `
 <div class="liq-doc">
 
-<h1>LIQUIDACIÃ“N DE SUELDO</h1>
+<h1>LIQUIDACIÓN DE SUELDO</h1>
 <h3>${month}</h3>
 
 <p><strong>Nombre:</strong> ${worker.name}</p>
@@ -7762,7 +7860,7 @@ async function generateLiquidation() {
 <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
 <p><strong>AFP:</strong> ${worker.afp || "-"}</p>
 <p><strong>Salud:</strong> ${worker.health || "-"}</p>
-<p><strong>DÃ­as trabajados:</strong> ${daysWorked}</p>
+<p><strong>Días trabajados:</strong> ${daysWorked}</p>
 
 <hr>
 
@@ -7771,18 +7869,18 @@ async function generateLiquidation() {
 <table>
 
 <tr>
-<td>Sueldo Base</td>
-<td>$${sueldoBase.toLocaleString("es-CL")}</td>
+<td>SUELDO BASE</td>
+<td>$${sueldoBaseProporcional.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<td>Bono ProducciÃ³n</td>
-<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
+<td>BONO DE PRODUCCIÓN</td>
+<td>$${produccionReal.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
-<th>Total Haberes</th>
-<th>$${totalHaberes.toLocaleString("es-CL")}</th>
+<th>Total Final a Pagar</th>
+<th>$${totalPagar.toLocaleString("es-CL")}</th>
 </tr>
 </table>
 
@@ -7810,7 +7908,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÍQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -7853,13 +7951,13 @@ async function generateLiquidation() {
   );
 
   if (!uploadResult.ok) {
-    console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
-    alert(
-      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
+    console.error("Error subiendo liquidación:", uploadResult.error);
+    await showCustomAlert(
+      "⚠️ No se guardó en nube la liquidación. " + uploadResult.errorMessage,
     );
   } else {
-    console.log("LiquidaciÃ³n guardada en almacenamiento local");
-    alert("âœ… LiquidaciÃ³n guardada en almacenamiento local OK");
+    console.log("Liquidación guardada en almacenamiento local");
+    await showCustomAlert("✅ Liquidación guardada en almacenamiento local OK");
   }
 }
 
@@ -8065,7 +8163,7 @@ function openScreenPrintWindow({ title, contentHtml, extraStyles = "" }) {
 
   if (!printWindow) {
     alert(
-      "No se pudo abrir la ventana de impresiÃ³n. Verifique bloqueadores de ventanas emergentes.",
+      "No se pudo abrir la ventana de impresión. Verifique bloqueadores de ventanas emergentes.",
     );
     return;
   }
@@ -8098,12 +8196,12 @@ function printLiquidationScreen() {
   const container = document.getElementById("liquidationPrint");
 
   if (!container || !container.innerHTML.trim()) {
-    alert("Primero genere la liquidaciÃ³n para imprimir.");
+    alert("Primero genere la liquidación para imprimir.");
     return;
   }
 
   openScreenPrintWindow({
-    title: "LiquidaciÃ³n de Sueldo",
+    title: "Liquidación de Sueldo",
     contentHtml: container.outerHTML,
   });
 }
@@ -8378,11 +8476,11 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
+      "⚠️ No se guardó en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
-    showCustomAlert("âœ… Contrato guardado en almacenamiento local OK");
+    showCustomAlert("✅ Contrato guardado en almacenamiento local OK");
   }
 }
 function calcularTotalPagadoFiniquito(worker, inicio, fin) {
@@ -8462,7 +8560,7 @@ function refreshFiniquitoResumen() {
 
 async function generateFiniquito() {
   if (isGeneratingFiniquito) {
-    alert("Ya se estÃ¡ generando un finiquito. Espere un momento.");
+    alert("Ya se está generando un finiquito. Espere un momento.");
     return;
   }
 
@@ -8476,7 +8574,7 @@ async function generateFiniquito() {
 
   const rawWorker = workers[workerIndex];
   if (!rawWorker || typeof rawWorker !== "object") {
-    alert("El trabajador seleccionado no es vÃ¡lido. Vuelva a seleccionarlo.");
+    alert("El trabajador seleccionado no es válido. Vuelva a seleccionarlo.");
     return;
   }
 
@@ -8513,19 +8611,19 @@ async function generateFiniquito() {
 
   <h1 style="text-align:center;">FINIQUITO DE TRABAJO</h1>
 
-  <p>En conformidad a lo dispuesto en la legislaciÃ³n laboral vigente, se deja constancia que:</p>
+  <p>En conformidad a lo dispuesto en la legislación laboral vigente, se deja constancia que:</p>
 
   <p><strong>Trabajador:</strong> ${worker.name}</p>
   <p><strong>RUT:</strong> ${worker.rut}</p>
   <p><strong>Cargo:</strong> ${worker.position || "-"}</p>
   <p><strong>Servicios prestados desde:</strong> ${inicio || "__________"} <strong>hasta:</strong> ${fin || "__________"}</p>
-  <p><strong>Fecha de terminaciÃ³n:</strong> ${endDate || "__________"}</p>
+  <p><strong>Fecha de terminación:</strong> ${endDate || "__________"}</p>
 
   <br>
 
-  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
+  <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondían por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÍQUIDO A PAGAR SEGÚN DETALLE LIQUIDACIÓN</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -8578,15 +8676,15 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
+        "⚠️ No se guardó en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
-      showCustomAlert("âœ… Finiquito guardado en almacenamiento local OK");
+      showCustomAlert("✅ Finiquito guardado en almacenamiento local OK");
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
+    alert("⚠️ Ocurrió un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -8656,11 +8754,11 @@ function generateMonthlySummary() {
   const container = document.getElementById("monthlyResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÍAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -8686,7 +8784,7 @@ function generateMonthlySummary() {
 
   html += "</table>";
 
-  html += "<p><strong>DÃ­as trabajados:</strong> " + daysWorked + "</p>";
+  html += "<p><strong>Días trabajados:</strong> " + daysWorked + "</p>";
   html += "<h2>Total del Mes: $" + total.toLocaleString("es-CL") + "</h2>";
 
   container.innerHTML = html;
@@ -8708,7 +8806,7 @@ function generateMonthlyGeneral() {
   const container = document.getElementById("monthlyGeneralResult");
 
   if (records.length === 0) {
-    container.innerHTML = "<p>No hay producciÃ³n ese mes.</p>";
+    container.innerHTML = "<p>No hay producción ese mes.</p>";
     return;
   }
 
@@ -8769,7 +8867,7 @@ function generateMonthlyGeneral() {
   html += "</table></div>";
 
   html += "<table>";
-  html += "<tr><th>Trabajador</th><th>DÃ­as</th><th>Total</th></tr>";
+  html += "<tr><th>Trabajador</th><th>Días</th><th>Total</th></tr>";
 
   let totalGeneral = 0;
 
@@ -9142,7 +9240,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 async function syncFromCloud() {
-  if (!confirm("Â¿Descargar datos de la nube y reemplazar los locales?")) return;
+  if (!confirm("¿Descargar datos de la nube y reemplazar los locales?")) return;
 
   const reachability = await ensureStorageReachable();
   if (!reachability.ok) {
