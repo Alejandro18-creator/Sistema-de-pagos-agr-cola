@@ -333,12 +333,26 @@ window.addEventListener('DOMContentLoaded', () => {
       await deleteWorker();
       window.scrollTo(prevX, prevY);
     });
+  document
+    .getElementById('btnDeactivateWorker')
+    ?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const prevX = window.scrollX;
+      const prevY = window.scrollY;
+      await deactivateWorker();
+      window.scrollTo(prevX, prevY);
+    });
 });
 
 function clearWorkerLiquidationSearch() {
   const searchInput = document.getElementById('searchWorkerLiquidation');
   const list = document.getElementById('workerLiquidationList');
   const hiddenSelect = document.getElementById('workerLiquidation');
+  const liquidationPrint = document.getElementById('liquidationPrint');
+  const monthInput = document.getElementById('monthLiquidation');
+  const advanceInput = document.getElementById('advanceAmount');
 
   if (searchInput) searchInput.value = '';
   if (hiddenSelect) hiddenSelect.value = '';
@@ -346,4 +360,10 @@ function clearWorkerLiquidationSearch() {
     list.style.display = 'none';
     list.innerHTML = '';
   }
+  if (liquidationPrint) {
+    liquidationPrint.innerHTML = '';
+    liquidationPrint.classList.add('hidden');
+  }
+  if (monthInput) monthInput.value = '';
+  if (advanceInput) advanceInput.value = '';
 }

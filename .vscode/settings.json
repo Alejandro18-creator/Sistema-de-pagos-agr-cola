@@ -1,6 +1,8 @@
 {
   "editor.formatOnSave": false,
   "editor.defaultFormatter": null,
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": true,
   "[javascript]": {
     "editor.formatOnSave": false,
     "editor.defaultFormatter": null

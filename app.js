@@ -1,5 +1,5 @@
 ﻿// =============================
-// ðŸ’¾ GUARDADO DE DATOS DEBOUNCEADO
+// GUARDADO DE DATOS DEBOUNCEADO
 // =============================
 let saveTimer;
 function saveLocalDataDebounced() {
@@ -22,7 +22,7 @@ function debounceSearch(fn) {
 }
 
 // =============================
-// ðŸŒ MODO LOCAL OFFLINE
+// ðŸŒ MODO LOCAL OFFLINE
 // =============================
 
 console.log("APP VERSION 2");
@@ -84,7 +84,7 @@ function exitPendingCalendar() {
   if (calendar) calendar.innerHTML = "";
 }
 
-// ⚠️ Solo llamar explícitamente para un reset total (por ejemplo, botón de limpiar datos).
+// ⚠︝ Solo llamar explícitamente para un reset total (por ejemplo, botón de limpiar datos).
 // NO llamar al inicio: borra todos los datos persistidos.
 function initializeFreshLocalState() {
   const keysToClear = ["workers", "history", "labors", "fundos", "sessionActive"];
@@ -312,6 +312,31 @@ function createOfflineStorageClient() {
       let nextRows = [...rows];
 
       if (state.operation === "insert") {
+        if (state.tableName === "workers") {
+          const existingRutKeys = new Set(
+            rows.map((row) => getRutKey(row?.rut)).filter(Boolean),
+          );
+          const payloadRutKeys = new Set();
+
+          for (const row of state.payload || []) {
+            const rutKey = getRutKey(row?.rut);
+            if (!rutKey) continue;
+
+            if (existingRutKeys.has(rutKey) || payloadRutKeys.has(rutKey)) {
+              return {
+                data: null,
+                error: {
+                  message:
+                    'duplicate key value violates unique constraint "workers_rut_key"',
+                  code: "23505",
+                },
+              };
+            }
+
+            payloadRutKeys.add(rutKey);
+          }
+        }
+
         const insertedRows = (state.payload || []).map((row) => ({
           ...row,
           id: row.id || `local_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -494,7 +519,7 @@ const afpRates = {
 // CotizaciÃ³n obligatoria base
 const AFP_BASE = 0.1; // 10%
 
-/*â˜ï¸ GUARDAR EN almacenamiento local*/
+/*â˜ï¸ GUARDAR EN almacenamiento local*/
 // =============================
 
 async function saveWorkerToCloud(worker) {
@@ -1112,7 +1137,7 @@ async function syncPendingLocalDataBeforeCloudDownload() {
 }
 
 // =============================
-// ðŸ” PASSWORD
+// ðŸ” PASSWORD
 // =============================
 
 const LOGIN_PASSWORD = "1234";
@@ -1173,7 +1198,7 @@ function formatRutInput(input) {
 }
 
 // =============================
-// ðŸ” LOGIN
+// ðŸ” LOGIN
 // =============================
 
 async function loginUser() {
@@ -1237,11 +1262,17 @@ async function addWorker() {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
-  // ðŸ”¹ VALIDAR RUT DUPLICADO
-  const rutIndex = workers.findIndex((w) => w.rut === workerRut);
-  if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
-    // await showCustomAlert("Este trabajador o RUT ya existe.");
-    console.warn("Trabajador duplicado");
+  // ðŸ”¹ VALIDAR RUT DUPLICADO (normalizado)
+  const workerRutKey = getRutKey(workerRut);
+  const currentEditIndex =
+    editIndexWorker !== null ? Number(editIndexWorker) : -1;
+  const rutIndex = workers.findIndex((w, index) => {
+    if (index === currentEditIndex) return false;
+    return getRutKey(w?.rut) === workerRutKey;
+  });
+
+  if (workerRutKey && rutIndex !== -1) {
+    await showCustomAlert("Ya existe un trabajador registrado con ese RUT.");
     return;
   }
 
@@ -1390,7 +1421,7 @@ function filterWorkersPagos() {
   }
 }
 // =============================
-// ðŸ¦ CARGAR AFP EN SELECT
+// ðŸ¦ CARGAR AFP EN SELECT
 // =============================
 
 function loadAFPOptions() {
@@ -1544,11 +1575,13 @@ function filterWorkersProduction() {
     return;
   }
 
-  const filtered = workers.filter(
-    (w) =>
-      w.name.toLowerCase().includes(input) ||
-      w.rut.toLowerCase().includes(input),
-  );
+  const filtered = workers.filter((w) => {
+    if (w.active === false) return false;
+    return (
+      (w.name || "").toLowerCase().includes(input) ||
+      (w.rut || "").toLowerCase().includes(input)
+    );
+  });
 
   filtered.forEach((w) => {
     const div = document.createElement("div");
@@ -1887,8 +1920,22 @@ function filterWorkersLiquidation() {
     const div = document.createElement("div");
     div.textContent = `${w.name} - ${w.rut}`;
     div.addEventListener("click", () => {
+      clearTimeout(debounceTimer);
+      console.log("LIQUIDATION WORKER CLICK:", w);
       const index = workers.indexOf(w);
-      hiddenSelect.value = index;
+      const workerLiquidation = hiddenSelect;
+      if (workerLiquidation) {
+        const targetValue = String(index);
+        if (!workerLiquidation.querySelector(`option[value="${targetValue}"]`)) {
+          const opt = document.createElement("option");
+          opt.value = targetValue;
+          opt.textContent = w.name || "";
+          workerLiquidation.appendChild(opt);
+        }
+        workerLiquidation.value = targetValue;
+        console.log("SETTING INPUT:", workerLiquidation);
+        console.log("VALUE AFTER SET:", workerLiquidation.value);
+      }
       document.getElementById("searchWorkerLiquidation").value = w.name;
       list.style.display = "none";
       list.innerHTML = "";
@@ -2185,7 +2232,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -2230,7 +2277,7 @@ async function generateLiquidation() {
   if (!uploadResult.ok) {
     console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
     );
   } else {
     console.log("LiquidaciÃ³n guardada en almacenamiento local");
@@ -2638,7 +2685,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
+  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -2753,7 +2800,7 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
@@ -2900,7 +2947,7 @@ async function generateFiniquito() {
 
   <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -2953,7 +3000,7 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
+        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
@@ -2961,7 +3008,7 @@ async function generateFiniquito() {
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
+    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -3035,7 +3082,7 @@ function generateMonthlySummary() {
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÃAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -3177,7 +3224,7 @@ function generateMonthlyGeneral() {
   container.innerHTML = html;
 }
 // =============================
-// ðŸ” SESIÃ“N
+// ðŸ” SESIÃ“N
 // =============================
 
 function focusFirstFieldInView() {
@@ -3318,47 +3365,132 @@ function importData(event) {
   reader.readAsText(file);
 }
 // =============================
-// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
+// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
 // =============================
 
 async function deleteWorker() {
-  const index = document.getElementById("workerEditSelect").value;
+  const selectedIndexValue = document.getElementById("workerEditSelect").value;
+  console.log("editIndexWorker:", editIndexWorker);
+  console.log("workerEditSelect.value:", selectedIndexValue);
 
-  if (index === "") {
-    await showCustomAlert("Seleccione un trabajador para inactivar.");
+  const index =
+    selectedIndexValue !== ""
+      ? Number(selectedIndexValue)
+      : editIndexWorker !== null
+        ? Number(editIndexWorker)
+        : -1;
+
+  if (!Number.isInteger(index) || index < 0 || !workers[index]) {
+    await showCustomAlert("Seleccione un trabajador para eliminar.");
     return;
   }
 
-  const worker = workers[index];
+  if (selectedIndexValue === "") {
+    document.getElementById("workerEditSelect").value = String(index);
+  }
+
+  const workerIndex = index;
+  const worker = workers[workerIndex];
 
   const ok = await showCustomConfirm(
-    `Â¿EstÃ¡ seguro de inactivar a ${worker.name}? El trabajador quedarÃ¡ inactivo y no aparecerÃ¡ en las listas.`,
+    `¿Está seguro de eliminar a ${worker.name}? Esta acción borrará el trabajador de forma permanente.`,
   );
 
   if (!ok) return;
 
-  // ðŸ”¹ 1. Marcar inactivo en almacenamiento local
-  const { error } = await storageClient
-    .from("workers")
-    .update({ active: false })
-    .eq("rut", worker.rut);
+  if (storageClient) {
+    let error = null;
+    if (worker?.id) {
+      const result = await storageClient.from("workers").delete().eq("id", worker.id);
+      error = result?.error || null;
+    } else {
+      const result = await storageClient.from("workers").delete().eq("rut", worker.rut);
+      error = result?.error || null;
+    }
 
-  if (error) {
-    console.error("Error actualizando trabajador en almacenamiento local:", error.message);
-    await showCustomAlert("Error al actualizar en la base de datos.");
-    // ...existing code...
+    if (error) {
+      console.error("Error eliminando trabajador en almacenamiento local:", error.message);
+      await showCustomAlert("Error al eliminar en la base de datos local.");
+      return;
+    }
   }
 
-  // ðŸ”¹ 2. Marcar inactivo local
-  workers[index].active = false;
+  workers.splice(workerIndex, 1);
   saveLocalDataDebounced();
 
-  // ðŸ”¹ 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
 
-  await showCustomAlert(`Trabajador ${worker.name} marcado como inactivo.`);
+  await showCustomAlert(`Trabajador ${worker.name} eliminado correctamente.`);
+}
+
+async function deactivateWorker() {
+  const selectedIndexValue = document.getElementById("workerEditSelect").value;
+  console.log("editIndexWorker:", editIndexWorker);
+  console.log("workerEditSelect.value:", selectedIndexValue);
+
+  const index =
+    selectedIndexValue !== ""
+      ? Number(selectedIndexValue)
+      : editIndexWorker !== null
+        ? Number(editIndexWorker)
+        : -1;
+
+  if (!Number.isInteger(index) || index < 0 || !workers[index]) {
+    await showCustomAlert("Seleccione un trabajador para desactivar.");
+    return;
+  }
+
+  if (selectedIndexValue === "") {
+    document.getElementById("workerEditSelect").value = String(index);
+  }
+
+  const workerIndex = index;
+  const worker = workers[workerIndex];
+
+  if (worker.active === false) {
+    await showCustomAlert(`Trabajador ${worker.name} ya está desactivado.`);
+    return;
+  }
+
+  const ok = await showCustomConfirm(
+    `¿Está seguro de desactivar a ${worker.name}? El trabajador no aparecerá en listas activas.`,
+  );
+
+  if (!ok) return;
+
+  if (storageClient) {
+    let error = null;
+    if (worker?.id) {
+      const result = await storageClient
+        .from("workers")
+        .update({ active: false })
+        .eq("id", worker.id);
+      error = result?.error || null;
+    } else {
+      const result = await storageClient
+        .from("workers")
+        .update({ active: false })
+        .eq("rut", worker.rut);
+      error = result?.error || null;
+    }
+
+    if (error) {
+      console.error("Error desactivando trabajador en almacenamiento local:", error.message);
+      await showCustomAlert("Error al desactivar en la base de datos local.");
+      return;
+    }
+  }
+
+  workers[workerIndex].active = false;
+  saveLocalDataDebounced();
+
+  loadWorkers();
+  renderWorkersTable();
+  clearWorkerForm();
+
+  await showCustomAlert(`Trabajador ${worker.name} desactivado correctamente.`);
 }
 
 // =============================
@@ -3541,7 +3673,7 @@ function exportMonthlyGeneralExcel() {
   const responsable = "Contratista"; // puedes cambiarlo luego
 
   // ENCABEZADO EMPRESA
-  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
+  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
   csv += "RESUMEN MENSUAL GENERAL\n";
   csv += "Mes: " + month + "\n";
   csv += "Fecha de generaciÃ³n: " + fechaGeneracion + "\n";
@@ -3868,7 +4000,7 @@ function formatRutInput(input) {
 }
 
 // =============================
-// ðŸ” LOGIN
+// ðŸ” LOGIN
 // =============================
 
 async function loginUser() {
@@ -3932,11 +4064,17 @@ async function addWorker() {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
-  // ðŸ”¹ VALIDAR RUT DUPLICADO
-  const rutIndex = workers.findIndex((w) => w.rut === workerRut);
-  if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
-    // await showCustomAlert("Este trabajador o RUT ya existe.");
-    console.warn("Trabajador duplicado");
+  // ðŸ”¹ VALIDAR RUT DUPLICADO (normalizado)
+  const workerRutKey = getRutKey(workerRut);
+  const currentEditIndex =
+    editIndexWorker !== null ? Number(editIndexWorker) : -1;
+  const rutIndex = workers.findIndex((w, index) => {
+    if (index === currentEditIndex) return false;
+    return getRutKey(w?.rut) === workerRutKey;
+  });
+
+  if (workerRutKey && rutIndex !== -1) {
+    await showCustomAlert("Ya existe un trabajador registrado con ese RUT.");
     return;
   }
 
@@ -4085,7 +4223,7 @@ function filterWorkersPagos() {
   }
 }
 // =============================
-// ðŸ¦ CARGAR AFP EN SELECT
+// ðŸ¦ CARGAR AFP EN SELECT
 // =============================
 
 function loadAFPOptions() {
@@ -4239,11 +4377,13 @@ function filterWorkersProduction() {
     return;
   }
 
-  const filtered = workers.filter(
-    (w) =>
-      w.name.toLowerCase().includes(input) ||
-      w.rut.toLowerCase().includes(input),
-  );
+  const filtered = workers.filter((w) => {
+    if (w.active === false) return false;
+    return (
+      (w.name || "").toLowerCase().includes(input) ||
+      (w.rut || "").toLowerCase().includes(input)
+    );
+  });
 
   filtered.forEach((w) => {
     const div = document.createElement("div");
@@ -4582,8 +4722,22 @@ function filterWorkersLiquidation() {
     const div = document.createElement("div");
     div.textContent = `${w.name} - ${w.rut}`;
     div.addEventListener("click", () => {
+      clearTimeout(debounceTimer);
+      console.log("LIQUIDATION WORKER CLICK:", w);
       const index = workers.indexOf(w);
-      hiddenSelect.value = index;
+      const workerLiquidation = hiddenSelect;
+      if (workerLiquidation) {
+        const targetValue = String(index);
+        if (!workerLiquidation.querySelector(`option[value="${targetValue}"]`)) {
+          const opt = document.createElement("option");
+          opt.value = targetValue;
+          opt.textContent = w.name || "";
+          workerLiquidation.appendChild(opt);
+        }
+        workerLiquidation.value = targetValue;
+        console.log("SETTING INPUT:", workerLiquidation);
+        console.log("VALUE AFTER SET:", workerLiquidation.value);
+      }
       document.getElementById("searchWorkerLiquidation").value = w.name;
       list.style.display = "none";
       list.innerHTML = "";
@@ -4880,7 +5034,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -4925,7 +5079,7 @@ async function generateLiquidation() {
   if (!uploadResult.ok) {
     console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
     );
   } else {
     console.log("LiquidaciÃ³n guardada en almacenamiento local");
@@ -5333,7 +5487,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
+  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -5448,7 +5602,7 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
@@ -5595,7 +5749,7 @@ async function generateFiniquito() {
 
   <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -5648,7 +5802,7 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
+        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
@@ -5656,7 +5810,7 @@ async function generateFiniquito() {
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
+    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -5730,7 +5884,7 @@ function generateMonthlySummary() {
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÃAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -5872,7 +6026,7 @@ function generateMonthlyGeneral() {
   container.innerHTML = html;
 }
 // =============================
-// ðŸ” SESIÃ“N
+// ðŸ” SESIÃ“N
 // =============================
 
 function focusFirstFieldInView() {
@@ -6013,47 +6167,64 @@ function importData(event) {
   reader.readAsText(file);
 }
 // =============================
-// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
+// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
 // =============================
 
 async function deleteWorker() {
-  const index = document.getElementById("workerEditSelect").value;
+  const selectedIndexValue = document.getElementById("workerEditSelect").value;
+  console.log("editIndexWorker:", editIndexWorker);
+  console.log("workerEditSelect.value:", selectedIndexValue);
 
-  if (index === "") {
-    await showCustomAlert("Seleccione un trabajador para inactivar.");
+  const index =
+    selectedIndexValue !== ""
+      ? Number(selectedIndexValue)
+      : editIndexWorker !== null
+        ? Number(editIndexWorker)
+        : -1;
+
+  if (!Number.isInteger(index) || index < 0 || !workers[index]) {
+    await showCustomAlert("Seleccione un trabajador para eliminar.");
     return;
   }
 
-  const worker = workers[index];
+  if (selectedIndexValue === "") {
+    document.getElementById("workerEditSelect").value = String(index);
+  }
+
+  const workerIndex = index;
+  const worker = workers[workerIndex];
 
   const ok = await showCustomConfirm(
-    `Â¿EstÃ¡ seguro de inactivar a ${worker.name}? El trabajador quedarÃ¡ inactivo y no aparecerÃ¡ en las listas.`,
+    `¿Está seguro de eliminar a ${worker.name}? Esta acción borrará el trabajador de forma permanente.`,
   );
 
   if (!ok) return;
 
-  // ðŸ”¹ 1. Marcar inactivo en almacenamiento local
-  const { error } = await storageClient
-    .from("workers")
-    .update({ active: false })
-    .eq("rut", worker.rut);
+  if (storageClient) {
+    let error = null;
+    if (worker?.id) {
+      const result = await storageClient.from("workers").delete().eq("id", worker.id);
+      error = result?.error || null;
+    } else {
+      const result = await storageClient.from("workers").delete().eq("rut", worker.rut);
+      error = result?.error || null;
+    }
 
-  if (error) {
-    console.error("Error actualizando trabajador en almacenamiento local:", error.message);
-    await showCustomAlert("Error al actualizar en la base de datos.");
-    // ...existing code...
+    if (error) {
+      console.error("Error eliminando trabajador en almacenamiento local:", error.message);
+      await showCustomAlert("Error al eliminar en la base de datos local.");
+      return;
+    }
   }
 
-  // ðŸ”¹ 2. Marcar inactivo local
-  workers[index].active = false;
+  workers.splice(workerIndex, 1);
   saveLocalDataDebounced();
 
-  // ðŸ”¹ 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
 
-  await showCustomAlert(`Trabajador ${worker.name} marcado como inactivo.`);
+  await showCustomAlert(`Trabajador ${worker.name} eliminado correctamente.`);
 }
 
 function exportData() {
@@ -6158,7 +6329,7 @@ function exportMonthlyGeneralExcel() {
   const responsable = "Contratista"; // puedes cambiarlo luego
 
   // ENCABEZADO EMPRESA
-  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
+  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
   csv += "RESUMEN MENSUAL GENERAL\n";
   csv += "Mes: " + month + "\n";
   csv += "Fecha de generaciÃ³n: " + fechaGeneracion + "\n";
@@ -6485,7 +6656,7 @@ function formatRutInput(input) {
 }
 
 // =============================
-// ðŸ” LOGIN
+// ðŸ” LOGIN
 // =============================
 
 async function loginUser() {
@@ -6635,7 +6806,7 @@ async function initSystem() {
 }
 
 // =============================
-// ðŸ‘¨â€ðŸŒ¾ TRABAJADORES
+// ðŸ‘¨â€ðŸŒ¾ TRABAJADORES
 // =============================
 
 async function addWorker() {
@@ -6669,11 +6840,17 @@ async function addWorker() {
     alert("Falta completar campos obligatorios (Nombre y RUT).");
     return;
   }
-  // ðŸ”¹ VALIDAR RUT DUPLICADO
-  const rutIndex = workers.findIndex((w) => w.rut === workerRut);
-  if (rutIndex !== -1 && rutIndex !== Number(editIndexWorker)) {
-    // await showCustomAlert("Este trabajador o RUT ya existe.");
-    console.warn("Trabajador duplicado");
+  // ðŸ”¹ VALIDAR RUT DUPLICADO (normalizado)
+  const workerRutKey = getRutKey(workerRut);
+  const currentEditIndex =
+    editIndexWorker !== null ? Number(editIndexWorker) : -1;
+  const rutIndex = workers.findIndex((w, index) => {
+    if (index === currentEditIndex) return false;
+    return getRutKey(w?.rut) === workerRutKey;
+  });
+
+  if (workerRutKey && rutIndex !== -1) {
+    await showCustomAlert("Ya existe un trabajador registrado con ese RUT.");
     return;
   }
 
@@ -6822,7 +6999,7 @@ function filterWorkersPagos() {
   }
 }
 // =============================
-// 🏦 CARGAR AFP EN SELECT
+// 🝦 CARGAR AFP EN SELECT
 // =============================
 
 function loadAFPOptions() {
@@ -6873,7 +7050,7 @@ function loadMandanteFundoFilter() {
 }
 
 // =============================
-// 🛠️ AUXILIARES
+// 🛠︝ AUXILIARES
 // =============================
 
 function formatCurrency(input) {
@@ -6976,11 +7153,13 @@ function filterWorkersProduction() {
     return;
   }
 
-  const filtered = workers.filter(
-    (w) =>
-      w.name.toLowerCase().includes(input) ||
-      w.rut.toLowerCase().includes(input),
-  );
+  const filtered = workers.filter((w) => {
+    if (w.active === false) return false;
+    return (
+      (w.name || "").toLowerCase().includes(input) ||
+      (w.rut || "").toLowerCase().includes(input)
+    );
+  });
 
   filtered.forEach((w) => {
     const div = document.createElement("div");
@@ -7319,8 +7498,22 @@ function filterWorkersLiquidation() {
     const div = document.createElement("div");
     div.textContent = `${w.name} - ${w.rut}`;
     div.addEventListener("click", () => {
+      clearTimeout(debounceTimer);
+      console.log("LIQUIDATION WORKER CLICK:", w);
       const index = workers.indexOf(w);
-      hiddenSelect.value = index;
+      const workerLiquidation = hiddenSelect;
+      if (workerLiquidation) {
+        const targetValue = String(index);
+        if (!workerLiquidation.querySelector(`option[value="${targetValue}"]`)) {
+          const opt = document.createElement("option");
+          opt.value = targetValue;
+          opt.textContent = w.name || "";
+          workerLiquidation.appendChild(opt);
+        }
+        workerLiquidation.value = targetValue;
+        console.log("SETTING INPUT:", workerLiquidation);
+        console.log("VALUE AFTER SET:", workerLiquidation.value);
+      }
       document.getElementById("searchWorkerLiquidation").value = w.name;
       list.style.display = "none";
       list.innerHTML = "";
@@ -7617,7 +7810,7 @@ async function generateLiquidation() {
 </tr>
 </table>
 
-<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
+<h2>LÃQUIDO A PAGAR: ${formatMoney(liquido)}</h2>
 
 <div style="margin-top:60px;text-align:center">
   <div style="border-top:1px solid #222;width:220px;margin:0 auto 4px auto;height:0"></div>
@@ -7662,7 +7855,7 @@ async function generateLiquidation() {
   if (!uploadResult.ok) {
     console.error("Error subiendo liquidaciÃ³n:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube la liquidaciÃ³n. " + uploadResult.errorMessage,
     );
   } else {
     console.log("LiquidaciÃ³n guardada en almacenamiento local");
@@ -8070,7 +8263,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
+  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -8185,7 +8378,7 @@ async function generateContract() {
   if (!uploadResult.ok) {
     console.error("Error subiendo contrato:", uploadResult.error);
     alert(
-      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
+      "âš ï¸ No se guardÃ³ en nube el contrato. " + uploadResult.errorMessage,
     );
   } else {
     console.log("Contrato guardado en almacenamiento local");
@@ -8332,7 +8525,7 @@ async function generateFiniquito() {
 
   <p>Declara haber recibido de su empleador todas las remuneraciones, pagos y beneficios que le correspondÃ­an por su trabajo realizado.</p>
 
-  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
+  <h3 style="text-align:center; margin-top:18px;">TOTAL LÃQUIDO A PAGAR SEGÃšN DETALLE LIQUIDACIÃ“N</h3>
   <h2 style="text-align:center;">$ ${totalPagado.toLocaleString("es-CL")}</h2>
 
   <br><br>
@@ -8385,7 +8578,7 @@ async function generateFiniquito() {
     if (!uploadResult.ok) {
       console.error("Error subiendo finiquito:", uploadResult.error);
       alert(
-        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
+        "âš ï¸ No se guardÃ³ en nube el finiquito. " + uploadResult.errorMessage,
       );
     } else {
       console.log("Finiquito guardado en almacenamiento local");
@@ -8393,7 +8586,7 @@ async function generateFiniquito() {
     }
   } catch (error) {
     console.error("Error generando finiquito:", error);
-    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
+    alert("âš ï¸ OcurriÃ³ un error al generar el finiquito. Intente nuevamente.");
   } finally {
     isGeneratingFiniquito = false;
   }
@@ -8467,7 +8660,7 @@ function generateMonthlySummary() {
     return;
   }
 
-  // ===== CALCULAR DÃAS TRABAJADOS =====
+  // ===== CALCULAR DÃAS TRABAJADOS =====
   const uniqueDates = [
     ...new Set(records.map((r) => getHistoryDateKey(r.date))),
   ];
@@ -8609,7 +8802,7 @@ function generateMonthlyGeneral() {
   container.innerHTML = html;
 }
 // =============================
-// ðŸ” SESIÃ“N
+// ðŸ” SESIÃ“N
 // =============================
 
 window.onload = function () {
@@ -8769,47 +8962,64 @@ function importData(event) {
   reader.readAsText(file);
 }
 // =============================
-// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
+// ðŸ—‘ï¸ ELIMINAR TRABAJADOR
 // =============================
 
 async function deleteWorker() {
-  const index = document.getElementById("workerEditSelect").value;
+  const selectedIndexValue = document.getElementById("workerEditSelect").value;
+  console.log("editIndexWorker:", editIndexWorker);
+  console.log("workerEditSelect.value:", selectedIndexValue);
 
-  if (index === "") {
-    await showCustomAlert("Seleccione un trabajador para inactivar.");
+  const index =
+    selectedIndexValue !== ""
+      ? Number(selectedIndexValue)
+      : editIndexWorker !== null
+        ? Number(editIndexWorker)
+        : -1;
+
+  if (!Number.isInteger(index) || index < 0 || !workers[index]) {
+    await showCustomAlert("Seleccione un trabajador para eliminar.");
     return;
   }
 
-  const worker = workers[index];
+  if (selectedIndexValue === "") {
+    document.getElementById("workerEditSelect").value = String(index);
+  }
+
+  const workerIndex = index;
+  const worker = workers[workerIndex];
 
   const ok = await showCustomConfirm(
-    `Â¿EstÃ¡ seguro de inactivar a ${worker.name}? El trabajador quedarÃ¡ inactivo y no aparecerÃ¡ en las listas.`,
+    `¿Está seguro de eliminar a ${worker.name}? Esta acción borrará el trabajador de forma permanente.`,
   );
 
   if (!ok) return;
 
-  // ðŸ”¹ 1. Marcar inactivo en almacenamiento local
-  const { error } = await storageClient
-    .from("workers")
-    .update({ active: false })
-    .eq("rut", worker.rut);
+  if (storageClient) {
+    let error = null;
+    if (worker?.id) {
+      const result = await storageClient.from("workers").delete().eq("id", worker.id);
+      error = result?.error || null;
+    } else {
+      const result = await storageClient.from("workers").delete().eq("rut", worker.rut);
+      error = result?.error || null;
+    }
 
-  if (error) {
-    console.error("Error actualizando trabajador en almacenamiento local:", error.message);
-    await showCustomAlert("Error al actualizar en la base de datos.");
-    // ...existing code...
+    if (error) {
+      console.error("Error eliminando trabajador en almacenamiento local:", error.message);
+      await showCustomAlert("Error al eliminar en la base de datos local.");
+      return;
+    }
   }
 
-  // ðŸ”¹ 2. Marcar inactivo local
-  workers[index].active = false;
+  workers.splice(workerIndex, 1);
   saveLocalDataDebounced();
 
-  // ðŸ”¹ 3. Actualizar sistema
   loadWorkers();
   renderWorkersTable();
   clearWorkerForm();
 
-  await showCustomAlert(`Trabajador ${worker.name} marcado como inactivo.`);
+  await showCustomAlert(`Trabajador ${worker.name} eliminado correctamente.`);
 }
 
 function exportData() {
@@ -8890,7 +9100,7 @@ async function syncToCloud(showAlerts = false) {
         );
       } else {
         alert(
-          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
+          "âš ï¸ Subida parcial a almacenamiento local. Trabajadores OK: " +
             workerSuccess +
             ", Trabajadores con error: " +
             workerErrors +
@@ -9053,7 +9263,7 @@ function exportMonthlyGeneralExcel() {
   const responsable = "Contratista"; // puedes cambiarlo luego
 
   // ENCABEZADO EMPRESA
-  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
+  csv += "SERVICIOS AGRÃCOLAS SAN GERÃ“NIMO SPA\n";
   csv += "RESUMEN MENSUAL GENERAL\n";
     csv += "Mes: " + month + "\n";
     csv += "Fecha de generaciÃ³n: " + fechaGeneracion + "\n";

@@ -72,6 +72,8 @@ window.addEventListener('DOMContentLoaded', () => {
 function setupFundoSuggestions() {
   const fundoInput = document.getElementById('fundoProduction');
   if (!fundoInput || fundoInput.dataset.suggestionsReady === 'true') return;
+  let isSelectingFromSuggestions = false;
+  let suppressNextSuggestions = false;
 
   const suggestionBox = document.createElement('div');
   suggestionBox.style.position = 'absolute';
@@ -84,7 +86,21 @@ function setupFundoSuggestions() {
   suggestionBox.className = 'fundo-suggestion-box';
   fundoInput.parentNode.insertBefore(suggestionBox, fundoInput.nextSibling);
 
+  function selectFundo(fundo) {
+    console.log("FUNDO CLICK:", fundo);
+    fundoInput.value = fundo;
+    suggestionBox.style.display = 'none';
+    suppressNextSuggestions = true;
+    fundoInput.dispatchEvent(new Event('input'));
+  }
+
   function showSuggestions() {
+    if (suppressNextSuggestions) {
+      suppressNextSuggestions = false;
+      suggestionBox.style.display = 'none';
+      return;
+    }
+
     let fundos = [];
     try {
       fundos = JSON.parse(localStorage.getItem('fundosHistoricos') || '[]');
@@ -106,12 +122,16 @@ function setupFundoSuggestions() {
       item.textContent = f;
       item.style.padding = '6px 12px';
       item.style.cursor = 'pointer';
-      item.addEventListener('mousedown', (e) => {
+      const handleSelect = (e) => {
         e.preventDefault();
-        fundoInput.value = f;
-        suggestionBox.style.display = 'none';
-        fundoInput.dispatchEvent(new Event('input'));
-      });
+        e.stopPropagation();
+        isSelectingFromSuggestions = true;
+        selectFundo(f);
+      };
+      item.addEventListener('pointerdown', handleSelect);
+      item.addEventListener('mousedown', handleSelect);
+      item.addEventListener('touchstart', handleSelect, { passive: false });
+      item.addEventListener('click', handleSelect);
       suggestionBox.appendChild(item);
     });
 
@@ -124,8 +144,25 @@ function setupFundoSuggestions() {
 
   fundoInput.addEventListener('focus', showSuggestions);
   fundoInput.addEventListener('input', showSuggestions);
+  fundoInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      suggestionBox.style.display = 'none';
+    }
+  });
   fundoInput.addEventListener('blur', () => {
+    if (isSelectingFromSuggestions) {
+      setTimeout(() => {
+        isSelectingFromSuggestions = false;
+      }, 0);
+      return;
+    }
     setTimeout(() => (suggestionBox.style.display = 'none'), 120);
+  });
+  document.addEventListener('pointerdown', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    if (target === fundoInput || suggestionBox.contains(target)) return;
+    suggestionBox.style.display = 'none';
   });
   fundoInput.dataset.suggestionsReady = 'true';
 }

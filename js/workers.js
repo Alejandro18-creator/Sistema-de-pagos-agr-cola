@@ -39,6 +39,12 @@ function clearWorkerForm() /*🧠 DESACTIVAR MODO EDICIÓN*/ {
     ""; /*Restablecer el valor del campo de nacionalidad del trabajador a vacío.*/
   document.getElementById("workerAccount").value =
     ""; /*Restablecer el valor del campo de cuenta del trabajador a vacío.*/
+  document.getElementById("workerBaseSalary").value =
+    ""; /*Restablecer el valor del campo de sueldo base a vacío.*/
+  document.getElementById("workerIdPhoto").value =
+    ""; /*Restablecer el archivo seleccionado de foto carnet.*/
+  document.getElementById("workerPosition").value =
+    "Trabajador Agricola"; /*Restablecer el cargo por defecto para nuevo registro.*/
 }
 function clearWorkerInputs() {
   /*Limpiar solo los campos de entrada del formulario sin afectar el modo de edición o selección.*/
@@ -440,16 +446,7 @@ function filterWorkersEdit() {
   list.style.display = "block";
 }
 function clearWorkerEditSearch() {
-  const searchInput = document.getElementById("searchWorkerEdit");
-  const list = document.getElementById("workerEditList");
-  const hiddenSelect = document.getElementById("workerEditSelect");
-
-  if (searchInput) searchInput.value = "";
-  if (hiddenSelect) hiddenSelect.value = "";
-  if (list) {
-    list.style.display = "none";
-    list.innerHTML = "";
-  }
+  clearWorkerForm();
 }
 function clearWorkerContractSearch() {
   const searchInput = document.getElementById("searchWorkerContract");
