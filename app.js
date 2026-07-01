@@ -2207,8 +2207,17 @@ async function generateLiquidation() {
     sueldoMinimoMensual > 0 && diasDelMes > 0
       ? Math.round((sueldoMinimoMensual / diasDelMes) * daysWorked)
       : 0;
-  const totalPagar = Math.min(produccionReal, sueldoBaseProporcional || produccionReal);
-  const baseImponible = Math.min(totalPagar, sueldoMinimoMensual || totalPagar);
+  const sueldoBase = sueldoBaseProporcional;
+  const sueldoMinimoConfigurado = sueldoMinimoMensual;
+  let bonoProduccion = produccionReal;
+  let totalFinal = sueldoBase + bonoProduccion;
+
+  if (sueldoMinimoConfigurado > 0 && totalFinal > sueldoMinimoConfigurado) {
+    bonoProduccion = Math.max(0, sueldoMinimoConfigurado - sueldoBase);
+    totalFinal = sueldoBase + bonoProduccion;
+  }
+
+  const baseImponible = totalFinal;
 
   // ===== DESCUENTOS =====
 
@@ -2225,12 +2234,15 @@ async function generateLiquidation() {
 
   const totalDescuentos = afp + salud + anticipos;
 
-  const liquido = totalPagar - totalDescuentos;
+  const liquido = totalFinal - totalDescuentos;
 
   console.log({
+    sueldoBase,
+    bonoProduccion,
+    sueldoMinimoConfigurado,
     sueldoBaseProporcional,
     produccionReal,
-    totalPagar,
+    totalFinal,
   });
 
   // ===== DOCUMENTO HTML =====
@@ -2261,12 +2273,12 @@ async function generateLiquidation() {
 
 <tr>
 <td>BONO DE PRODUCCIÓN</td>
-<td>$${produccionReal.toLocaleString("es-CL")}</td>
+<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
 <th>Total Final a Pagar</th>
-<th>$${totalPagar.toLocaleString("es-CL")}</th>
+<th>$${totalFinal.toLocaleString("es-CL")}</th>
 </tr>
 </table>
 
@@ -5027,8 +5039,17 @@ async function generateLiquidation() {
     sueldoMinimoMensual > 0 && diasDelMes > 0
       ? Math.round((sueldoMinimoMensual / diasDelMes) * daysWorked)
       : 0;
-  const totalPagar = Math.min(produccionReal, sueldoBaseProporcional || produccionReal);
-  const baseImponible = Math.min(totalPagar, sueldoMinimoMensual || totalPagar);
+  const sueldoBase = sueldoBaseProporcional;
+  const sueldoMinimoConfigurado = sueldoMinimoMensual;
+  let bonoProduccion = produccionReal;
+  let totalFinal = sueldoBase + bonoProduccion;
+
+  if (sueldoMinimoConfigurado > 0 && totalFinal > sueldoMinimoConfigurado) {
+    bonoProduccion = Math.max(0, sueldoMinimoConfigurado - sueldoBase);
+    totalFinal = sueldoBase + bonoProduccion;
+  }
+
+  const baseImponible = totalFinal;
 
   // ===== DESCUENTOS =====
 
@@ -5045,12 +5066,15 @@ async function generateLiquidation() {
 
   const totalDescuentos = afp + salud + anticipos;
 
-  const liquido = totalPagar - totalDescuentos;
+  const liquido = totalFinal - totalDescuentos;
 
   console.log({
+    sueldoBase,
+    bonoProduccion,
+    sueldoMinimoConfigurado,
     sueldoBaseProporcional,
     produccionReal,
-    totalPagar,
+    totalFinal,
   });
 
   // ===== DOCUMENTO HTML =====
@@ -5081,12 +5105,12 @@ async function generateLiquidation() {
 
 <tr>
 <td>BONO DE PRODUCCIÓN</td>
-<td>$${produccionReal.toLocaleString("es-CL")}</td>
+<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
 <th>Total Final a Pagar</th>
-<th>$${totalPagar.toLocaleString("es-CL")}</th>
+<th>$${totalFinal.toLocaleString("es-CL")}</th>
 </tr>
 </table>
 
@@ -7821,8 +7845,17 @@ async function generateLiquidation() {
     sueldoMinimoMensual > 0 && diasDelMes > 0
       ? Math.round((sueldoMinimoMensual / diasDelMes) * daysWorked)
       : 0;
-  const totalPagar = Math.min(produccionReal, sueldoBaseProporcional || produccionReal);
-  const baseImponible = Math.min(totalPagar, sueldoMinimoMensual || totalPagar);
+  const sueldoBase = sueldoBaseProporcional;
+  const sueldoMinimoConfigurado = sueldoMinimoMensual;
+  let bonoProduccion = produccionReal;
+  let totalFinal = sueldoBase + bonoProduccion;
+
+  if (sueldoMinimoConfigurado > 0 && totalFinal > sueldoMinimoConfigurado) {
+    bonoProduccion = Math.max(0, sueldoMinimoConfigurado - sueldoBase);
+    totalFinal = sueldoBase + bonoProduccion;
+  }
+
+  const baseImponible = totalFinal;
 
   // ===== DESCUENTOS =====
 
@@ -7839,12 +7872,15 @@ async function generateLiquidation() {
 
   const totalDescuentos = afp + salud + anticipos;
 
-  const liquido = totalPagar - totalDescuentos;
+  const liquido = totalFinal - totalDescuentos;
 
   console.log({
+    sueldoBase,
+    bonoProduccion,
+    sueldoMinimoConfigurado,
     sueldoBaseProporcional,
     produccionReal,
-    totalPagar,
+    totalFinal,
   });
 
   // ===== DOCUMENTO HTML =====
@@ -7875,12 +7911,12 @@ async function generateLiquidation() {
 
 <tr>
 <td>BONO DE PRODUCCIÓN</td>
-<td>$${produccionReal.toLocaleString("es-CL")}</td>
+<td>$${bonoProduccion.toLocaleString("es-CL")}</td>
 </tr>
 
 <tr>
 <th>Total Final a Pagar</th>
-<th>$${totalPagar.toLocaleString("es-CL")}</th>
+<th>$${totalFinal.toLocaleString("es-CL")}</th>
 </tr>
 </table>
 
