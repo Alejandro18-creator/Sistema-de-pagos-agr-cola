@@ -1737,7 +1737,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
+      "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
 }
 
@@ -4690,7 +4690,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
+      "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
 }
 
@@ -5635,7 +5635,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
+    const fixedPrefix = "La jornada ordinaria de trabajo será¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
@@ -7585,7 +7585,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
+      "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
 }
 
@@ -8530,7 +8530,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
+    const fixedPrefix = "La jornada ordinaria de trabajo será¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())

@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Alejandro Castillo Pinto",
+    "rut": "9.962.931-2",
+    "birthDate": "25/11/1965",
+    "maritalStatus": "casado",
+    "address": "Las Lomas parcela 5",
+    "afp": "Habitat",
+    "health": "Fonasa",
+    "position": "Trabajador Agricola",
+    "nationality": "Chilena",
+    "baseSalary": "569000",
+    "account_number": "1245235214",
+    "id_card_photo": null,
+    "pending": false
+  }
+]

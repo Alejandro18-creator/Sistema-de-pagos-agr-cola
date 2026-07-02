@@ -5,8 +5,8 @@ let saveTimer;
 function saveLocalDataDebounced() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    localStorage.setItem("workers", JSON.stringify(workers));
-    localStorage.setItem("history", JSON.stringify(history));
+    persistWorkersDualWrite();
+    persistHistoryDualWrite();
     localStorage.setItem("labors", JSON.stringify(labors));
     localStorage.setItem("fundos", JSON.stringify(fundos));
     console.log("Datos guardados localmente");
@@ -36,6 +36,114 @@ let workers = [];
 let labors = [];
 let history = [];
 let fundos = [];
+
+const PORTABLE_CLIENT_WORKERS_FILE = "client/workers.json";
+const PORTABLE_CLIENT_HISTORY_FILE = "client/history.json";
+
+function hasPortableStorage() {
+  return Boolean(
+    window.portableStorage &&
+      typeof window.portableStorage.writeJson === "function" &&
+      typeof window.portableStorage.readJson === "function" &&
+      typeof window.portableStorage.fileExists === "function",
+  );
+}
+
+async function writePortableJsonSafe(relativePath, data) {
+  if (!hasPortableStorage()) return;
+
+  try {
+    await window.portableStorage.writeJson(relativePath, data);
+  } catch (error) {
+    console.warn("No se pudo escribir almacenamiento portable:", relativePath, error);
+  }
+}
+
+async function readPortableJsonSafe(relativePath) {
+  if (!hasPortableStorage()) return null;
+
+  try {
+    return await window.portableStorage.readJson(relativePath);
+  } catch (error) {
+    console.warn("No se pudo leer almacenamiento portable:", relativePath, error);
+    return null;
+  }
+}
+
+async function fileExistsPortableSafe(relativePath) {
+  if (!hasPortableStorage()) return false;
+
+  try {
+    return await window.portableStorage.fileExists(relativePath);
+  } catch (error) {
+    console.warn("No se pudo validar existencia en portable:", relativePath, error);
+    return false;
+  }
+}
+
+function persistWorkersDualWrite() {
+  localStorage.setItem("workers", JSON.stringify(workers));
+}
+
+function persistHistoryDualWrite() {
+  localStorage.setItem("history", JSON.stringify(history));
+}
+
+const __originalSetItem = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function patchedSetItem(key, value) {
+  __originalSetItem(key, value);
+
+  if (key === "workers") {
+    try {
+      const parsed = JSON.parse(value || "[]");
+      void writePortableJsonSafe(PORTABLE_CLIENT_WORKERS_FILE, parsed);
+    } catch (error) {
+      console.warn("No se pudo serializar workers para portable:", error);
+    }
+  }
+
+  if (key === "history") {
+    try {
+      const parsed = JSON.parse(value || "[]");
+      void writePortableJsonSafe(PORTABLE_CLIENT_HISTORY_FILE, parsed);
+    } catch (error) {
+      console.warn("No se pudo serializar history para portable:", error);
+    }
+  }
+};
+
+async function hydrateWorkersHistoryFromPortableStorage() {
+  const hasWorkersPortable = await fileExistsPortableSafe(
+    PORTABLE_CLIENT_WORKERS_FILE,
+  );
+  if (hasWorkersPortable) {
+    const portableWorkers = await readPortableJsonSafe(
+      PORTABLE_CLIENT_WORKERS_FILE,
+    );
+
+    if (Array.isArray(portableWorkers)) {
+      workers = portableWorkers.map((worker) => ({
+        ...worker,
+        pending: false,
+      }));
+      persistWorkersDualWrite();
+    }
+  }
+
+  const hasHistoryPortable = await fileExistsPortableSafe(
+    PORTABLE_CLIENT_HISTORY_FILE,
+  );
+  if (hasHistoryPortable) {
+    const portableHistory = await readPortableJsonSafe(
+      PORTABLE_CLIENT_HISTORY_FILE,
+    );
+
+    if (Array.isArray(portableHistory)) {
+      history = portableHistory;
+      persistHistoryDualWrite();
+    }
+  }
+}
 
 // Estado global del calendario semanal (requerido por production.js y app.js)
 let currentCalendarDate = new Date();
@@ -123,7 +231,10 @@ function initializeLocalState() {
     fundos = JSON.parse(localStorage.getItem("fundos") || "[]");
   } catch { fundos = []; }
 
-  localStorage.setItem("workers", JSON.stringify(workers));
+  persistWorkersDualWrite();
+  persistHistoryDualWrite();
+
+  void hydrateWorkersHistoryFromPortableStorage();
 }
 
 initializeLocalState();
@@ -1761,7 +1872,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
+      "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
 }
 
@@ -2750,7 +2861,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
+    const fixedPrefix = "La jornada ordinaria de trabajo será¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
@@ -2759,7 +2870,7 @@ async function generateContract() {
     workScheduleElement.textContent = normalized;
   }
 
-  // ðŸ”¹ AQUÃ VA EL PASO 2 ðŸ‘‡
+  // ðŸ”¹ AQUÍ VA EL PASO 2 ðŸ‘‡
 
   const startDate = document.getElementById("startDate").value.trim();
 
@@ -4593,7 +4704,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
+      "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
 }
 
@@ -5582,7 +5693,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
+    const fixedPrefix = "La jornada ordinaria de trabajo será¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
@@ -7399,7 +7510,7 @@ function clearAllContract() {
   const scheduleEl = document.getElementById("c_workSchedule");
   if (scheduleEl) {
     scheduleEl.textContent =
-      "La jornada ordinaria de trabajo serÃ¡ _______________________________.";
+      "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
 }
 
@@ -8388,7 +8499,7 @@ async function generateContract() {
   const workScheduleValue = (workScheduleInput?.value || "").trim();
   const workScheduleElement = document.getElementById("c_workSchedule");
   if (workScheduleElement && workScheduleValue) {
-    const fixedPrefix = "La jornada ordinaria de trabajo serÃ¡ ";
+    const fixedPrefix = "La jornada ordinaria de trabajo será¡ ";
     const normalized = workScheduleValue
       .toLowerCase()
       .startsWith(fixedPrefix.toLowerCase())
