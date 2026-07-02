@@ -1,6 +1,25 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { createStorageService } = require("./electron/services/storageService");
+
+const storageService = createStorageService({ app, fs, path });
+
+function registerStorageIpcHandlers() {
+  ipcMain.handle("storage:read", async (_event, relativePath) => {
+    return storageService.readJson(relativePath);
+  });
+
+  ipcMain.handle("storage:write", async (_event, payload) => {
+    const relativePath = payload?.relativePath;
+    const data = payload?.data;
+    return storageService.writeJson(relativePath, data);
+  });
+
+  ipcMain.handle("storage:exists", async (_event, relativePath) => {
+    return storageService.fileExists(relativePath);
+  });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -11,6 +30,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false,
       backgroundThrottling: false,
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
@@ -89,6 +109,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  storageService.ensureBaseDirectories();
+  registerStorageIpcHandlers();
+
   // Agregar encabezados para cross-origin isolation
   const { session } = require("electron");
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
