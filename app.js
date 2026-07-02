@@ -63,7 +63,26 @@ async function readPortableJsonSafe(relativePath) {
   if (!hasPortableStorage()) return null;
 
   try {
-    return await window.portableStorage.readJson(relativePath);
+    const data = await window.portableStorage.readJson(relativePath);
+
+    if (data === null || data === undefined) {
+      return null;
+    }
+
+    if (typeof data === "string") {
+      const normalized = data.trim();
+      if (normalized.length < 2) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(normalized);
+      } catch {
+        return null;
+      }
+    }
+
+    return data;
   } catch (error) {
     console.warn("No se pudo leer almacenamiento portable:", relativePath, error);
     return null;
@@ -1851,12 +1870,14 @@ function clearAllContract() {
   clearWorkerContractSearch();
 
   const startDate = document.getElementById("startDate");
+  const faena = document.getElementById("faena");
   const fundoSelect = document.getElementById("fundoSelect");
   const newFundo = document.getElementById("newFundo");
   const workSchedule = document.getElementById("workSchedule");
   const salary = document.getElementById("salary");
 
   if (startDate) startDate.value = "";
+  if (faena) faena.value = "";
   if (fundoSelect) fundoSelect.value = "";
   if (newFundo) newFundo.value = "";
   if (workSchedule) workSchedule.value = "";
@@ -2833,6 +2854,8 @@ async function generateContract() {
   }
 
   const worker = workers[workerIndex];
+  const faenaInput = document.getElementById("faena");
+  const contractFaena = (faenaInput?.value || "").trim();
 
   const fundoSelect = document.getElementById("fundoSelect");
   const newFundoInput = document.getElementById("newFundo");
@@ -2854,7 +2877,7 @@ async function generateContract() {
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
-    contractFundo || "________________________";
+    contractFaena || "________________________";
   document.getElementById("c_workerSign").textContent = worker.name;
 
   const workScheduleInput = document.getElementById("workSchedule");

@@ -56,7 +56,18 @@ function createStorageService({ app, fs, path }) {
     }
 
     const raw = await fs.promises.readFile(fullPath, "utf8");
-    return JSON.parse(raw);
+    const normalized = String(raw || "").trim();
+
+    if (normalized.length < 2) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(normalized);
+    } catch (error) {
+      console.warn("JSON portable inválido, se usa fallback local:", fullPath, error.message);
+      return null;
+    }
   }
 
   async function writeJson(relativePath, data) {

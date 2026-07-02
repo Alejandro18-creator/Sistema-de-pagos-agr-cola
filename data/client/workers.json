@@ -13,5 +13,20 @@
     "account_number": "1245235214",
     "id_card_photo": null,
     "pending": false
+  },
+  {
+    "name": "bernarda espinoza retamal",
+    "rut": "10.459.435-2",
+    "birthDate": "20/11/1965",
+    "maritalStatus": "casada",
+    "address": "las lomas parcela 5",
+    "afp": "PlanVital",
+    "health": "fonasa",
+    "position": "Trabajador Agricola",
+    "nationality": "chilena",
+    "baseSalary": "553553",
+    "account_number": "12548785",
+    "id_card_photo": null,
+    "pending": false
   }
 ]
