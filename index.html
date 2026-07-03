@@ -452,7 +452,7 @@
             </p>
             <p class="clausula">
               <b>PRIMERO:</b>
-              El trabajador prestará sus servicios como Trabajador en
+              El trabajador prestará sus servicios como Trabajador en Faena de
               <span id="c_faena">________________________</span>.
             </p>
             <p class="clausula">
@@ -594,11 +594,14 @@
           />
 
           <label for="faena">Faena</label>
+          <select id="faena">
+            <option value="">-- Seleccionar faena --</option>
+          </select>
+
           <input
             type="text"
-            id="faena"
-            placeholder="Faena"
-            autocomplete="off"
+            id="newFaena"
+            placeholder="Nueva faena (opcional)"
           />
 
           <label for="fundoSelect">Fundo</label>
@@ -962,6 +965,7 @@
     <script src="node_modules/html2canvas/dist/html2canvas.min.js"></script>
 
     <!-- APP JS -->
+    <script src="js/utils/date.utils.js"></script>
     <script src="js/core.js"></script>
     <script src="js/workers.js"></script>
     <script src="js/production.js"></script>

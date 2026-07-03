@@ -1,32 +1,19 @@
 [
   {
-    "name": "Alejandro Castillo Pinto",
+    "name": "alejandro castillo",
     "rut": "9.962.931-2",
     "birthDate": "25/11/1965",
     "maritalStatus": "casado",
-    "address": "Las Lomas parcela 5",
+    "address": "las lomas 5",
     "afp": "Habitat",
-    "health": "Fonasa",
-    "position": "Trabajador Agricola",
-    "nationality": "Chilena",
-    "baseSalary": "569000",
-    "account_number": "1245235214",
-    "id_card_photo": null,
-    "pending": false
-  },
-  {
-    "name": "bernarda espinoza retamal",
-    "rut": "10.459.435-2",
-    "birthDate": "20/11/1965",
-    "maritalStatus": "casada",
-    "address": "las lomas parcela 5",
-    "afp": "PlanVital",
     "health": "fonasa",
     "position": "Trabajador Agricola",
     "nationality": "chilena",
-    "baseSalary": "553553",
-    "account_number": "12548785",
+    "baseSalary": "569000",
+    "account_number": "838383838",
     "id_card_photo": null,
+    "active": true,
+    "id": "local_1782787141610_0fea71afc59078",
     "pending": false
   }
 ]

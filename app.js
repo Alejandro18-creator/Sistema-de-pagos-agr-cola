@@ -9,6 +9,7 @@ function saveLocalDataDebounced() {
     persistHistoryDualWrite();
     localStorage.setItem("labors", JSON.stringify(labors));
     localStorage.setItem("fundos", JSON.stringify(fundos));
+    localStorage.setItem("faenas", JSON.stringify(faenas));
     console.log("Datos guardados localmente");
   }, 500);
 }
@@ -36,6 +37,7 @@ let workers = [];
 let labors = [];
 let history = [];
 let fundos = [];
+let faenas = [];
 
 const PORTABLE_CLIENT_WORKERS_FILE = "client/workers.json";
 const PORTABLE_CLIENT_HISTORY_FILE = "client/history.json";
@@ -214,7 +216,7 @@ function exitPendingCalendar() {
 // ⚠︝ Solo llamar explícitamente para un reset total (por ejemplo, botón de limpiar datos).
 // NO llamar al inicio: borra todos los datos persistidos.
 function initializeFreshLocalState() {
-  const keysToClear = ["workers", "history", "labors", "fundos", "sessionActive"];
+  const keysToClear = ["workers", "history", "labors", "fundos", "faenas", "sessionActive"];
 
   keysToClear.forEach((key) => localStorage.removeItem(key));
 
@@ -228,6 +230,7 @@ function initializeFreshLocalState() {
   labors = [];
   history = [];
   fundos = [];
+  faenas = [];
   saveLocalDataDebounced();
 }
 
@@ -249,6 +252,9 @@ function initializeLocalState() {
   try {
     fundos = JSON.parse(localStorage.getItem("fundos") || "[]");
   } catch { fundos = []; }
+  try {
+    faenas = JSON.parse(localStorage.getItem("faenas") || "[]");
+  } catch { faenas = []; }
 
   persistWorkersDualWrite();
   persistHistoryDualWrite();
@@ -257,6 +263,25 @@ function initializeLocalState() {
 }
 
 initializeLocalState();
+
+function loadFaenas() {
+  const select = document.getElementById("faena");
+  if (!select) return;
+
+  const currentValue = select.value;
+  select.innerHTML = "<option value=''>-- Seleccionar faena --</option>";
+
+  faenas.forEach((f) => {
+    const option = document.createElement("option");
+    option.value = f;
+    option.textContent = f;
+    select.appendChild(option);
+  });
+
+  if (currentValue && faenas.includes(currentValue)) {
+    select.value = currentValue;
+  }
+}
 
 let isGeneratingFiniquito = false;
 let isSyncInProgress = false;
@@ -872,27 +897,6 @@ function getHistoryDedupeKey(record) {
   ].join("|");
 }
 
-function getHistoryDateKey(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-  }
-
-  const clMatch = raw.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/);
-  if (clMatch) {
-    return `${clMatch[3]}-${clMatch[2]}-${clMatch[1]}`;
-  }
-
-  return raw.slice(0, 10);
-}
-
-function isHistoryRecordInMonth(recordDate, month) {
-  const dateKey = getHistoryDateKey(recordDate);
-  return !!month && !!dateKey && dateKey.startsWith(month);
-}
 
 function dedupeHistoryRecords(records) {
   const seen = new Set();
@@ -1897,74 +1901,6 @@ function clearAllContract() {
   }
 }
 
-function filterWorkersMonthly() {
-  const searchInput = document.getElementById("searchWorkerMonthly");
-  const list = document.getElementById("workerMonthlyList");
-  const hiddenSelect = document.getElementById("workerMonthly");
-
-  if (!searchInput || !list || !hiddenSelect) return;
-
-  const search = searchInput.value
-    .toLowerCase()
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .trim();
-
-  hiddenSelect.value = "";
-  list.innerHTML = "";
-
-  if (search === "") {
-    list.style.display = "none";
-    return;
-  }
-
-  const filtered = workers.filter((worker) => {
-    const name = (worker.name || "").toLowerCase();
-    const cleanRut = (worker.rut || "")
-      .toLowerCase()
-      .replace(/\./g, "")
-      .replace(/-/g, "");
-
-    return name.includes(search) || cleanRut.includes(search);
-  });
-
-  if (filtered.length === 0) {
-    list.innerHTML =
-      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
-    list.style.display = "block";
-    return;
-  }
-
-  filtered.forEach((worker) => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-    div.addEventListener("click", () => {
-      const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
-      searchInput.value = worker.name || "";
-      document.getElementById("f_workerName").textContent = worker.name;
-      const workerRecords = history
-        .filter((r) => r.rut === worker.rut)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (workerRecords.length > 0) {
-        const parts = workerRecords[0].date.split("-");
-        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        document.getElementById("f_startDate").textContent = formatted;
-      } else {
-        document.getElementById("f_startDate").textContent =
-          "____ / ____ / ______";
-      }
-      refreshFiniquitoResumen();
-      list.style.display = "none";
-      list.innerHTML = "";
-    });
-    list.appendChild(div);
-  });
-
-  list.style.display = "block";
-}
-
 function clearWorkerMonthlySearch() {
   const searchInput = document.getElementById("searchWorkerMonthly");
   const list = document.getElementById("workerMonthlyList");
@@ -1991,6 +1927,26 @@ function filterWorkersFiniquito() {
     .replace(/-/g, "")
     .trim();
 
+  const selectedName = (searchInput.dataset.monthlySelectedName || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  if (
+    searchInput.dataset.monthlyWorkerLocked === "1" &&
+    hiddenSelect.value !== "" &&
+    search === selectedName
+  ) {
+    list.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+
+  if (search !== selectedName) {
+    delete searchInput.dataset.monthlyWorkerLocked;
+  }
+
   hiddenSelect.value = "";
   list.innerHTML = "";
 
@@ -2020,9 +1976,12 @@ function filterWorkersFiniquito() {
     const div = document.createElement("div");
     div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
     div.addEventListener("click", () => {
+      clearTimeout(debounceTimer);
       const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
+      hiddenSelect.value = String(index);
       searchInput.value = worker.name || "";
+      searchInput.dataset.monthlySelectedName = worker.name || "";
+      searchInput.dataset.monthlyWorkerLocked = "1";
       document.getElementById("f_workerName").textContent = worker.name;
       const workerRecords = history
         .filter((r) => r.rut === worker.rut)
@@ -2222,7 +2181,10 @@ document.addEventListener("click", (event) => {
   if (!searchInput || !list || !hiddenSelect) return;
 
   const clickedInsideInput = searchInput.contains(event.target);
-  const clickedInsideList = list.contains(event.target);
+  const eventPath =
+    typeof event.composedPath === "function" ? event.composedPath() : [];
+  const clickedInsideList =
+    list.contains(event.target) || eventPath.includes(list);
 
   if (clickedInsideInput || clickedInsideList) return;
 
@@ -3266,9 +3228,17 @@ function syncFiniquitoEndDate(value) {
 }
 
 function generateMonthlySummary() {
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const hiddenSelect = document.getElementById("workerMonthly");
   const workerIndex = document.getElementById("workerMonthly").value;
 
   const month = document.getElementById("monthMonthly").value;
+
+  console.log("[MonthlySummary] before validation", {
+    searchInputValue: (searchInput?.value || "").trim(),
+    hiddenSelectValue: (hiddenSelect?.value || "").trim(),
+    monthValue: (month || "").trim(),
+  });
 
   if (workerIndex === "" || !month) {
     showCustomAlert("Seleccione trabajador y mes.");
@@ -4633,6 +4603,26 @@ function filterWorkersContract() {
     .replace(/-/g, "")
     .trim();
 
+  const selectedName = (searchInput.dataset.monthlySelectedName || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  if (
+    searchInput.dataset.monthlyWorkerLocked === "1" &&
+    hiddenSelect.value !== "" &&
+    search === selectedName
+  ) {
+    list.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+
+  if (search !== selectedName) {
+    delete searchInput.dataset.monthlyWorkerLocked;
+  }
+
   hiddenSelect.value = "";
   list.innerHTML = "";
 
@@ -4731,74 +4721,6 @@ function clearAllContract() {
   }
 }
 
-function filterWorkersMonthly() {
-  const searchInput = document.getElementById("searchWorkerMonthly");
-  const list = document.getElementById("workerMonthlyList");
-  const hiddenSelect = document.getElementById("workerMonthly");
-
-  if (!searchInput || !list || !hiddenSelect) return;
-
-  const search = searchInput.value
-    .toLowerCase()
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .trim();
-
-  hiddenSelect.value = "";
-  list.innerHTML = "";
-
-  if (search === "") {
-    list.style.display = "none";
-    return;
-  }
-
-  const filtered = workers.filter((worker) => {
-    const name = (worker.name || "").toLowerCase();
-    const cleanRut = (worker.rut || "")
-      .toLowerCase()
-      .replace(/\./g, "")
-      .replace(/-/g, "");
-
-    return name.includes(search) || cleanRut.includes(search);
-  });
-
-  if (filtered.length === 0) {
-    list.innerHTML =
-      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
-    list.style.display = "block";
-    return;
-  }
-
-  filtered.forEach((worker) => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-    div.addEventListener("click", () => {
-      const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
-      searchInput.value = worker.name || "";
-      document.getElementById("f_workerName").textContent = worker.name;
-      const workerRecords = history
-        .filter((r) => r.rut === worker.rut)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (workerRecords.length > 0) {
-        const parts = workerRecords[0].date.split("-");
-        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        document.getElementById("f_startDate").textContent = formatted;
-      } else {
-        document.getElementById("f_startDate").textContent =
-          "____ / ____ / ______";
-      }
-      refreshFiniquitoResumen();
-      list.style.display = "none";
-      list.innerHTML = "";
-    });
-    list.appendChild(div);
-  });
-
-  list.style.display = "block";
-}
-
 function clearWorkerMonthlySearch() {
   const searchInput = document.getElementById("searchWorkerMonthly");
   const list = document.getElementById("workerMonthlyList");
@@ -4854,9 +4776,12 @@ function filterWorkersFiniquito() {
     const div = document.createElement("div");
     div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
     div.addEventListener("click", () => {
+      clearTimeout(debounceTimer);
       const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
+      hiddenSelect.value = String(index);
       searchInput.value = worker.name || "";
+      searchInput.dataset.monthlySelectedName = worker.name || "";
+      searchInput.dataset.monthlyWorkerLocked = "1";
       document.getElementById("f_workerName").textContent = worker.name;
       const workerRecords = history
         .filter((r) => r.rut === worker.rut)
@@ -5056,7 +4981,10 @@ document.addEventListener("click", (event) => {
   if (!searchInput || !list || !hiddenSelect) return;
 
   const clickedInsideInput = searchInput.contains(event.target);
-  const clickedInsideList = list.contains(event.target);
+  const eventPath =
+    typeof event.composedPath === "function" ? event.composedPath() : [];
+  const clickedInsideList =
+    list.contains(event.target) || eventPath.includes(list);
 
   if (clickedInsideInput || clickedInsideList) return;
 
@@ -5688,6 +5616,8 @@ async function generateContract() {
   }
 
   const worker = workers[workerIndex];
+  const faenaInput = document.getElementById("faena");
+  const contractFaena = (faenaInput?.value || "").trim();
 
   const fundoSelect = document.getElementById("fundoSelect");
   const newFundoInput = document.getElementById("newFundo");
@@ -5709,7 +5639,7 @@ async function generateContract() {
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
-    contractFundo || "________________________";
+    contractFaena || "________________________";
   document.getElementById("c_workerSign").textContent = worker.name;
 
   const workScheduleInput = document.getElementById("workSchedule");
@@ -6098,9 +6028,17 @@ function syncFiniquitoEndDate(value) {
 }
 
 function generateMonthlySummary() {
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const hiddenSelect = document.getElementById("workerMonthly");
   const workerIndex = document.getElementById("workerMonthly").value;
 
   const month = document.getElementById("monthMonthly").value;
+
+  console.log("[MonthlySummary] before validation", {
+    searchInputValue: (searchInput?.value || "").trim(),
+    hiddenSelectValue: (hiddenSelect?.value || "").trim(),
+    monthValue: (month || "").trim(),
+  });
 
   if (workerIndex === "" || !month) {
     showCustomAlert("Seleccione trabajador y mes.");
@@ -7036,6 +6974,7 @@ async function initSystem() {
 
   loadLabors();
   loadFundos();
+  loadFaenas();
   renderWorkersTable();
   loadAFPOptions();
   loadPagosWorkerFilter();
@@ -7512,12 +7451,16 @@ function clearAllContract() {
   clearWorkerContractSearch();
 
   const startDate = document.getElementById("startDate");
+  const faenaSelect = document.getElementById("faena");
+  const newFaena = document.getElementById("newFaena");
   const fundoSelect = document.getElementById("fundoSelect");
   const newFundo = document.getElementById("newFundo");
   const workSchedule = document.getElementById("workSchedule");
   const salary = document.getElementById("salary");
 
   if (startDate) startDate.value = "";
+  if (faenaSelect) faenaSelect.value = "";
+  if (newFaena) newFaena.value = "";
   if (fundoSelect) fundoSelect.value = "";
   if (newFundo) newFundo.value = "";
   if (workSchedule) workSchedule.value = "";
@@ -7535,74 +7478,6 @@ function clearAllContract() {
     scheduleEl.textContent =
       "La jornada ordinaria de trabajo será¡ _______________________________.";
   }
-}
-
-function filterWorkersMonthly() {
-  const searchInput = document.getElementById("searchWorkerMonthly");
-  const list = document.getElementById("workerMonthlyList");
-  const hiddenSelect = document.getElementById("workerMonthly");
-
-  if (!searchInput || !list || !hiddenSelect) return;
-
-  const search = searchInput.value
-    .toLowerCase()
-    .replace(/\./g, "")
-    .replace(/-/g, "")
-    .trim();
-
-  hiddenSelect.value = "";
-  list.innerHTML = "";
-
-  if (search === "") {
-    list.style.display = "none";
-    return;
-  }
-
-  const filtered = workers.filter((worker) => {
-    const name = (worker.name || "").toLowerCase();
-    const cleanRut = (worker.rut || "")
-      .toLowerCase()
-      .replace(/\./g, "")
-      .replace(/-/g, "");
-
-    return name.includes(search) || cleanRut.includes(search);
-  });
-
-  if (filtered.length === 0) {
-    list.innerHTML =
-      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
-    list.style.display = "block";
-    return;
-  }
-
-  filtered.forEach((worker) => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
-    div.addEventListener("click", () => {
-      const index = workers.indexOf(worker);
-      hiddenSelect.value = index;
-      searchInput.value = worker.name || "";
-      document.getElementById("f_workerName").textContent = worker.name;
-      const workerRecords = history
-        .filter((r) => r.rut === worker.rut)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      if (workerRecords.length > 0) {
-        const parts = workerRecords[0].date.split("-");
-        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        document.getElementById("f_startDate").textContent = formatted;
-      } else {
-        document.getElementById("f_startDate").textContent =
-          "____ / ____ / ______";
-      }
-      refreshFiniquitoResumen();
-      list.style.display = "none";
-      list.innerHTML = "";
-    });
-    list.appendChild(div);
-  });
-
-  list.style.display = "block";
 }
 
 function clearWorkerMonthlySearch() {
@@ -7862,7 +7737,10 @@ document.addEventListener("click", (event) => {
   if (!searchInput || !list || !hiddenSelect) return;
 
   const clickedInsideInput = searchInput.contains(event.target);
-  const clickedInsideList = list.contains(event.target);
+  const eventPath =
+    typeof event.composedPath === "function" ? event.composedPath() : [];
+  const clickedInsideList =
+    list.contains(event.target) || eventPath.includes(list);
 
   if (clickedInsideInput || clickedInsideList) return;
 
@@ -8494,6 +8372,21 @@ async function generateContract() {
   }
 
   const worker = workers[workerIndex];
+  const faenaSelect = document.getElementById("faena");
+  const newFaenaInput = document.getElementById("newFaena");
+  const selectedFaena = (faenaSelect?.value || "").trim();
+  const newFaena = (newFaenaInput?.value || "").trim();
+  const contractFaena = newFaena || selectedFaena;
+
+  if (
+    newFaena &&
+    !faenas.some((f) => f.toLowerCase() === newFaena.toLowerCase())
+  ) {
+    faenas.push(newFaena);
+    localStorage.setItem("faenas", JSON.stringify(faenas));
+    loadFaenas();
+    if (faenaSelect) faenaSelect.value = newFaena;
+  }
 
   const fundoSelect = document.getElementById("fundoSelect");
   const newFundoInput = document.getElementById("newFundo");
@@ -8515,7 +8408,7 @@ async function generateContract() {
   document.getElementById("c_name").textContent = worker.name;
   document.getElementById("c_rut").textContent = worker.rut;
   document.getElementById("c_faena").textContent =
-    contractFundo || "________________________";
+    contractFaena || "________________________";
   document.getElementById("c_workerSign").textContent = worker.name;
 
   const workScheduleInput = document.getElementById("workSchedule");
@@ -8904,12 +8797,20 @@ function syncFiniquitoEndDate(value) {
 }
 
 function generateMonthlySummary() {
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const hiddenSelect = document.getElementById("workerMonthly");
   const workerIndex = document.getElementById("workerMonthly").value;
 
   const month = document.getElementById("monthMonthly").value;
 
+  console.log("[MonthlySummary] before validation", {
+    searchInputValue: (searchInput?.value || "").trim(),
+    hiddenSelectValue: (hiddenSelect?.value || "").trim(),
+    monthValue: (month || "").trim(),
+  });
+
   if (workerIndex === "" || !month) {
-    alert("Seleccione trabajador y mes.");
+    showCustomAlert("Seleccione trabajador y mes.");
     return;
   }
 
@@ -9585,4 +9486,98 @@ function exportMonthlyGeneralExcel() {
   // ï¿½ COBROS MANDANTES - CALENDARIO
   // =============================
   // Se reutiliza el calendario global definido arriba.
+
+function filterWorkersMonthly() {
+  console.log("[DIAG] FILTER V4 (9787) CALLED - LAST DEFINITION");
+  const searchInput = document.getElementById("searchWorkerMonthly");
+  const list = document.getElementById("workerMonthlyList");
+  const hiddenSelect = document.getElementById("workerMonthly");
+
+  if (!searchInput || !list || !hiddenSelect) return;
+
+  const search = searchInput.value
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  const selectedName = (searchInput.dataset.monthlySelectedName || "")
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/-/g, "")
+    .trim();
+
+  if (
+    searchInput.dataset.monthlyWorkerLocked === "1" &&
+    hiddenSelect.value !== "" &&
+    search === selectedName
+  ) {
+    list.style.display = "none";
+    list.innerHTML = "";
+    return;
+  }
+
+  if (search !== selectedName) {
+    delete searchInput.dataset.monthlyWorkerLocked;
+  }
+
+  hiddenSelect.value = "";
+  list.innerHTML = "";
+
+  if (search === "") {
+    list.style.display = "none";
+    return;
+  }
+
+  const filtered = workers.filter((worker) => {
+    const name = (worker.name || "").toLowerCase();
+    const cleanRut = (worker.rut || "")
+      .toLowerCase()
+      .replace(/\./g, "")
+      .replace(/-/g, "");
+
+    return name.includes(search) || cleanRut.includes(search);
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML =
+      "<div style='padding: 10px; color: #999;'>No se encontraron resultados</div>";
+    list.style.display = "block";
+    return;
+  }
+
+  filtered.forEach((worker) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${worker.name || ""}</strong><br><small style='color:#666;'>${worker.rut || ""}</small>`;
+    div.addEventListener("click", () => {
+      clearTimeout(debounceTimer);
+      const index = workers.indexOf(worker);
+      hiddenSelect.value = String(index);
+      searchInput.value = worker.name || "";
+      searchInput.dataset.monthlySelectedName = worker.name || "";
+      searchInput.dataset.monthlyWorkerLocked = "1";
+      document.getElementById("f_workerName").textContent = worker.name;
+
+      const workerRecords = history
+        .filter((r) => r.rut === worker.rut)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (workerRecords.length > 0) {
+        const parts = workerRecords[0].date.split("-");
+        const formatted = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        document.getElementById("f_startDate").textContent = formatted;
+      } else {
+        document.getElementById("f_startDate").textContent =
+          "____ / ____ / ______";
+      }
+
+      refreshFiniquitoResumen();
+      list.style.display = "none";
+      list.innerHTML = "";
+    });
+    list.appendChild(div);
+  });
+
+  list.style.display = "block";
+}
 
