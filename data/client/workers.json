@@ -15,5 +15,20 @@
     "active": true,
     "id": "local_1782787141610_0fea71afc59078",
     "pending": false
+  },
+  {
+    "name": "bernarda espinossa",
+    "rut": "10.459.435-2",
+    "birthDate": "20/11/1965",
+    "maritalStatus": "casada",
+    "address": "laslomas 838",
+    "afp": "PlanVital",
+    "health": "fonasa",
+    "position": "Trabajador Agricola",
+    "nationality": "chilena",
+    "baseSalary": "553553",
+    "account_number": "3939392",
+    "id_card_photo": null,
+    "pending": false
   }
 ]

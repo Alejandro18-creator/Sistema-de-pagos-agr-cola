@@ -20,5 +20,15 @@
     "fundo": "Fundo EL REFUGIO",
     "mandante_paid": false,
     "paid": true
+  },
+  {
+    "name": "bernarda espinossa",
+    "rut": "10.459.435-2",
+    "date": "2026-07-02",
+    "labor": "poda",
+    "quantity": 2,
+    "total": 3000,
+    "fundo": "Fundo EL REFUGIO",
+    "mandante_paid": false
   }
 ]
